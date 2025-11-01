@@ -52,7 +52,6 @@ shopify_config.py
 
 # Backups and old files
 *_MILESTONE_*.py
-app_enhanced.py
 app_ultimate.py
 app.py
 
@@ -80,6 +79,14 @@ Dockerfile*
 docker-compose.yml
 nginx.conf
 
-# Old backend/frontend structure (we're using single file for now)
-backend/
+# Backend - ignore cache and desktop files but keep Python modules
+backend/__pycache__/
+backend/*.pyc
+backend/desktop.ini
+backend/app.py
+backend/models.py
+backend/migrations_init.py
+# Keep: backend/models_v2.py, backend/__init__.py, backend/config.py, backend/scrapers.py, backend/shopify_auth.py, backend/ai_scoring.py
+
+# Frontend
 frontend/
