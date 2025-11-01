@@ -133,6 +133,38 @@
             margin: 12px 0;
         }
         
+        .review-media {
+            margin: 12px 0;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .media-item {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .media-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
         .review-meta {
             display: flex;
             gap: 12px;
@@ -231,6 +263,18 @@
                     <div class="review-text">
                         {{ review.text }}
                     </div>
+                    
+                    {% if review.media and review.media|length > 0 %}
+                    <div class="review-media">
+                        <div class="media-grid">
+                            {% for media in review.media %}
+                            <div class="media-item">
+                                <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" onclick="window.open('{{ media.media_url }}', '_blank')">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <div class="review-meta">
                         {% if review.verified %}

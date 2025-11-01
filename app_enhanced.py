@@ -10,6 +10,7 @@ Matching Loox architecture with competitive advantages:
 
 from flask import Flask, request, jsonify, session, render_template
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 import os
 import json
 import logging
@@ -43,6 +44,24 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+
+# Database Configuration - Use models_v2 db instance
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://saksaks:11!!!!.Magics4321@193.203.165.217:5432/sakrev_db?sslmode=disable')
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Import models_v2 db instance (this is the ONE db instance we'll use)
+from backend.models_v2 import db
+db.init_app(app)
+
+# Import database integration
+try:
+    from database_integration import DatabaseIntegration
+    db_integration = DatabaseIntegration(db)
+    logger.info("✅ Database integration initialized")
+except Exception as e:
+    logger.warning(f"⚠️ Database integration not available: {e}")
+    db_integration = None
 
 # Configuration
 class Config:
@@ -1459,7 +1478,61 @@ def import_single():
         shopify_product_id = data.get('shopify_product_id')
         session_id = data.get('session_id')
         
-        # Simulate import (in production, save to database)
+        # DEBUG: Log full review data received
+        logger.info(f"="*60)
+        logger.info(f"DEBUG: Import request received")
+        logger.info(f"  shopify_product_id: {shopify_product_id}")
+        logger.info(f"  review_id: {review.get('id')}")
+        logger.info(f"  reviewer_name: {review.get('author') or review.get('reviewer_name')}")
+        logger.info(f"  rating: {review.get('rating')}")
+        logger.info(f"  title: {review.get('title', '')[:50]}")
+        logger.info(f"  db_integration available: {db_integration is not None}")
+        logger.info(f"  Full review keys: {list(review.keys())}")
+        logger.info(f"="*60)
+        
+        # Save to database if integration is available
+        if db_integration:
+            try:
+                # Use demo shop for testing
+                shop_domain = "sakura-rev-test-store.myshopify.com"
+                shop = db_integration.get_or_create_shop(shop_domain)
+                
+                # Import review to database
+                result = db_integration.import_single_review(
+                    shop_id=shop.id,
+                    shopify_product_id=shopify_product_id,
+                    review_data=review,
+                    source_platform=data.get('platform', 'aliexpress')
+                )
+                
+                if result['success']:
+                    logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
+                    
+                    # Track in session
+                    if session_id and session_id in import_sessions:
+                        import_sessions[session_id]['imported_count'] += 1
+                    
+                    return jsonify({
+                        'success': True,
+                        'review_id': result['review_id'],
+                        'product_id': result['product_id'],
+                        'shopify_product_id': shopify_product_id,
+                        'imported_at': datetime.now().isoformat(),
+                        'status': 'imported',
+                        'quality_score': review.get('quality_score', 0),
+                        'platform': review.get('platform', 'unknown'),
+                        'message': 'Review imported and saved to database'
+                    })
+                else:
+                    logger.error(f"❌ Database import failed: {result.get('error')}")
+                    # Fall through to simulation mode
+            except Exception as e:
+                logger.error(f"❌ Database import error: {str(e)}")
+                import traceback
+                logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
+                # Fall through to simulation mode
+        
+        # Fallback: Simulate import (if database not available)
         imported_review = {
             'id': review.get('id'),
             'imported_at': datetime.now().isoformat(),
@@ -1473,12 +1546,14 @@ def import_single():
         if session_id and session_id in import_sessions:
             import_sessions[session_id]['imported_count'] += 1
         
-        logger.info(f"Review imported: {review.get('id')} - Score: {review.get('quality_score')}")
+        logger.info(f"Review imported (simulated): {review.get('id')} - Score: {review.get('quality_score')}")
         
         return jsonify({
             'success': True,
             'imported_review': imported_review,
-            'message': 'Review imported successfully'
+            'message': 'Review imported successfully (database not available - using simulation)',
+            'database_available': False,
+            'review_id': None  # No database ID since save failed
         })
         
     except Exception as e:
@@ -1751,7 +1826,9 @@ def bookmarklet():
             const isModalPage = this.isModalPage();
             
             if (isModalPage) {{
-                // SSR page - setup modal detection and user guidance
+                // ⚠️ SSR page - setup modal detection and user guidance
+                // CRITICAL: This calls setupModalListener() which adds the "Get Reviews" button
+                // DO NOT REMOVE THIS CALL - it's essential for SSR functionality
                 this.setupModalListener();
                 return;
             }}
@@ -1767,6 +1844,8 @@ def bookmarklet():
         }}
         
         isModalPage() {{
+            // ⚠️ CRITICAL: This method determines if we're on SSR page
+            // If returns true, setupModalListener() is called which adds the "Get Reviews" button
             // Check if we're on a modal/immersive page (not a regular product page)
             const url = window.location.href;
             
@@ -1795,15 +1874,39 @@ def bookmarklet():
             return null;
         }}
         
+        // ====================================================================
+        // ⚠️ CRITICAL SSR BUTTON CODE - DO NOT REMOVE OR MODIFY ⚠️
+        // ====================================================================
+        // This code adds "Get Reviews" button to AliExpress SSR modal pages.
+        // It was developed over 16+ hours and is essential functionality.
+        // Location: Lines ~1861-2167 in app_enhanced.py
+        // Backup: See SSR_BUTTON_CODE_BACKUP.py for complete code reference
+        // ====================================================================
         
         setupModalListener() {{
             console.log('[SSR MODE] Setting up Sakura Reviews for AliExpress SSR page...');
             
-            // Check if AliExpress modal is currently open
-            const modalMask = document.querySelector('.comet-v2-modal-mask.comet-v2-fade-appear-done.comet-v2-fade-enter-done');
-            const modalWrap = document.querySelector('.comet-v2-modal-wrap');
+            // Check if AliExpress modal is currently open (try multiple selectors)
+            const modalSelectors = [
+                '.comet-v2-modal-mask.comet-v2-fade-appear-done.comet-v2-fade-enter-done',
+                '.comet-v2-modal-mask',
+                '.comet-modal-mask',
+                '[class*="modal-mask"]',
+                '.comet-v2-modal-wrap',
+                '.comet-modal-wrap'
+            ];
             
-            if (modalMask || modalWrap) {{
+            let modalFound = false;
+            for (const selector of modalSelectors) {{
+                const element = document.querySelector(selector);
+                if (element) {{
+                    console.log('[SSR MODE] ✅ Found modal with selector:', selector);
+                    modalFound = true;
+                    break;
+                }}
+            }}
+            
+            if (modalFound) {{
                 console.log('[SSR MODE] ✅ AliExpress modal is open - activating Sakura Reviews');
                 
                 // Show activation message
@@ -1811,7 +1914,9 @@ def bookmarklet():
                 
                 // Close the modal after user clicks OK
                 setTimeout(() => {{
-                    const closeButton = document.querySelector('button[aria-label="Close"].comet-v2-modal-close');
+                    const closeButton = document.querySelector('button[aria-label="Close"].comet-v2-modal-close') ||
+                                     document.querySelector('.comet-v2-modal-close') ||
+                                     document.querySelector('[aria-label*="Close"]');
                     if (closeButton) {{
                         closeButton.click();
                     }}
@@ -1821,8 +1926,12 @@ def bookmarklet():
                 this.setupProductClickListener();
                 
             }} else {{
-                console.log('[SSR MODE] ❌ No AliExpress modal found');
-                alert('🌸 Sakura Reviews\\n\\nPlease click on any product first, then click this bookmarklet again.');
+                console.log('[SSR MODE] No modal currently open - setting up listener for when user clicks product');
+                // Even if modal isn't open, set up listener for when user clicks a product
+                this.setupProductClickListener();
+                
+                // Show helpful message
+                alert('🌸 Sakura Reviews\\n\\nClick on any product in the search results to add the "Get Reviews" button to its modal.');
             }}
         }}
         
@@ -1836,14 +1945,41 @@ def bookmarklet():
             
             // Listen for clicks on products
             this.modalClickHandler = (event) => {{
-                const productElement = event.target.closest('.productContainer');
+                // Try multiple ways to find the product element
+                let productElement = event.target.closest('.productContainer');
+                if (!productElement) {{
+                    // Try other common product container classes
+                    productElement = event.target.closest('[data-product-id]') ||
+                                  event.target.closest('.product-item') ||
+                                  event.target.closest('[id^="1005"]');
+                }}
                 
-                if (productElement && productElement.id && /^1005\\\\d{{9,}}$/.test(productElement.id)) {{
-                    const productId = productElement.id;
-                    console.log('[SSR MODE] ✅ Product clicked:', productId);
+                if (productElement) {{
+                    // Try to get product ID from various sources
+                    let productId = productElement.id || 
+                                  productElement.getAttribute('data-product-id') ||
+                                  productElement.getAttribute('data-spm-data');
                     
-                    // Store product ID and add "Get Reviews Now" button to the NEW modal
-                    this.addSakuraButton(productId);
+                    // Extract product ID if it's in a data attribute
+                    if (productId && productId.includes('productId')) {{
+                        try {{
+                            const parsed = JSON.parse(productId);
+                            productId = parsed.productId;
+                        }} catch (e) {{
+                            // Try regex extraction
+                            const match = productId.match(/productId['":]?[\\s]*(\\d+)/);
+                            if (match) productId = match[1];
+                        }}
+                    }}
+                    
+                    // Validate product ID (AliExpress IDs are usually 13+ digits starting with 1005)
+                    if (productId && /^1005\\d{{9,}}$/.test(String(productId))) {{
+                        console.log('[SSR MODE] ✅ Product clicked:', productId);
+                        // Store product ID and add "Get Reviews Now" button to the NEW modal
+                        this.addSakuraButton(productId);
+                    }} else {{
+                        console.log('[SSR MODE] ⚠️ Product element found but ID not valid:', productId);
+                    }}
                 }}
             }};
             
@@ -1861,30 +1997,65 @@ def bookmarklet():
             
             // Try multiple times to add the button as the modal loads
             const tryAddButton = (attempt = 1) => {{
-                const navReview = document.querySelector('#nav-review');
+                // Try multiple selectors for the review tab
+                const selectors = [
+                    '#nav-review',
+                    '[data-spm="nav-review"]',
+                    '.comet-tabs-nav-item[data-spm="nav-review"]',
+                    '.nav-review',
+                    'a[href*="#nav-review"]',
+                    '.product-tabs-nav a[href*="review"]'
+                ];
+                
+                let navReview = null;
+                for (const selector of selectors) {{
+                    navReview = document.querySelector(selector);
+                    if (navReview) {{
+                        console.log(`[SSR MODE] ✅ Found review tab with selector: ${{selector}} (attempt ${{attempt}})`);
+                        break;
+                    }}
+                }}
+                
                 if (navReview) {{
-                    console.log(`[SSR MODE] ✅ Found #nav-review (attempt ${{attempt}})`);
-                    
                     // Remove any existing Sakura button
                     const existingButton = navReview.querySelector('.sakura-reviews-btn');
                     if (existingButton) {{
+                        console.log('[SSR MODE] Removing existing button');
                         existingButton.remove();
                     }}
                     
                     // Create the button
                     const btn = this.createSakuraButtonElement(productId);
-                    navReview.insertBefore(btn, navReview.firstChild);
-                    console.log('[SSR MODE] ✅ Sakura button added successfully');
-                }} else if (attempt < 3) {{
-                    console.log(`[SSR MODE] ⏳ #nav-review not found, retry ${{attempt + 1}}/3...`);
-                    setTimeout(() => tryAddButton(attempt + 1), 500);
+                    
+                    // Try to insert at the beginning of nav-review
+                    if (navReview.firstChild) {{
+                        navReview.insertBefore(btn, navReview.firstChild);
+                    }} else {{
+                        navReview.appendChild(btn);
+                    }}
+                    
+                    console.log('[SSR MODE] ✅ Sakura "Get Reviews" button added successfully');
+                }} else if (attempt < 10) {{
+                    console.log(`[SSR MODE] ⏳ Review tab not found, retry ${{attempt + 1}}/10...`);
+                    setTimeout(() => tryAddButton(attempt + 1), 300);
                 }} else {{
-                    console.log('[SSR MODE] ❌ #nav-review not found after 3 attempts');
+                    console.log('[SSR MODE] ❌ Review tab not found after 10 attempts - trying alternative locations');
+                    // Try adding to modal body as fallback
+                    const modalBody = document.querySelector('.comet-v2-modal-body') || 
+                                     document.querySelector('.product-detail-wrap') ||
+                                     document.querySelector('.product-main');
+                    if (modalBody) {{
+                        const btn = this.createSakuraButtonElement(productId);
+                        modalBody.insertBefore(btn, modalBody.firstChild);
+                        console.log('[SSR MODE] ✅ Button added to modal body as fallback');
+                    }}
                 }}
             }};
             
-            // Start trying after 600ms (AliExpress modal animation)
-            setTimeout(() => tryAddButton(), 600);
+            // Start trying immediately and also after delays
+            tryAddButton();
+            setTimeout(() => tryAddButton(4), 600);
+            setTimeout(() => tryAddButton(7), 1500);
         }}
         
         createSakuraButtonElement(productId) {{
@@ -1955,6 +2126,10 @@ def bookmarklet():
             
             return btn;
         }}
+        // ====================================================================
+        // ✅ END OF CRITICAL SSR BUTTON CODE
+        // If you see this marker, the SSR button code is intact.
+        // ====================================================================
         
         handleProductClick(productId) {{
             console.log('[SSR MODE] Processing product click:', productId);
@@ -1977,24 +2152,56 @@ def bookmarklet():
             
             let platform = 'unknown', productId = null;
             
+            // Try multiple methods for AliExpress
             if (hostname.includes('aliexpress')) {{
                 platform = 'aliexpress';
-                const match = url.match(/\\/item\\/(\\\\d+)/);
-                if (match) productId = match[1];
+                
+                // Method 1: Extract from URL (supports .html extension)
+                const urlMatch = url.match(/\\/item\\/(\\d+)(?:\\.html)?/);
+                if (urlMatch) {{
+                    productId = urlMatch[1];
+                    console.log('[DETECT] Product ID from URL:', productId);
+                }}
+                
+                // Method 2: Try window.runParams (AliExpress global data)
+                if (!productId && typeof window.runParams === 'object' && window.runParams.data) {{
+                    const data = window.runParams.data;
+                    if (data.feedbackModule && data.feedbackModule.productId) {{
+                        productId = data.feedbackModule.productId;
+                        console.log('[DETECT] Product ID from runParams.feedbackModule:', productId);
+                    }} else if (data.productId) {{
+                        productId = data.productId;
+                        console.log('[DETECT] Product ID from runParams.data:', productId);
+                    }} else if (data.storeModule && data.storeModule.productId) {{
+                        productId = data.storeModule.productId;
+                        console.log('[DETECT] Product ID from runParams.storeModule:', productId);
+                    }}
+                }}
+                
+                // Method 3: Try to find in page meta/data attributes
+                if (!productId) {{
+                    const metaProductId = document.querySelector('meta[property="product:id"]') || 
+                                       document.querySelector('meta[name="product:id"]');
+                    if (metaProductId) {{
+                        productId = metaProductId.getAttribute('content');
+                        console.log('[DETECT] Product ID from meta tag:', productId);
+                    }}
+                }}
             }} else if (hostname.includes('amazon')) {{
                 platform = 'amazon';
                 const match = url.match(/\\/dp\\/([A-Z0-9]{{10}})/);
                 if (match) productId = match[1];
             }} else if (hostname.includes('ebay')) {{
                 platform = 'ebay';
-                const match = url.match(/\\/itm\\/(\\\\d+)/);
+                const match = url.match(/\\/itm\\/(\\d+)/);
                 if (match) productId = match[1];
             }} else if (hostname.includes('walmart')) {{
                 platform = 'walmart';
-                const match = url.match(/\\/ip\\/[^\\/]+\\/(\\\\d+)/);
+                const match = url.match(/\\/ip\\/[^\\/]+\\/(\\d+)/);
                 if (match) productId = match[1];
             }}
             
+            console.log('[DETECT] Final result:', {{ platform, productId, url }});
             return {{ platform, productId, url }};
         }}
         
@@ -2698,24 +2905,58 @@ def bookmarklet():
             const review = this.reviews[this.currentIndex];
             
             try {{
+                // DEBUG: Log review data before sending
+                console.log('[DEBUG] Sending review to database:', {{
+                    review_id: review.id,
+                    reviewer_name: review.author || review.reviewer_name,
+                    rating: review.rating,
+                    title: review.title,
+                    shopify_product_id: this.selectedProduct.id,
+                    shopify_product_title: this.selectedProduct.title,
+                    review_data: review
+                }});
+                
+                const requestBody = {{
+                    review: review,
+                    shopify_product_id: this.selectedProduct.id,
+                    session_id: this.sessionId
+                }};
+                
+                console.log('[DEBUG] Request URL:', `${{API_URL}}/admin/reviews/import/single`);
+                console.log('[DEBUG] Request body:', JSON.stringify(requestBody, null, 2));
+                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/single`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
-                        review: review,
-                        shopify_product_id: this.selectedProduct.id,
-                        session_id: this.sessionId
-                    }})
+                    body: JSON.stringify(requestBody)
                 }});
                 
+                console.log('[DEBUG] Response status:', response.status);
                 const result = await response.json();
+                console.log('[DEBUG] Response data:', result);
                 
                 if (result.success) {{
+                    // Log database review ID if available
+                    if (result.review_id) {{
+                        console.log('✅ [DATABASE] Review saved with DB ID:', result.review_id);
+                        console.log('   Shopify Product ID:', result.shopify_product_id || this.selectedProduct.id);
+                        console.log('   Database Product ID:', result.product_id || 'N/A');
+                        console.log('   Imported at:', result.imported_at || new Date().toISOString());
+                    }} else {{
+                        console.warn('⚠️ [WARNING] Review imported but NO database ID returned - using simulation mode');
+                        if (result.imported_review) {{
+                            console.log('   Source Review ID (not DB ID):', result.imported_review.id);
+                        }}
+                    }}
+                    
                     // Track analytics
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Post+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    alert(`✓ Review imported successfully to "${{this.selectedProduct.title}}"!`);
+                    const message = result.review_id 
+                        ? `✓ Review imported successfully! Database ID: ${{result.review_id}}`
+                        : `✓ Review imported (simulation mode - database unavailable)`;
+                    alert(message);
                     this.nextReview();
                 }} else {{
                     alert('Failed to import: ' + result.error);
@@ -3167,23 +3408,61 @@ def check_payment_status(shop_id):
 
 def get_product_reviews(product_id, limit=20):
     """
-    Get reviews for a specific product
+    Get reviews for a specific product from database
     """
-    # For now, return sample data
-    # In production, fetch from your database
-    return [
-        {
-            'id': f'review_{i}',
-            'rating': random.randint(3, 5),
-            'text': f'This is a sample review {i} for testing the widget system. The product is amazing!',
-            'author': f'Customer {i}',
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'verified': random.choice([True, False]),
-            'images': [],
-            'ai_score': round(random.uniform(6.0, 10.0), 1)
-        }
-        for i in range(1, min(limit + 1, 21))
-    ]
+    try:
+        from backend.models_v2 import Review, ReviewMedia
+        
+        # Query reviews by shopify_product_id
+        reviews_query = Review.query.filter_by(
+            shopify_product_id=product_id,
+            status='published'
+        ).order_by(Review.imported_at.desc()).limit(limit).all()
+        
+        if not reviews_query:
+            logger.info(f"No reviews found for product {product_id}")
+            return []
+        
+        # Convert to dict format for template
+        reviews = []
+        for review in reviews_query:
+            # Get media for this review
+            media = ReviewMedia.query.filter_by(review_id=review.id, status='active').all()
+            # Format media for widget template (expects 'media' with 'media_url' property)
+            media_list = [{'media_url': m.media_url} for m in media]
+            
+            reviews.append({
+                'id': review.id,
+                'rating': review.rating,
+                'text': review.body or '',
+                'body': review.body or '',  # Some templates use 'body'
+                'title': review.title or '',
+                'author': review.reviewer_name or 'Anonymous',
+                'reviewer_name': review.reviewer_name or 'Anonymous',  # Some templates use 'reviewer_name'
+                'date': review.review_date.strftime('%Y-%m-%d') if review.review_date else review.imported_at.strftime('%Y-%m-%d'),
+                'review_date': review.review_date.strftime('%Y-%m-%d') if review.review_date else review.imported_at.strftime('%Y-%m-%d'),
+                'imported_at': review.imported_at.strftime('%Y-%m-%d') if review.imported_at else '',
+                'verified': review.verified_purchase,
+                'verified_purchase': review.verified_purchase,  # Some templates use 'verified_purchase'
+                'media': media_list,  # Widget templates expect 'media' not 'images'
+                'images': media_list,  # Keep 'images' for backward compatibility
+                'country': review.reviewer_country or '',
+                'reviewer_country': review.reviewer_country or '',
+                'ai_score': review.quality_score or 0.0,
+                'quality_score': review.quality_score or 0.0,  # Some templates use 'quality_score'
+                'ai_recommended': review.ai_recommended,
+                'shopify_product_id': review.shopify_product_id,
+                'aliexpress_product_id': review.aliexpress_product_id
+            })
+        
+        logger.info(f"Found {len(reviews)} reviews for product {product_id}")
+        return reviews
+        
+    except Exception as e:
+        logger.error(f"Error fetching reviews for product {product_id}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return []
 
 # Shopify App Block Integration
 @app.route('/app-blocks')
@@ -4130,7 +4409,7 @@ def list_routes():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5007))  # Use 5007 for fresh start (avoid cache)
     debug = os.environ.get('FLASK_ENV') == 'development'
     
     print("=" * 60)
@@ -4149,7 +4428,8 @@ if __name__ == '__main__':
     print("  * Sentiment analysis")
     print("=" * 60)
     print(f"\nBookmarklet URL:")
-    print(f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/js/bookmarklet.js';document.head.appendChild(s);}})();")
+    bookmarklet_url = f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
+    print(bookmarklet_url)
     print("=" * 60)
     
     # Use SSL only for local development (EasyPanel handles SSL at proxy level)
