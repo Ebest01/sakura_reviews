@@ -4428,7 +4428,15 @@ if __name__ == '__main__':
     print("  * Sentiment analysis")
     print("=" * 60)
     print(f"\nBookmarklet URL:")
-    bookmarklet_url = f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
+    # Detect if we're in production (Easypanel) or local development
+    app_url = os.environ.get('SHOPIFY_APP_URL') or os.environ.get('APP_URL')
+    if app_url:
+        # Remove trailing slash and use the provided URL
+        base_url = app_url.rstrip('/')
+        bookmarklet_url = f"javascript:(function(){{var s=document.createElement('script');s.src='{base_url}/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
+    else:
+        # Local development - use localhost
+        bookmarklet_url = f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
     print(bookmarklet_url)
     print("=" * 60)
     
