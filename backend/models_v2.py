@@ -4,7 +4,7 @@ Based on Loox's strategy: Owner -> Shop -> Product -> Review -> Media
 """
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Index
+from sqlalchemy import Index, UniqueConstraint
 import json
 
 db = SQLAlchemy()
@@ -236,6 +236,8 @@ class Review(db.Model):
     __table_args__ = (
         Index('idx_shop_product_review', 'shop_id', 'product_id'),
         Index('idx_source_review', 'source_platform', 'source_review_id'),
+        # Composite unique constraint for duplicate prevention (shop + product + review_id)
+        UniqueConstraint('shop_id', 'shopify_product_id', 'source_review_id', name='uq_shop_product_review'),
     )
     
     def __repr__(self):

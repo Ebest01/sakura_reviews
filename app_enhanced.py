@@ -25,6 +25,20 @@ import hashlib
 import uuid
 import hmac
 
+# VADER sentiment analysis
+try:
+    import nltk
+    from nltk.sentiment.vader import SentimentIntensityAnalyzer
+    # Download VADER lexicon if not already downloaded
+    try:
+        nltk.data.find('vader_lexicon')
+    except LookupError:
+        nltk.download('vader_lexicon', quiet=True)
+    VADER_AVAILABLE = True
+except ImportError:
+    VADER_AVAILABLE = False
+    SentimentIntensityAnalyzer = None
+
 # Import remote config loader
 try:
     from config_loader import config as remote_config
@@ -116,6 +130,11 @@ class EnhancedReviewExtractor:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
+        # Initialize VADER analyzer if available
+        if VADER_AVAILABLE and SentimentIntensityAnalyzer:
+            self.vader = SentimentIntensityAnalyzer()
+        else:
+            self.vader = None
     
     def extract_reviews_paginated(self, product_data, page=1, per_page=10, filters=None):
         """Extract reviews with pagination - matches Loox /admin/reviews/import/url"""
@@ -599,45 +618,178 @@ class EnhancedReviewExtractor:
         ]
         return dates[offset % len(dates)]
     
+    def _detect_repetitive_text(self, text):
+        """
+        Detect if text is repetitive (like the example: same sentence repeated 4 times)
+        Returns True if text appears to be repetitive spam
+        """
+        if not text or len(text) < 20:
+            return False
+        
+        # Split into sentences
+        sentences = re.split(r'[.!?]\s+', text.strip())
+        if len(sentences) < 2:
+            return False
+        
+        # Check if sentences are very similar (normalize and compare)
+        normalized_sentences = [s.strip().lower() for s in sentences if s.strip()]
+        if len(normalized_sentences) < 2:
+            return False
+        
+        # Check for duplicate sentences (more than 2 identical sentences = repetitive)
+        sentence_counts = {}
+        for sent in normalized_sentences:
+            sentence_counts[sent] = sentence_counts.get(sent, 0) + 1
+        
+        # If any sentence appears more than 2 times, it's repetitive
+        max_count = max(sentence_counts.values())
+        if max_count >= 3:
+            return True
+        
+        # Also check if text is just the same phrase repeated
+        phrases = re.split(r'[.,;\n]+', text.lower().strip())
+        phrase_counts = {}
+        for phrase in phrases:
+            phrase = phrase.strip()
+            if len(phrase) > 10:  # Only count meaningful phrases
+                phrase_counts[phrase] = phrase_counts.get(phrase, 0) + 1
+        
+        if phrase_counts:
+            max_phrase_count = max(phrase_counts.values())
+            if max_phrase_count >= 3:
+                return True
+        
+        return False
+    
     def _calculate_quality_score(self, review):
         """
         AI Quality Scoring - Competitive Advantage!
         Loox doesn't have this
+        
+        Improved algorithm with VADER sentiment analysis:
+        - 5-star reviews get base score 6-10 (need positive sentiment for 10/10)
+        - 4-star reviews get base score 5-9 (capped at 9/10)
+        - Lower ratings get base score based on detail level
+        - Detects repetitive text and mismatched sentiment
         """
         score = 0
         text = review.get('text', '')
+        rating = review.get('rating', 0)
+        text_len = len(text)
         
-        # Text length (0-3 points)
-        if len(text) > 150:
+        # Normalize AliExpress rating (0-100) to 1-5 scale
+        if rating > 5:
+            rating_normalized = max(1, min(5, int((rating / 100) * 5)))
+        else:
+            rating_normalized = max(1, min(5, int(rating)))
+        
+        # BASE SCORE: Star rating is the foundation
+        # Ensures high-star reviews ALWAYS score higher than low-star reviews
+        # Even a basic 5-star (6/10) beats the best 1-star (2/10 max)
+        if rating_normalized == 5:
+            score = 6  # 5-star: 6-10/10 (range: +0 to +4 from bonuses)
+        elif rating_normalized == 4:
+            score = 5  # 4-star: 5-9/10 (range: +0 to +4 from bonuses)
+        elif rating_normalized == 3:
+            score = 4  # 3-star: 4-8/10 (range: +0 to +4 from bonuses)
+        elif rating_normalized == 2:
+            score = 1  # 2-star: 1-3/10 (range: +0 to +2, capped at 3)
+        else:  # 1-star
+            score = 0  # 1-star: 0-2/10 (range: +0 to +2, capped at 2)
+        
+        # Text detail bonus (0-3 points)
+        # Detailed reviews get bonus regardless of rating
+        if text_len > 150:
             score += 3
-        elif len(text) > 80:
+        elif text_len > 80:
             score += 2
-        elif len(text) > 40:
+        elif text_len > 40:
             score += 1
         
-        # Has images (0-2 points)
+        # Images bonus (0-2 points)
         if len(review.get('images', [])) >= 2:
             score += 2
         elif len(review.get('images', [])) >= 1:
             score += 1
         
-        # Rating (0-2 points)
-        if review.get('rating', 0) >= 5:
-            score += 2
-        elif review.get('rating', 0) >= 4:
-            score += 1
-        
-        # Verified (0-1 point)
+        # Verified purchase bonus (0-1 point)
         if review.get('verified', False):
             score += 1
         
-        # Quality keywords (0-2 points)
-        quality_words = ['quality', 'perfect', 'excellent', 'amazing', 'love', 'recommend']
+        # Quality keywords bonus (0-2 points)
+        quality_words = ['quality', 'perfect', 'excellent', 'amazing', 'love', 'recommend', 'great', 'wonderful', 'satisfied']
         keyword_count = sum(1 for word in quality_words if word in text.lower())
         if keyword_count >= 2:
             score += 2
         elif keyword_count >= 1:
             score += 1
+        
+        # VADER sentiment analysis - validate alignment with star rating
+        vader_compound = None
+        if self.vader:
+            try:
+                vader_scores = self.vader.polarity_scores(text)
+                vader_compound = vader_scores['compound']  # Range: -1 (negative) to +1 (positive)
+                
+                # Check sentiment alignment with star rating
+                if rating_normalized == 5:
+                    # 5-star reviews MUST have positive sentiment to reach high scores
+                    if vader_compound < 0.05:
+                        # Mismatch: 5-star but not positive sentiment - penalize
+                        score = max(score - 2, 6)  # Can't go below base 5-star score of 6
+                    elif vader_compound >= 0.5:
+                        # Very positive sentiment - bonus
+                        score += 1
+                elif rating_normalized == 4:
+                    # 4-star reviews should be neutral to positive
+                    if vader_compound < -0.1:
+                        # Very negative sentiment for 4-star - penalize slightly
+                        score = max(score - 1, 5)  # Can't go below base 4-star score
+                elif rating_normalized <= 2:
+                    # Negative reviews (1-2 star) should have negative/neutral sentiment
+                    if vader_compound > 0.3:
+                        # Very positive sentiment for negative review - might be spam
+                        score = max(score - 1, 0)
+                
+            except Exception as e:
+                # VADER failed, continue without it
+                pass
+        
+        # Penalty for repetitive text (like the example review)
+        if self._detect_repetitive_text(text):
+            score = max(score - 3, 0)  # Heavy penalty for repetitive spam
+        
+        # Penalty for very short reviews with high rating (might be spam)
+        # But keep it above 2-star max (3/10) - a short 5-star is still better than detailed negative
+        if rating_normalized == 5 and text_len < 20:
+            score = max(4, score - 2)  # Reduce to 4/10 minimum (still better than 2-star max of 3/10)
+        
+        # Cap 4-star reviews at 9/10 (as per user requirement)
+        # Even perfect 4-star reviews can't reach 10/10
+        if rating_normalized == 4:
+            score = min(9, score)
+        
+        # Cap negative reviews: even with all bonuses, they can't exceed their maximum
+        # 2-star reviews: max 3/10 (basic 4-star is 5/10, so always lower)
+        if rating_normalized == 2:
+            score = min(3, score)
+        
+        # 1-star reviews: max 2/10 (basic 3-star is 4/10, so always lower)
+        if rating_normalized == 1:
+            score = min(2, score)
+        
+        # 5-star reviews need positive sentiment to reach 10/10
+        # If sentiment is neutral/negative but still high score, cap at 9/10
+        if rating_normalized == 5 and score >= 9:
+            if self.vader:
+                try:
+                    if vader_compound is None:
+                        vader_scores = self.vader.polarity_scores(text)
+                        vader_compound = vader_scores['compound']
+                    if vader_compound < 0.05:  # Not clearly positive
+                        score = min(9, score)  # Cap at 9/10 for neutral/negative 5-star
+                except:
+                    pass
         
         return min(10, max(0, score))
     
@@ -1506,23 +1658,41 @@ def import_single():
                 )
                 
                 if result['success']:
-                    logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
-                    
-                    # Track in session
-                    if session_id and session_id in import_sessions:
-                        import_sessions[session_id]['imported_count'] += 1
-                    
-                    return jsonify({
-                        'success': True,
-                        'review_id': result['review_id'],
-                        'product_id': result['product_id'],
-                        'shopify_product_id': shopify_product_id,
-                        'imported_at': datetime.now().isoformat(),
-                        'status': 'imported',
-                        'quality_score': review.get('quality_score', 0),
-                        'platform': review.get('platform', 'unknown'),
-                        'message': 'Review imported and saved to database'
-                    })
+                    if result.get('duplicate', False):
+                        # Duplicate review - inform user
+                        logger.info(f"⚠️ Duplicate review detected: {result['review_id']} - Already imported for this product")
+                        return jsonify({
+                            'success': True,
+                            'review_id': result['review_id'],
+                            'product_id': result['product_id'],
+                            'shopify_product_id': shopify_product_id,
+                            'imported_at': datetime.now().isoformat(),
+                            'status': 'duplicate',
+                            'quality_score': review.get('quality_score', 0),
+                            'platform': review.get('platform', 'unknown'),
+                            'duplicate': True,
+                            'message': result.get('message', 'Review already imported for this product')
+                        })
+                    else:
+                        # New review imported
+                        logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
+                        
+                        # Track in session (only count new imports, not duplicates)
+                        if session_id and session_id in import_sessions:
+                            import_sessions[session_id]['imported_count'] += 1
+                        
+                        return jsonify({
+                            'success': True,
+                            'review_id': result['review_id'],
+                            'product_id': result['product_id'],
+                            'shopify_product_id': shopify_product_id,
+                            'imported_at': datetime.now().isoformat(),
+                            'status': 'imported',
+                            'quality_score': review.get('quality_score', 0),
+                            'platform': review.get('platform', 'unknown'),
+                            'duplicate': False,
+                            'message': 'Review imported and saved to database'
+                        })
                 else:
                     logger.error(f"❌ Database import failed: {result.get('error')}")
                     # Fall through to simulation mode
@@ -1636,13 +1806,14 @@ def skip_review():
 def import_bulk():
     """
     Enhanced endpoint: Bulk import (Loox doesn't have this!)
-    Import multiple reviews at once, excluding skipped ones
+    Import multiple reviews at once to database, excluding skipped ones
     
     Body: {
         "reviews": [{...}, {...}],
         "shopify_product_id": "123",
         "session_id": "abc",
-        "filters": {"min_quality_score": 7}
+        "filters": {"min_quality_score": 7},
+        "platform": "aliexpress"
     }
     """
     try:
@@ -1651,6 +1822,7 @@ def import_bulk():
         shopify_product_id = data.get('shopify_product_id')
         session_id = data.get('session_id')
         filters = data.get('filters', {})
+        source_platform = data.get('platform', 'aliexpress')
         
         if not reviews:
             return jsonify({
@@ -1674,54 +1846,119 @@ def import_bulk():
         min_quality = filters.get('min_quality_score', 0)
         filtered_reviews = [r for r in non_skipped_reviews if r.get('quality_score', 0) >= min_quality]
         
-        # Bulk import to Shopify
-        imported = []
+        # Import all filtered reviews (no limit)
+        reviews_to_import = filtered_reviews
+        
+        # Bulk import to database
+        imported = []  # Newly imported reviews
+        duplicates = []  # Reviews that were already imported
         failed = []
         
-        for review in filtered_reviews[:50]:  # Limit to 50 at once
+        # Get or create shop for database
+        shop_domain = "sakura-rev-test-store.myshopify.com"
+        shop = None
+        
+        if db_integration:
             try:
-                result = shopify_helper.add_review_to_product(shopify_product_id, review)
+                shop = db_integration.get_or_create_shop(shop_domain)
+                logger.info(f"Bulk import: Using shop_id={shop.id} for product {shopify_product_id}")
+            except Exception as e:
+                logger.error(f"Bulk import: Failed to get/create shop: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Database error: {str(e)}'
+                }), 500
+        
+        # Use PostgreSQL ON CONFLICT DO NOTHING for efficient bulk import
+        if db_integration and shop:
+            try:
+                result = db_integration.import_reviews_bulk(
+                    shop_id=shop.id,
+                    shopify_product_id=shopify_product_id,
+                    reviews_data=reviews_to_import,
+                    source_platform=source_platform
+                )
                 
                 if result['success']:
-                    imported.append({
-                        'id': review.get('id'),
-                        'imported_at': datetime.now().isoformat(),
-                        'quality_score': review.get('quality_score'),
-                        'shopify_product_id': shopify_product_id,
-                        'review_id': result['review_id']
-                    })
+                    # Create summary lists (we don't need individual review IDs for bulk operations)
+                    imported_count = result['imported']
+                    duplicates_count = result['duplicates']
+                    failed_count = result['failed']
+                    
+                    # For response, create generic entries
+                    for i in range(imported_count):
+                        imported.append({
+                            'id': f'bulk_{i}',
+                            'shopify_product_id': shopify_product_id,
+                            'message': 'Imported via bulk operation'
+                        })
+                    
+                    for i in range(duplicates_count):
+                        duplicates.append({
+                            'id': f'duplicate_{i}',
+                            'shopify_product_id': shopify_product_id,
+                            'message': 'Already imported'
+                        })
+                    
+                    if failed_count > 0:
+                        for i in range(failed_count):
+                            failed.append({
+                                'id': f'failed_{i}',
+                                'error': result.get('error', 'Unknown error')
+                            })
                 else:
+                    # All failed
+                    for review in reviews_to_import:
+                        failed.append({
+                            'id': review.get('id'),
+                            'error': result.get('error', 'Unknown error')
+                        })
+            except Exception as e:
+                logger.error(f"Bulk import error: {str(e)}")
+                import traceback
+                logger.error(traceback.format_exc())
+                for review in reviews_to_import:
                     failed.append({
                         'id': review.get('id'),
-                        'error': result['error']
+                        'error': str(e)
                     })
-            except Exception as e:
-                failed.append({
+        else:
+            # Database not available - simulation mode
+            for review in reviews_to_import:
+                imported.append({
                     'id': review.get('id'),
-                    'error': str(e)
+                    'review_id': None,  # No database ID
+                    'imported_at': datetime.now().isoformat(),
+                    'quality_score': review.get('quality_score', 0),
+                    'shopify_product_id': shopify_product_id,
+                    'database_available': False
                 })
         
-        # Update session stats
+        # Update session stats (only count newly imported, not duplicates)
         if session_id and session_id in import_sessions:
             import_sessions[session_id]['imported_count'] += len(imported)
         
-        logger.info(f"Bulk import to Shopify: {len(imported)} successful, {len(failed)} failed, {len(session_skipped)} skipped")
+        logger.info(f"Bulk import to database: {len(imported)} imported (new), {len(duplicates)} duplicates, {len(failed)} failed, {len(session_skipped)} skipped")
         
         return jsonify({
             'success': True,
-            'imported_count': len(imported),
+            'imported_count': len(imported),  # New imports only
+            'duplicate_count': len(duplicates),  # Already imported
             'failed_count': len(failed),
             'skipped_count': len(session_skipped),
             'imported_reviews': imported,
+            'duplicate_reviews': duplicates,
             'failed_reviews': failed,
-            'message': f'Bulk import completed: {len(imported)} imported, {len(failed)} failed, {len(session_skipped)} skipped'
+            'message': f'Bulk import completed: {len(imported)} new, {len(duplicates)} duplicates, {len(failed)} failed, {len(session_skipped)} skipped'
         })
         
     except Exception as e:
         logger.error(f"Bulk import error: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
-            'error': 'Bulk import failed'
+            'error': f'Bulk import failed: {str(e)}'
         }), 500
 
 @app.route('/e', methods=['GET', 'POST'])
@@ -1817,7 +2054,8 @@ def bookmarklet():
             this.modalClickHandler = null;  // Store event handler for cleanup
             this.currentIndex = 0;  // Initialize current review index
             this.pagination = {{ has_next: false, page: 1 }};  // Initialize pagination
-            this.stats = {{ with_photos: 0, ai_recommended: 0 }};  // Initialize stats
+            this.stats = {{ with_photos: 0, ai_recommended: 0, reviews_45star: 0, reviews_3star: 0 }};  // Initialize stats
+            this.isImporting = false;  // Track bulk import progress
             this.init();
         }}
         
@@ -2391,7 +2629,7 @@ def bookmarklet():
                                     display: flex; align-items: center; gap: 12px;"
                              onmouseover="this.style.background='#f8f9fa'" 
                              onmouseout="this.style.background='white'"
-                             onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}')">
+                             onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}', '${{product.image || ""}}')">
                             ${{product.image ? `<img src="${{product.image}}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}}
                             <div>
                                 <div style="font-weight: 500; color: #333; font-size: 14px;">${{product.title}}</div>
@@ -2407,8 +2645,8 @@ def bookmarklet():
             }}
         }}
         
-        selectProduct(productId, productTitle) {{
-            this.selectedProduct = {{ id: productId, title: productTitle }};
+        selectProduct(productId, productTitle, productImage) {{
+            this.selectedProduct = {{ id: productId, title: productTitle, image: productImage || null }};
             
             // Hide dropdown and clear input
             const dropdown = document.getElementById('product-dropdown');
@@ -2423,12 +2661,15 @@ def bookmarklet():
                 return;
             }}
             
-            // Show selected product
+            // Show selected product with thumbnail
             selectedDiv.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <div style="font-weight: 500;">✓ Target Product Selected</div>
-                        <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${{productImage ? `<img src="${{productImage}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                        <div>
+                            <div style="font-weight: 500;">✓ Target Product Selected</div>
+                            <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
+                        </div>
                     </div>
                     <button onclick="window.reviewKingClient.clearProduct()" 
                             style="background: rgba(255,255,255,0.2); border: none; color: white; 
@@ -2531,11 +2772,23 @@ def bookmarklet():
             this.currentIndex = 0;
             
             // Update stats based on all reviews (not filtered)
+            // Calculate rating counts (normalize AliExpress 0-100 to 1-5 scale)
+            const reviews45star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 4 || rating === 5;
+            }});
+            const reviews3star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 3;
+            }});
+            
             this.stats = {{
                 ...this.stats,
                 total: this.allReviews.length,
                 with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
-                ai_recommended: this.allReviews.filter(r => r.ai_recommended).length
+                ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
+                reviews_45star: reviews45star.length,
+                reviews_3star: reviews3star.length
             }};
             
             this.displayReview();
@@ -2717,18 +2970,24 @@ def bookmarklet():
                          box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 120px; overflow-y: auto; color: #333;"></div>
                     <div id="selected-product" style="display: block; margin-top: 8px; padding: 8px 12px; 
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
-                        ✓ Target Product Selected: ${{this.selectedProduct.title}}
-                        <button onclick="window.reviewKingClient.clearProduct()" 
-                                style="background: rgba(255,255,255,0.2); border: none; color: white; 
-                                       padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;">
-                            Change
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            ${{this.selectedProduct.image ? `<img src="${{this.selectedProduct.image}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">✓ Target Product Selected</div>
+                                <div style="opacity: 0.9; font-size: 12px;">${{this.selectedProduct.title}}</div>
+                            </div>
+                            <button onclick="window.reviewKingClient.clearProduct()" 
+                                    style="background: rgba(255,255,255,0.2); border: none; color: white; 
+                                           padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Change
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Beautiful Stats Header (like your design) -->
                 <div style="background: linear-gradient(135deg, #FF2D85 0%, #FF1493 100%); 
-                            padding: 24px; border-radius: 12px; margin-bottom: 24px; color: white; text-align: center;
+                            padding: 16px; border-radius: 12px; margin-bottom: 24px; color: white; text-align: center;
                             box-shadow: 0 4px 16px rgba(255, 45, 133, 0.3);">
                     <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 16px;">
                         <div style="flex: 1; min-width: 80px;">
@@ -2750,20 +3009,66 @@ def bookmarklet():
                     </div>
                 </div>
                 
-                <!-- Bulk Import Buttons (like your design) -->
-                <div style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importAllReviews()">
-                        Import All Reviews
-                    </button>
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importWithPhotos()">
-                        Import only with Photos
-                    </button>
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importWithoutPhotos()">
-                        Import with no Photos
-                    </button>
+                <!-- Bulk Import Progress Loader -->
+                <div id="rk-import-loader" style="display: none; margin-bottom: 16px; padding: 16px; background: rgba(255, 45, 133, 0.1); border: 2px solid #FF2D85; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <div class="rk-spinner" style="width: 20px; height: 20px; border: 3px solid rgba(255, 45, 133, 0.3); border-top-color: #FF2D85; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <div style="color: #FF2D85; font-weight: 600; font-size: 14px;">
+                            <span id="rk-import-status">Importing reviews...</span>
+                        </div>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255, 45, 133, 0.2); border-radius: 3px; overflow: hidden;">
+                        <div id="rk-import-progress" style="height: 100%; background: linear-gradient(90deg, #FF2D85, #FF1493); width: 0%; transition: width 0.3s ease; border-radius: 3px;"></div>
+                    </div>
+                    <div id="rk-import-message" style="margin-top: 8px; font-size: 12px; color: #9ca3af;"></div>
+                </div>
+                
+                <!-- Bulk Import Section -->
+                <div style="margin-bottom: 24px;">
+                    <div style="color: #9ca3af; font-size: 16px; margin-bottom: 12px; font-weight: 600;">Bulk Imports:</div>
+                    
+                    <!-- Bulk Import Buttons Row 1 -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <button id="rk-btn-import-all" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importAllReviews()">
+                            All Reviews (${{this.allReviews.length}})
+                        </button>
+                        <button id="rk-btn-import-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importWithPhotos()">
+                            With Photos (${{this.stats.with_photos}})
+                        </button>
+                        <button id="rk-btn-import-no-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importWithoutPhotos()">
+                            No Photos (${{this.allReviews.length - this.stats.with_photos}})
+                        </button>
+                    </div>
+                    
+                    <!-- Bulk Import Buttons Row 2 -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button id="rk-btn-import-ai" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importAIRecommended()">
+                            AI Recommended (${{this.stats.ai_recommended}})
+                        </button>
+                        <button id="rk-btn-import-45star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.import45Star()">
+                            4-5 ★ (${{this.stats.reviews_45star}})
+                        </button>
+                        <button id="rk-btn-import-3star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.import3Star()">
+                            3 ★ (${{this.stats.reviews_3star}})
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Warning Message -->
+                <div style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 18px;">⚠️</span>
+                        <div style="flex: 1;">
+                            <div style="color: #92400e; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Warning: Bulk Import Notice</div>
+                            <div style="color: #78350f; font-size: 12px; line-height: 1.5;">Bulk import operations may include negative reviews (1-2 star ratings). Please review the selected reviews before importing.</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Country Filter & Translation Toggle (Loox-inspired) -->
@@ -2795,8 +3100,8 @@ def bookmarklet():
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'all' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('all')">All (${{this.allReviews.length}})</button>
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'photos' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('photos')">&#128247; With Photos (${{this.stats.with_photos}})</button>
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'ai_recommended' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('ai_recommended')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff69b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg> AI Recommended (${{this.stats.ai_recommended}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733;</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; Only</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733; (${{this.stats.reviews_45star}})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; (${{this.stats.reviews_3star}})</button>
                     </div>
                     <div style="color: #6b7280; font-size: 12px;">
                         Showing ${{this.currentIndex + 1}} of ${{this.reviews.length}} reviews
@@ -2953,11 +3258,19 @@ def bookmarklet():
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Post+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    const message = result.review_id 
-                        ? `✓ Review imported successfully! Database ID: ${{result.review_id}}`
-                        : `✓ Review imported (simulation mode - database unavailable)`;
-                    alert(message);
-                    this.nextReview();
+                    // Handle duplicate vs new import
+                    if (result.duplicate) {{
+                        const message = result.message || `⚠️ Review already imported for this product (Database ID: ${{result.review_id}})`;
+                        alert(message);
+                        // Don't auto-advance for duplicates - let user see what happened
+                        // this.nextReview();
+                    }} else {{
+                        const message = result.review_id 
+                            ? `✓ Review imported successfully! Database ID: ${{result.review_id}}`
+                            : `✓ Review imported (simulation mode - database unavailable)`;
+                        alert(message);
+                        this.nextReview();
+                    }}
                 }} else {{
                     alert('Failed to import: ' + result.error);
                 }}
@@ -2992,24 +3305,140 @@ def bookmarklet():
             }}
         }}
         
+        // Helper methods for bulk import progress
+        showImportLoader(statusText, totalReviews) {{
+            this.isImporting = true;
+            const loader = document.getElementById('rk-import-loader');
+            const status = document.getElementById('rk-import-status');
+            const progress = document.getElementById('rk-import-progress');
+            const message = document.getElementById('rk-import-message');
+            
+            if (loader && status && progress && message) {{
+                loader.style.display = 'block';
+                status.textContent = statusText || 'Importing reviews...';
+                progress.style.width = '0%';
+                message.textContent = '';
+            }}
+            
+            // Disable all bulk import buttons
+            this.setBulkImportButtonsEnabled(false);
+        }}
+        
+        updateImportProgress(current, total) {{
+            const progress = document.getElementById('rk-import-progress');
+            const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+            if (progress) {{
+                progress.style.width = percentage + '%';
+            }}
+        }}
+        
+        hideImportLoader(success, message, details) {{
+            this.isImporting = false;
+            const loader = document.getElementById('rk-import-loader');
+            const status = document.getElementById('rk-import-status');
+            const progress = document.getElementById('rk-import-progress');
+            const messageEl = document.getElementById('rk-import-message');
+            
+            if (loader && status && progress && messageEl) {{
+                if (success) {{
+                    status.textContent = '✅ Import completed!';
+                    status.style.color = '#10b981';
+                    progress.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    progress.style.width = '100%';
+                }} else {{
+                    status.textContent = '❌ Import failed';
+                    status.style.color = '#ef4444';
+                    progress.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+                }}
+                
+                if (message) {{
+                    messageEl.textContent = message;
+                    messageEl.style.color = success ? '#10b981' : '#ef4444';
+                }}
+                
+                if (details) {{
+                    messageEl.textContent += ' ' + details;
+                }}
+            }}
+            
+            // Re-enable all bulk import buttons
+            this.setBulkImportButtonsEnabled(true);
+            
+            // Hide loader after 5 seconds
+            setTimeout(() => {{
+                if (loader) loader.style.display = 'none';
+                // Reset progress bar
+                if (progress) {{
+                    progress.style.width = '0%';
+                    progress.style.background = 'linear-gradient(90deg, #FF2D85, #FF1493)';
+                }}
+                if (status) {{
+                    status.textContent = 'Importing reviews...';
+                    status.style.color = '#FF2D85';
+                }}
+            }}, 5000);
+        }}
+        
+        setBulkImportButtonsEnabled(enabled) {{
+            // Update all bulk import buttons including new ones
+            const buttons = [
+                document.getElementById('rk-btn-import-all'),
+                document.getElementById('rk-btn-import-photos'),
+                document.getElementById('rk-btn-import-no-photos'),
+                document.getElementById('rk-btn-import-ai'),
+                document.getElementById('rk-btn-import-45star'),
+                document.getElementById('rk-btn-import-3star')
+            ];
+            
+            buttons.forEach(btn => {{
+                if (btn) {{
+                    btn.disabled = !enabled;
+                    btn.style.opacity = enabled ? '1' : '0.5';
+                    btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+                }}
+            }});
+        }}
+        
         async importAllReviews() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            if (!confirm(`Import all non-skipped reviews to "${{this.selectedProduct.title}}"?\\n\\nThis will import multiple reviews at once.`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
+            
+            // Count negative reviews for warning
+            const negativeReviews = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0 
+                ? `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).\\n\\nThis will import multiple reviews at once.`
+                : `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\nThis will import multiple reviews at once.`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{this.allReviews.length}} reviews...`, this.allReviews.length);
             
             try {{
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
-                        reviews: this.reviews,
+                        reviews: this.allReviews,  // Use allReviews, not filtered reviews
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
+                        platform: 'aliexpress',
                         filters: {{
                             min_quality_score: 0  // Import all quality levels
                         }}
@@ -3023,29 +3452,56 @@ def bookmarklet():
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Bulk+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    alert(`🎉 Bulk import completed!\\n\\n` +
-                          `✅ Imported: ${{result.imported_count}}\\n` +
-                          `❌ Failed: ${{result.failed_count}}\\n` +
-                          `⏭️ Skipped: ${{result.skipped_count}}`);
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}} | ⏭️ Skipped: ${{result.skipped_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews!`, message);
                 }} else {{
-                    alert('Bulk import failed: ' + result.error);
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                alert('Bulk import failed. Please try again.');
+                console.error('Bulk import error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
         async importWithPhotos() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            const reviewsWithPhotos = this.reviews.filter(r => r.images && r.images.length > 0);
-            
-            if (!confirm(`Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
+            
+            // Filter allReviews (not just filtered display reviews) for reviews with photos
+            const reviewsWithPhotos = this.allReviews.filter(r => r.images && r.images.length > 0);
+            
+            if (reviewsWithPhotos.length === 0) {{
+                alert('⚠️ No reviews with photos found for this product.\\n\\nPlease try selecting a different product with photo reviews.');
+                return;
+            }}
+            
+            // Count negative reviews for warning
+            const negativeReviews = reviewsWithPhotos.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviewsWithPhotos.length}} reviews with photos...`, reviewsWithPhotos.length);
             
             try {{
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
@@ -3054,33 +3510,64 @@ def bookmarklet():
                     body: JSON.stringify({{
                         reviews: reviewsWithPhotos,
                         shopify_product_id: this.selectedProduct.id,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
                     }})
                 }});
                 
                 const result = await response.json();
                 
                 if (result.success) {{
-                    alert(`✅ Imported ${{result.imported_count}} reviews with photos!`);
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with photos!`, message);
                 }} else {{
-                    alert('Import failed: ' + result.error);
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                alert('Import failed. Please try again.');
+                console.error('Import with photos error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
         async importWithoutPhotos() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            const reviewsWithoutPhotos = this.reviews.filter(r => !r.images || r.images.length === 0);
-            
-            if (!confirm(`Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
+            
+            // Filter allReviews (not just filtered display reviews) for reviews without photos
+            const reviewsWithoutPhotos = this.allReviews.filter(r => !r.images || r.images.length === 0);
+            
+            if (reviewsWithoutPhotos.length === 0) {{
+                alert('⚠️ No reviews without photos found for this product.\\n\\nAll reviews for this product have photos. Please try selecting a different product.');
+                return;
+            }}
+            
+            // Count negative reviews for warning
+            const negativeReviews = reviewsWithoutPhotos.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviewsWithoutPhotos.length}} reviews without photos...`, reviewsWithoutPhotos.length);
             
             try {{
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
@@ -3089,19 +3576,207 @@ def bookmarklet():
                     body: JSON.stringify({{
                         reviews: reviewsWithoutPhotos,
                         shopify_product_id: this.selectedProduct.id,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
                     }})
                 }});
                 
                 const result = await response.json();
                 
                 if (result.success) {{
-                    alert(`✅ Imported ${{result.imported_count}} reviews without photos!`);
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews without photos!`, message);
                 }} else {{
-                    alert('Import failed: ' + result.error);
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                alert('Import failed. Please try again.');
+                console.error('Import without photos error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async importAIRecommended() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for AI recommended reviews
+            const aiRecommendedReviews = this.allReviews.filter(r => r.ai_recommended);
+            
+            if (aiRecommendedReviews.length === 0) {{
+                alert('⚠️ No AI recommended reviews found for this product.\\n\\nAI recommended reviews are reviews with high quality scores. Please try selecting a different product.');
+                return;
+            }}
+            
+            // Count negative reviews for warning
+            const negativeReviews = aiRecommendedReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{aiRecommendedReviews.length}} AI recommended reviews...`, aiRecommendedReviews.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: aiRecommendedReviews,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} AI recommended reviews!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import AI recommended error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async import45Star() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for 4-5 star reviews
+            const reviews45star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 4 || rating === 5;
+            }});
+            
+            if (reviews45star.length === 0) {{
+                alert('⚠️ No 4-5 star reviews found for this product.\\n\\nPlease try selecting a different product with higher-rated reviews.');
+                return;
+            }}
+            
+            if (!confirm(`Import ${{reviews45star.length}} reviews with 4-5 stars to "${{this.selectedProduct.title}}"?`)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviews45star.length}} reviews with 4-5 stars...`, reviews45star.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: reviews45star,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 4-5 stars!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import 4-5 star error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async import3Star() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for 3 star reviews
+            const reviews3star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 3;
+            }});
+            
+            if (reviews3star.length === 0) {{
+                alert('⚠️ No 3 star reviews found for this product.\\n\\nPlease try selecting a different product.');
+                return;
+            }}
+            
+            if (!confirm(`Import ${{reviews3star.length}} reviews with 3 stars to "${{this.selectedProduct.title}}"?`)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviews3star.length}} reviews with 3 stars...`, reviews3star.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: reviews3star,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✅ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 3 stars!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import 3 star error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
@@ -3357,7 +4032,7 @@ def widget_reviews(shop_id, product_id):
     timestamp = request.args.get('t')
     version = request.args.get('v')
     theme = request.args.get('theme', 'default')
-    limit = int(request.args.get('limit', 20))
+    limit = int(request.args.get('limit', 15))  # Show 15 reviews initially
     
     # Check payment status (for now, always allow)
     if not check_payment_status(shop_id):
@@ -3365,21 +4040,23 @@ def widget_reviews(shop_id, product_id):
                              shop_id=shop_id, 
                              upgrade_url=f"{Config.WIDGET_BASE_URL}/billing")
     
-    # Get reviews for this product (for now, use sample data)
-    reviews = get_product_reviews(product_id, limit)
+    # Get reviews for this product (initial load: 15 reviews)
+    reviews, total_count = get_product_reviews(product_id, limit=15, offset=0)
     
     # Render widget
     return render_template('widget.html', 
                          shop_id=shop_id,
                          product_id=product_id,
                          reviews=reviews,
+                         total_count=total_count,
                          theme=theme,
                          version=version)
 
 @app.route('/widget/<shop_id>/reviews/<product_id>/api')
 def widget_api(shop_id, product_id):
     """
-    API endpoint for widget data
+    API endpoint for widget data with pagination support
+    Query params: offset (default 0), limit (default 15)
     """
     # Check payment status
     if not check_payment_status(shop_id):
@@ -3388,12 +4065,18 @@ def widget_api(shop_id, product_id):
             'upgrade_url': f"{Config.WIDGET_BASE_URL}/billing"
         }), 402
     
-    reviews = get_product_reviews(product_id)
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 15))
+    
+    reviews, total_count = get_product_reviews(product_id, limit=limit, offset=offset)
     
     return jsonify({
         'success': True,
         'reviews': reviews,
-        'total': len(reviews),
+        'total': total_count,
+        'offset': offset,
+        'limit': limit,
+        'has_more': (offset + limit) < total_count,
         'shop_id': shop_id,
         'product_id': product_id
     })
@@ -3406,22 +4089,29 @@ def check_payment_status(shop_id):
     # In production, check against Shopify billing API
     return True
 
-def get_product_reviews(product_id, limit=20):
+def get_product_reviews(product_id, limit=15, offset=0):
     """
-    Get reviews for a specific product from database
+    Get reviews for a specific product from database with pagination support
+    Returns: (reviews_list, total_count)
     """
     try:
         from backend.models_v2 import Review, ReviewMedia
         
-        # Query reviews by shopify_product_id
+        # Get total count
+        total_count = Review.query.filter_by(
+            shopify_product_id=product_id,
+            status='published'
+        ).count()
+        
+        # Query reviews by shopify_product_id with pagination
         reviews_query = Review.query.filter_by(
             shopify_product_id=product_id,
             status='published'
-        ).order_by(Review.imported_at.desc()).limit(limit).all()
+        ).order_by(Review.imported_at.desc()).offset(offset).limit(limit).all()
         
         if not reviews_query:
             logger.info(f"No reviews found for product {product_id}")
-            return []
+            return [], total_count
         
         # Convert to dict format for template
         reviews = []
@@ -3455,14 +4145,14 @@ def get_product_reviews(product_id, limit=20):
                 'aliexpress_product_id': review.aliexpress_product_id
             })
         
-        logger.info(f"Found {len(reviews)} reviews for product {product_id}")
-        return reviews
+        logger.info(f"Found {len(reviews)} reviews for product {product_id} (offset: {offset}, limit: {limit}, total: {total_count})")
+        return reviews, total_count
         
     except Exception as e:
         logger.error(f"Error fetching reviews for product {product_id}: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
-        return []
+        return [], 0
 
 # Shopify App Block Integration
 @app.route('/app-blocks')
@@ -4409,7 +5099,7 @@ def list_routes():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5007))  # Use 5007 for fresh start (avoid cache)
+    port = int(os.environ.get('PORT', 5011))  # Use 5011 for fresh start (avoid cache)
     debug = os.environ.get('FLASK_ENV') == 'development'
     
     print("=" * 60)

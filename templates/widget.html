@@ -206,6 +206,25 @@
             color: #e53e3e;
         }
         
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #load-more-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3);
+        }
+        
+        #load-more-btn:active {
+            transform: translateY(0);
+        }
+        
+        #load-more-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         @media (max-width: 768px) {
             .reviews-stats {
                 flex-direction: column;
@@ -227,7 +246,7 @@
             
             <div class="reviews-stats">
                 <div class="stat-item">
-                    <span class="stat-number">{{ reviews|length }}</span>
+                    <span class="stat-number">{{ total_count }}</span>
                     <span class="stat-label">Reviews</span>
                 </div>
                 <div class="stat-item">
@@ -289,9 +308,38 @@
                     </div>
                 </div>
                 {% endfor %}
+                
+                {% if total_count > reviews|length %}
+                <div id="load-more-container" style="text-align: center; margin-top: 24px;">
+                    <button id="load-more-btn" style="
+                        background: linear-gradient(135deg, #ff69b4, #8b4a8b);
+                        color: white;
+                        border: none;
+                        padding: 12px 32px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    ">
+                        Load More Reviews
+                    </button>
+                    <div id="load-more-spinner" style="display: none; margin-top: 16px;">
+                        <div style="
+                            border: 3px solid #f3f3f3;
+                            border-top: 3px solid #ff69b4;
+                            border-radius: 50%;
+                            width: 40px;
+                            height: 40px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto;
+                        "></div>
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="loading">
-                    <p>Loading reviews...</p>
+                    <p>No reviews yet.</p>
                 </div>
             {% endif %}
         </div>
@@ -324,6 +372,106 @@
                 timestamp: new Date().toISOString()
             })
         }).catch(console.error);
+        
+        // Load More Reviews functionality
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const loadMoreSpinner = document.getElementById('load-more-spinner');
+        const reviewsContainer = document.querySelector('.reviews-container');
+        let currentOffset = {{ reviews|length }};
+        const limit = 15;
+        const totalCount = {{ total_count }};
+        
+        function renderReview(review) {
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'review-card';
+            
+            // Build stars
+            let stars = '';
+            for (let i = 0; i < review.rating; i++) {
+                stars += '<span class="star">★</span>';
+            }
+            
+            // Build media
+            let mediaHtml = '';
+            if (review.media && review.media.length > 0) {
+                mediaHtml = '<div class="review-media"><div class="media-grid">';
+                review.media.forEach(m => {
+                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" onclick="window.open('${m.media_url}', '_blank')"></div>`;
+                });
+                mediaHtml += '</div></div>';
+            }
+            
+            // Build meta badges
+            let metaHtml = '';
+            if (review.verified) {
+                metaHtml += '<span class="meta-badge verified">✓ Verified</span>';
+            }
+            if (review.ai_score > 8) {
+                metaHtml += '<span class="meta-badge ai-recommended">🤖 AI Recommended</span>';
+            }
+            metaHtml += `<span class="meta-badge quality-score">Quality: ${review.ai_score}/10</span>`;
+            
+            reviewCard.innerHTML = `
+                <div class="review-header">
+                    <div class="reviewer-avatar">${(review.author || review.reviewer_name || 'C')[0]}</div>
+                    <div class="reviewer-info">
+                        <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
+                        <div class="review-date">${review.date || review.review_date}</div>
+                    </div>
+                    <div class="review-rating">${stars}</div>
+                </div>
+                <div class="review-text">${review.text || review.body || ''}</div>
+                ${mediaHtml}
+                <div class="review-meta">${metaHtml}</div>
+            `;
+            
+            return reviewCard;
+        }
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', async function() {
+                if (this.disabled) return;
+                
+                this.disabled = true;
+                loadMoreSpinner.style.display = 'block';
+                
+                try {
+                    const response = await fetch(`/widget/{{ shop_id }}/reviews/{{ product_id }}/api?offset=${currentOffset}&limit=${limit}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.reviews) {
+                        // Insert new reviews before the load more button
+                        const loadMoreContainer = document.getElementById('load-more-container');
+                        data.reviews.forEach(review => {
+                            const reviewCard = renderReview(review);
+                            reviewsContainer.insertBefore(reviewCard, loadMoreContainer);
+                        });
+                        
+                        currentOffset += data.reviews.length;
+                        
+                        // Check if there are more reviews
+                        if (!data.has_more || currentOffset >= totalCount) {
+                            loadMoreContainer.remove();
+                        } else {
+                            this.disabled = false;
+                        }
+                        
+                        // Resize iframe after adding content
+                        resizeIframe();
+                    } else {
+                        console.error('Failed to load more reviews:', data);
+                        alert('Failed to load more reviews. Please try again.');
+                        this.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error loading more reviews:', error);
+                    alert('Error loading more reviews. Please try again.');
+                    this.disabled = false;
+                } finally {
+                    loadMoreSpinner.style.display = 'none';
+                }
+            });
+        }
     </script>
 </body>
 </html>
