@@ -8,7 +8,7 @@ Matching Loox architecture with competitive advantages:
 - Superior UX
 """
 
-from flask import Flask, request, jsonify, session, render_template
+from flask import Flask, request, jsonify, session, render_template, redirect
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -3346,6 +3346,53 @@ class SakuraWidgetSystem:
 
 # Initialize widget system
 widget_system = SakuraWidgetSystem()
+
+@app.route('/reviews/<product_id>')
+def reviews_short(product_id):
+    """
+    Convenience route for reviews without shop_id prefix
+    Uses session data or tries to find shop by domain, defaults to shop_id=1
+    """
+    from backend.models_v2 import Shop
+    
+    # Try to get shop_id from session first
+    shop_id = session.get('shop_id')
+    if shop_id:
+        # Use session shop_id
+        pass
+    else:
+        # Try to get from sakura_shop_id in session
+        sakura_shop_id = session.get('sakura_shop_id')
+        if sakura_shop_id:
+            shop = Shop.query.filter_by(sakura_shop_id=str(sakura_shop_id)).first()
+            if shop:
+                shop_id = shop.id
+        
+        # If still no shop_id, try to find by shop_domain from session
+        if not shop_id:
+            shop_domain = session.get('shop_domain')
+            if shop_domain:
+                shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+                if shop:
+                    shop_id = shop.id
+                    # Store in session for next time
+                    session['shop_id'] = shop.id
+                    session['sakura_shop_id'] = shop.sakura_shop_id
+        
+        # Final fallback: try shop_id=1 or first shop
+        if not shop_id:
+            shop = Shop.query.first()
+            if shop:
+                shop_id = shop.id
+            else:
+                shop_id = 1
+    
+    # Preserve all query parameters
+    query_string = request.query_string.decode('utf-8')
+    if query_string:
+        return redirect(f'/widget/{shop_id}/reviews/{product_id}?{query_string}')
+    else:
+        return redirect(f'/widget/{shop_id}/reviews/{product_id}')
 
 @app.route('/widget/<shop_id>/reviews/<product_id>')
 def widget_reviews(shop_id, product_id):
