@@ -4689,6 +4689,108 @@ def create_scripttag():
             'error': f'Error creating ScriptTag: {str(e)}'
         }), 500
 
+@app.route('/auth/install')
+def auth_install():
+    """
+    Simple OAuth install route - redirects to Shopify OAuth
+    Usage: /auth/install?shop=your-store.myshopify.com
+    """
+    shop = request.args.get('shop')
+    if not shop:
+        return "Error: Missing shop parameter. Use: /auth/install?shop=your-store.myshopify.com", 400
+    
+    # Remove .myshopify.com if included
+    if '.myshopify.com' in shop:
+        shop = shop.replace('.myshopify.com', '')
+    shop_domain = f"{shop}.myshopify.com"
+    
+    # Build OAuth URL
+    api_key = Config.SHOPIFY_API_KEY
+    redirect_uri = Config.SHOPIFY_REDIRECT_URI or f"{Config.WIDGET_BASE_URL}/auth/callback"
+    scopes = Config.SHOPIFY_SCOPES
+    
+    if not api_key:
+        return "Error: SHOPIFY_API_KEY not configured", 500
+    
+    auth_url = f"https://{shop_domain}/admin/oauth/authorize?client_id={api_key}&scope={scopes}&redirect_uri={redirect_uri}"
+    
+    return redirect(auth_url)
+
+@app.route('/auth/callback')
+def auth_callback():
+    """
+    OAuth callback - exchanges code for access token
+    """
+    try:
+        code = request.args.get('code')
+        shop = request.args.get('shop')
+        hmac_param = request.args.get('hmac')
+        
+        if not code or not shop:
+            return "Error: Missing code or shop parameter", 400
+        
+        # Exchange code for access token
+        api_key = Config.SHOPIFY_API_KEY
+        api_secret = Config.SHOPIFY_API_SECRET
+        redirect_uri = Config.SHOPIFY_REDIRECT_URI or f"{Config.WIDGET_BASE_URL}/auth/callback"
+        
+        if not api_key or not api_secret:
+            return "Error: Shopify API credentials not configured", 500
+        
+        token_url = f"https://{shop}/admin/oauth/access_token"
+        token_data = {
+            'client_id': api_key,
+            'client_secret': api_secret,
+            'code': code
+        }
+        
+        import requests
+        response = requests.post(token_url, json=token_data)
+        
+        if response.status_code == 200:
+            token_response = response.json()
+            access_token = token_response.get('access_token')
+            
+            # Store in session
+            session['shop_domain'] = shop
+            session['access_token'] = access_token
+            
+            # Auto-create ScriptTag after successful auth
+            try:
+                import time
+                version = int(time.time())
+                scripttag_url = f"https://{shop}/admin/api/2025-10/script_tags.json"
+                headers = {
+                    'X-Shopify-Access-Token': access_token,
+                    'Content-Type': 'application/json'
+                }
+                scripttag_data = {
+                    "script_tag": {
+                        "event": "onload",
+                        "src": f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}"
+                    }
+                }
+                requests.post(scripttag_url, headers=headers, json=scripttag_data)
+            except:
+                pass  # ScriptTag creation is optional
+            
+            return f"""
+            <html>
+            <head><title>Installation Successful</title></head>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1>✅ Installation Successful!</h1>
+                <p>Your access token: <code>{access_token[:20]}...</code></p>
+                <p>Shop: {shop}</p>
+                <p><a href="/shopify/scripttag/update">Update ScriptTag</a> | <a href="/">Go Home</a></p>
+            </body>
+            </html>
+            """
+        else:
+            return f"Error: Failed to get access token: {response.text}", 400
+            
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
 @app.route('/shopify/scripttag/update', methods=['POST', 'GET'])
 def update_scripttag():
     """
