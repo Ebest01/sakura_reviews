@@ -1019,12 +1019,6 @@
                         {% if review.verified %}
                         <span class="meta-badge verified">✓ Verified</span>
                         {% endif %}
-                        
-                        {% if review.ai_score > 8 %}
-                        <span class="meta-badge ai-recommended">🤖 AI Recommended</span>
-                        {% endif %}
-                        
-                        <span class="meta-badge quality-score">Quality: {{ review.ai_score }}/10</span>
                     </div>
                 </div>
                 {% endfor %}
