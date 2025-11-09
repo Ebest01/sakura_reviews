@@ -4626,7 +4626,15 @@ def sakura_reviews_js():
     # Replace placeholder with actual base URL
     formatted_js = js_code.replace('__WIDGET_BASE_URL__', Config.WIDGET_BASE_URL)
     
-    return formatted_js, 200, {'Content-Type': 'application/javascript'}
+    # Add cache-busting headers to force refresh
+    headers = {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    }
+    
+    return formatted_js, 200, headers
 
 @app.route('/shopify/scripttag/create', methods=['POST'])
 def create_scripttag():
@@ -4649,10 +4657,13 @@ def create_scripttag():
             'Content-Type': 'application/json'
         }
         
+        # Add cache-busting version parameter to force refresh
+        import time
+        version = int(time.time())  # Use timestamp as version
         scripttag_data = {
             "script_tag": {
                 "event": "onload",
-                "src": f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js"
+                "src": f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}"
             }
         }
         
@@ -4676,6 +4687,70 @@ def create_scripttag():
         return jsonify({
             'success': False,
             'error': f'Error creating ScriptTag: {str(e)}'
+        }), 500
+
+@app.route('/shopify/scripttag/update', methods=['POST'])
+def update_scripttag():
+    """
+    Update ScriptTag by deleting old ones and creating a new one
+    This forces Shopify to load the new JavaScript file
+    """
+    try:
+        # Get shop domain and access token from request
+        shop_domain = request.json.get('shop_domain')
+        access_token = request.json.get('access_token')
+        
+        if not shop_domain or not access_token:
+            return jsonify({'error': 'Missing shop_domain or access_token'}), 400
+        
+        import requests
+        headers = {
+            'X-Shopify-Access-Token': access_token,
+            'Content-Type': 'application/json'
+        }
+        
+        # First, get all existing ScriptTags
+        scripttag_list_url = f"https://{shop_domain}/admin/api/2025-10/script_tags.json"
+        list_response = requests.get(scripttag_list_url, headers=headers)
+        
+        if list_response.status_code == 200:
+            scripttags = list_response.json().get('script_tags', [])
+            # Delete all old Sakura Reviews ScriptTags
+            for scripttag in scripttags:
+                if 'sakura-reviews' in scripttag.get('src', '').lower():
+                    delete_url = f"https://{shop_domain}/admin/api/2025-10/script_tags/{scripttag['id']}.json"
+                    requests.delete(delete_url, headers=headers)
+        
+        # Now create a new ScriptTag with cache-busting
+        import time
+        version = int(time.time())
+        scripttag_url = f"https://{shop_domain}/admin/api/2025-10/script_tags.json"
+        scripttag_data = {
+            "script_tag": {
+                "event": "onload",
+                "src": f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}"
+            }
+        }
+        
+        response = requests.post(scripttag_url, headers=headers, json=scripttag_data)
+        
+        if response.status_code == 201:
+            return jsonify({
+                'success': True,
+                'message': 'ScriptTag updated successfully',
+                'scripttag': response.json(),
+                'new_url': f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Failed to create ScriptTag: {response.text}'
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error updating ScriptTag: {str(e)}'
         }), 500
 
 @app.route('/debug/routes')
