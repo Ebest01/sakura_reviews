@@ -1585,10 +1585,6 @@
                             if (review.verified) {
                                 metaHtml += '<span class="meta-badge verified">✓ Verified</span>';
                             }
-                            if (review.ai_score > 8) {
-                                metaHtml += '<span class="meta-badge ai-recommended">🤖 AI Recommended</span>';
-                            }
-                            metaHtml += `<span class="meta-badge quality-score">Quality: ${review.ai_score}/10</span>`;
                             
                             reviewCard.innerHTML = `
                                 <div class="review-header">
