@@ -27,43 +27,269 @@
         }
         
         .widget-header {
-            background: linear-gradient(135deg, #ff69b4, #8b4a8b);
-            color: white;
-            padding: 24px;
-            text-align: center;
-        }
-        
-        .widget-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .widget-subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
-        .reviews-stats {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 24px;
             display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-top: 20px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
         }
         
-        .stat-item {
-            text-align: center;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
         
-        .stat-number {
-            font-size: 24px;
-            font-weight: 700;
+        .review-count-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .review-count-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .review-count-text::after {
+            content: '▼';
+            font-size: 10px;
+            opacity: 0.6;
+        }
+        
+        .review-count-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 280px;
+            z-index: 1000;
+            padding: 16px;
+        }
+        
+        .review-count-menu.show {
             display: block;
         }
         
-        .stat-label {
-            font-size: 14px;
+        .rating-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .rating-summary-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .rating-summary-star {
+            font-size: 24px;
+            color: #FFD700;
+        }
+        
+        .rating-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .rating-breakdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        
+        .rating-breakdown-item:hover {
             opacity: 0.8;
+        }
+        
+        .rating-breakdown-stars {
+            display: flex;
+            gap: 2px;
+            min-width: 100px;
+        }
+        
+        .rating-breakdown-star {
+            font-size: 14px;
+        }
+        
+        .rating-breakdown-star.filled {
+            color: #FFD700;
+        }
+        
+        .rating-breakdown-star.unfilled {
+            color: #e2e8f0;
+        }
+        
+        .rating-breakdown-progress {
+            flex: 1;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .rating-breakdown-progress-bar {
+            height: 100%;
+            background: #FFD700;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .rating-breakdown-count {
+            font-size: 14px;
+            color: #718096;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .average-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .rating-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .rating-stars {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .rating-star {
+            font-size: 20px;
+            color: #FFD700;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        
+        .write-review-header-btn {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .write-review-header-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .filter-icon-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-icon-btn:hover {
+            background: #f7fafc;
+            border-color: #ff69b4;
+        }
+        
+        .filter-icon-btn.active {
+            background: #f7fafc;
+            border-color: #ff69b4;
+        }
+        
+        .sort-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 200px;
+            z-index: 1000;
+            padding: 8px 0;
+        }
+        
+        .sort-dropdown.show {
+            display: block;
+        }
+        
+        .sort-menu-title {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 4px;
+        }
+        
+        .sort-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .sort-menu-item:hover {
+            background: #f7fafc;
+        }
+        
+        .sort-menu-item.active {
+            color: #ff69b4;
+            font-weight: 600;
+        }
+        
+        .sort-menu-item.active::after {
+            content: '✓';
+            color: #ff69b4;
+        }
+        
+        .sort-menu-footer {
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #a0aec0;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 4px;
         }
         
         .reviews-container {
@@ -206,9 +432,21 @@
             color: #e53e3e;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #load-more-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+        
+        #load-more-btn {
+            background: linear-gradient(135deg, #ff69b4, #8b4a8b);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
         
         #load-more-btn:hover {
@@ -216,52 +454,534 @@
             box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3);
         }
         
-        #load-more-btn:active {
-            transform: translateY(0);
-        }
-        
         #load-more-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
         
+        /* Review Wizard Modal */
+        .review-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .review-modal-overlay.show {
+            display: flex;
+        }
+        
+        .review-modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 24px;
+            color: #718096;
+            z-index: 10;
+        }
+        
+        .modal-close:hover {
+            color: #1a202c;
+        }
+        
+        .modal-content {
+            padding: 48px 32px 32px;
+        }
+        
+        .modal-step {
+            display: none;
+        }
+        
+        .modal-step.active {
+            display: block;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .modal-subtitle {
+            font-size: 16px;
+            color: #718096;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        /* Step 1: Rating */
+        .rating-wizard-stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 32px 0;
+        }
+        
+        .rating-wizard-star {
+            font-size: 48px;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .rating-wizard-star:hover,
+        .rating-wizard-star.filled {
+            color: #FFD700;
+            transform: scale(1.1);
+        }
+        
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        /* Step 2: Photos */
+        .photo-upload-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin: 24px 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .photo-upload-area:hover {
+            border-color: #ff69b4;
+            background: #fef5f9;
+        }
+        
+        .photo-upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .photo-upload-text {
+            font-size: 16px;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        
+        .photo-upload-hint {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .photo-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .photo-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .offer-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .offer-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 16px;
+        }
+        
+        .add-photos-btn {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .add-photos-btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* Step 3: Review Text */
+        .review-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin: 24px 0;
+        }
+        
+        .review-textarea:focus {
+            outline: none;
+            border-color: #ff69b4;
+        }
+        
+        /* Step 4: User Info */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        
+        .form-label .required {
+            color: #e53e3e;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #ff69b4;
+        }
+        
+        .form-disclaimer {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+        
+        .form-disclaimer a {
+            color: #ff69b4;
+            text-decoration: underline;
+        }
+        
+        /* Modal Navigation */
+        .modal-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .modal-nav-btn {
+            background: transparent;
+            border: none;
+            color: #1a202c;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+        
+        .modal-nav-btn:hover {
+            color: #ff69b4;
+        }
+        
+        .modal-nav-btn.primary {
+            background: #ff69b4;
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .modal-nav-btn.primary:hover {
+            opacity: 0.9;
+        }
+        
+        .modal-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-indicator {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        
+        .progress-bar {
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+            background: #e2e8f0;
+        }
+        
+        .progress-bar.active {
+            background: #ff69b4;
+        }
+        
+        /* Confirmation Modal */
+        .confirmation-modal {
+            text-align: center;
+        }
+        
+        .confirmation-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #48bb78;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 24px;
+        }
+        
+        .confirmation-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        
+        .confirmation-subtext {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 32px;
+        }
+        
+        .referral-box {
+            background: #ff69b4;
+            color: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        
+        .referral-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .referral-illustration {
+            margin: 16px 0;
+            font-size: 48px;
+        }
+        
+        .share-btn {
+            background: white;
+            color: #ff69b4;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+        }
+        
+        .share-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .referral-terms {
+            font-size: 12px;
+            margin-top: 16px;
+            opacity: 0.9;
+        }
+        
+        .referral-terms a {
+            color: white;
+            text-decoration: underline;
+        }
+        
         @media (max-width: 768px) {
-            .reviews-stats {
+            .widget-header {
                 flex-direction: column;
-                gap: 16px;
+                align-items: flex-start;
             }
             
             .review-header {
                 flex-direction: column;
                 align-items: flex-start;
             }
+            
+            .review-modal {
+                width: 95%;
+                max-height: 95vh;
+            }
+            
+            .modal-content {
+                padding: 40px 24px 24px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="sakura-widget">
+        {% if reviews and reviews|length > 0 %}
         <div class="widget-header">
-            <h1 class="widget-title">🌸 Sakura Reviews</h1>
-            <p class="widget-subtitle">Beautiful reviews, naturally. Powered by AI.</p>
-            
-            <div class="reviews-stats">
-                <div class="stat-item">
-                    <span class="stat-number">{{ total_count }}</span>
-                    <span class="stat-label">Reviews</span>
+            <div class="header-left">
+                <div class="review-count-dropdown" id="reviewCountDropdown">
+                    <div class="review-count-text">
+                        {{ total_count }} Review{{ 's' if total_count != 1 else '' }}
+                    </div>
+                    <div class="review-count-menu" id="reviewCountMenu">
+                        <div class="rating-summary-header">
+                            <span class="rating-summary-number">{{ "%.1f"|format(average_rating) }}</span>
+                            <span class="rating-summary-star">★</span>
+                        </div>
+                        <div class="rating-breakdown">
+                            {% for rating in range(5, 0, -1) %}
+                            {% set count = rating_distribution.get(rating, 0) %}
+                            {% set percentage = (count / total_count * 100) if total_count > 0 else 0 %}
+                            <div class="rating-breakdown-item" data-rating="{{ rating }}">
+                                <div class="rating-breakdown-stars">
+                                    {% for i in range(5) %}
+                                        {% if i < rating %}
+                                            <span class="rating-breakdown-star filled">★</span>
+                                        {% else %}
+                                            <span class="rating-breakdown-star unfilled">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="rating-breakdown-progress">
+                                    <div class="rating-breakdown-progress-bar" style="width: {{ percentage }}%;"></div>
+                                </div>
+                                <div class="rating-breakdown-count">({{ count }})</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-number">4.8</span>
-                    <span class="stat-label">Average Rating</span>
+                <div class="average-rating">
+                    <span class="rating-number">{{ "%.1f"|format(average_rating) }}</span>
+                    <div class="rating-stars">
+                        {% set full_stars = average_rating|int %}
+                        {% set has_half = (average_rating - full_stars) >= 0.5 %}
+                        {% for i in range(5) %}
+                            {% if i < full_stars %}
+                                <span class="rating-star">★</span>
+                            {% elif i == full_stars and has_half %}
+                                <span class="rating-star" style="opacity: 0.5;">★</span>
+                            {% else %}
+                                <span class="rating-star" style="opacity: 0.2;">☆</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-number">95%</span>
-                    <span class="stat-label">AI Recommended</span>
+            </div>
+            <div class="header-right">
+                <button class="write-review-header-btn" id="writeReviewBtn">
+                    Write a review
+                </button>
+                <div class="filter-icon-btn" id="filterIconBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="6" x2="20" y2="6"></line>
+                        <line x1="4" y1="12" x2="20" y2="12"></line>
+                        <line x1="4" y1="18" x2="20" y2="18"></line>
+                        <circle cx="7" cy="6" r="2"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <circle cx="17" cy="18" r="2"></circle>
+                    </svg>
+                </div>
+                <div class="sort-dropdown" id="sortDropdown">
+                    <div class="sort-menu-title">Sort by</div>
+                    <div class="sort-menu-item {% if current_sort == 'ai_recommended' %}active{% endif %}" data-sort="ai_recommended">AI recommended</div>
+                    <div class="sort-menu-item {% if current_sort == 'newest' %}active{% endif %}" data-sort="newest">Newest</div>
+                    <div class="sort-menu-item {% if current_sort == 'highest_ratings' %}active{% endif %}" data-sort="highest_ratings">Highest Ratings</div>
+                    <div class="sort-menu-item {% if current_sort == 'lowest_ratings' %}active{% endif %}" data-sort="lowest_ratings">Lowest Ratings</div>
+                    <div class="sort-menu-footer">Powered by Sakura Reviews</div>
                 </div>
             </div>
         </div>
+        {% endif %}
         
         <div class="reviews-container">
-            {% if reviews %}
+            {% if reviews and reviews|length > 0 %}
                 {% for review in reviews %}
                 <div class="review-card">
                     <div class="review-header">
@@ -310,31 +1030,8 @@
                 {% endfor %}
                 
                 {% if total_count > reviews|length %}
-                <div id="load-more-container" style="text-align: center; margin-top: 24px;">
-                    <button id="load-more-btn" style="
-                        background: linear-gradient(135deg, #ff69b4, #8b4a8b);
-                        color: white;
-                        border: none;
-                        padding: 12px 32px;
-                        border-radius: 8px;
-                        font-size: 16px;
-                        font-weight: 600;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                    ">
-                        Load More Reviews
-                    </button>
-                    <div id="load-more-spinner" style="display: none; margin-top: 16px;">
-                        <div style="
-                            border: 3px solid #f3f3f3;
-                            border-top: 3px solid #ff69b4;
-                            border-radius: 50%;
-                            width: 40px;
-                            height: 40px;
-                            animation: spin 1s linear infinite;
-                            margin: 0 auto;
-                        "></div>
-                    </div>
+                <div id="load-more-container">
+                    <button id="load-more-btn">Load More Reviews</button>
                 </div>
                 {% endif %}
             {% else %}
@@ -345,7 +1042,493 @@
         </div>
     </div>
     
+    <!-- Review Wizard Modal -->
+    <div class="review-modal-overlay" id="reviewModalOverlay">
+        <div class="review-modal">
+            <button class="modal-close" id="modalClose">×</button>
+            <div class="modal-content">
+                <!-- Step 1: Rating -->
+                <div class="modal-step active" id="step1">
+                    <h2 class="modal-title">How would you rate this item?</h2>
+                    <div class="rating-wizard-stars" id="ratingStars">
+                        <span class="rating-wizard-star" data-rating="1">★</span>
+                        <span class="rating-wizard-star" data-rating="2">★</span>
+                        <span class="rating-wizard-star" data-rating="3">★</span>
+                        <span class="rating-wizard-star" data-rating="4">★</span>
+                        <span class="rating-wizard-star" data-rating="5">★</span>
+                    </div>
+                    <div class="rating-labels">
+                        <span>Dislike it</span>
+                        <span>Love it!</span>
+                    </div>
+                    <div class="modal-navigation">
+                        <button class="modal-nav-btn" id="step1Next" disabled>Next →</button>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Photos -->
+                <div class="modal-step" id="step2">
+                    <h2 class="modal-title">Show it off</h2>
+                    <p class="modal-subtitle">We'd love to see it in action!</p>
+                    <div class="offer-box">
+                        <div class="offer-text">Get 15% off your next purchase!</div>
+                        <div class="photo-upload-area" id="photoUploadArea">
+                            <div class="photo-upload-icon">📷</div>
+                            <div class="photo-upload-text">Add photos</div>
+                            <div class="photo-upload-hint">Click to upload or drag and drop</div>
+                            <input type="file" id="photoInput" multiple accept="image/*" style="display: none;">
+                        </div>
+                        <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+                    </div>
+                    <div class="modal-navigation">
+                        <button class="modal-nav-btn" id="step2Back">← Back</button>
+                        <button class="modal-nav-btn" id="step2Skip">Skip</button>
+                        <button class="modal-nav-btn primary" id="step2Next">Next →</button>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Review Text -->
+                <div class="modal-step" id="step3">
+                    <h2 class="modal-title">Tell us more!</h2>
+                    <textarea class="review-textarea" id="reviewText" placeholder="Share your experience"></textarea>
+                    <div class="modal-navigation">
+                        <button class="modal-nav-btn" id="step3Back">← Back</button>
+                        <button class="modal-nav-btn primary" id="step3Next">Next →</button>
+                    </div>
+                </div>
+                
+                <!-- Step 4: User Info -->
+                <div class="modal-step" id="step4">
+                    <h2 class="modal-title">About you</h2>
+                    <div class="form-group">
+                        <label class="form-label">First name <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last name</label>
+                        <input type="text" class="form-input" id="lastName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email <span class="required">*</span></label>
+                        <input type="email" class="form-input" id="userEmail" required>
+                    </div>
+                    <div class="form-disclaimer">
+                        By submitting, I acknowledge the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>. and that my review will be publicly posted and shared online.
+                    </div>
+                    <div class="modal-navigation">
+                        <button class="modal-nav-btn" id="step4Back">← Back</button>
+                        <button class="modal-nav-btn primary" id="step4Done">Done</button>
+                    </div>
+                </div>
+                
+                <!-- Step 5: Confirmation -->
+                <div class="modal-step" id="step5">
+                    <div class="confirmation-modal">
+                        <div class="confirmation-icon">✓</div>
+                        <div class="confirmation-text">Review submitted</div>
+                        <div class="confirmation-subtext">Discount code emailed</div>
+                        
+                        <div class="referral-box">
+                            <div class="referral-title">Give your friends a 10% discount, earn $5 when they buy</div>
+                            <div class="referral-illustration">🤝</div>
+                            <button class="share-btn" id="shareDiscountBtn">Share discount link</button>
+                            <div class="referral-terms">Minimum purchase amount: $50 | <a href="#" target="_blank">Terms of Service</a></div>
+                        </div>
+                        
+                        <div class="modal-navigation">
+                            <button class="modal-nav-btn primary" id="step5Close" style="width: 100%;">Close</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Indicator -->
+                <div class="progress-indicator">
+                    <div class="progress-bar active" id="progress1"></div>
+                    <div class="progress-bar" id="progress2"></div>
+                    <div class="progress-bar" id="progress3"></div>
+                    <div class="progress-bar" id="progress4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
+        const shopId = '{{ shop_id }}';
+        const productId = '{{ product_id }}';
+        const currentSort = '{{ current_sort }}';
+        
+        // Dropdown management
+        function closeAllDropdowns() {
+            const reviewMenu = document.getElementById('reviewCountMenu');
+            const sortDropdown = document.getElementById('sortDropdown');
+            const filterBtn = document.getElementById('filterIconBtn');
+            
+            if (reviewMenu) reviewMenu.classList.remove('show');
+            if (sortDropdown) sortDropdown.classList.remove('show');
+            if (filterBtn) filterBtn.classList.remove('active');
+        }
+        
+        // Review count dropdown
+        const reviewCountDropdown = document.getElementById('reviewCountDropdown');
+        if (reviewCountDropdown) {
+            reviewCountDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const menu = document.getElementById('reviewCountMenu');
+                if (menu) {
+                    const isOpen = menu.classList.contains('show');
+                    closeAllDropdowns();
+                    if (!isOpen) {
+                        menu.classList.add('show');
+                    }
+                }
+            });
+        }
+        
+        // Filter icon and sort dropdown
+        const filterIconBtn = document.getElementById('filterIconBtn');
+        if (filterIconBtn) {
+            filterIconBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = document.getElementById('sortDropdown');
+                if (dropdown) {
+                    const isOpen = dropdown.classList.contains('show');
+                    closeAllDropdowns();
+                    if (!isOpen) {
+                        dropdown.classList.add('show');
+                        this.classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        // Sort menu item clicks
+        document.querySelectorAll('.sort-menu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const sort = this.getAttribute('data-sort');
+                if (sort && sort !== currentSort) {
+                    // Reload widget with new sort
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('sort', sort);
+                    window.location.href = currentUrl.toString();
+                } else {
+                    closeAllDropdowns();
+                }
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.review-count-dropdown') && 
+                !e.target.closest('.filter-icon-btn') && 
+                !e.target.closest('.sort-dropdown')) {
+                closeAllDropdowns();
+            }
+        });
+        
+        // Review Wizard State
+        let currentStep = 1;
+        let reviewData = {
+            rating: 0,
+            photos: [],
+            text: '',
+            firstName: '',
+            lastName: '',
+            email: ''
+        };
+        
+        // Open Review Modal
+        const writeReviewBtn = document.getElementById('writeReviewBtn');
+        const reviewModalOverlay = document.getElementById('reviewModalOverlay');
+        const modalClose = document.getElementById('modalClose');
+        
+        if (writeReviewBtn) {
+            writeReviewBtn.addEventListener('click', function() {
+                reviewModalOverlay.classList.add('show');
+                currentStep = 1;
+                reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                showStep(1);
+            });
+        }
+        
+        if (modalClose) {
+            modalClose.addEventListener('click', function() {
+                closeModal();
+            });
+        }
+        
+        if (reviewModalOverlay) {
+            reviewModalOverlay.addEventListener('click', function(e) {
+                if (e.target === reviewModalOverlay) {
+                    closeModal();
+                }
+            });
+        }
+        
+        function closeModal() {
+            reviewModalOverlay.classList.remove('show');
+        }
+        
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
+            
+            // Show current step
+            const stepElement = document.getElementById(`step${step}`);
+            if (stepElement) {
+                stepElement.classList.add('active');
+            }
+            
+            // Update progress bars
+            for (let i = 1; i <= 4; i++) {
+                const progressBar = document.getElementById(`progress${i}`);
+                if (progressBar) {
+                    if (i <= step) {
+                        progressBar.classList.add('active');
+                    } else {
+                        progressBar.classList.remove('active');
+                    }
+                }
+            }
+            
+            currentStep = step;
+        }
+        
+        // Step 1: Rating Selection
+        const ratingStars = document.querySelectorAll('.rating-wizard-star');
+        const step1Next = document.getElementById('step1Next');
+        
+        ratingStars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                reviewData.rating = rating;
+                
+                // Update star display
+                ratingStars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.classList.add('filled');
+                    } else {
+                        s.classList.remove('filled');
+                    }
+                });
+                
+                // Enable Next button
+                if (step1Next) {
+                    step1Next.disabled = false;
+                }
+            });
+        });
+        
+        if (step1Next) {
+            step1Next.addEventListener('click', function() {
+                if (reviewData.rating > 0) {
+                    showStep(2);
+                }
+            });
+        }
+        
+        // Step 2: Photo Upload
+        const photoUploadArea = document.getElementById('photoUploadArea');
+        const photoInput = document.getElementById('photoInput');
+        const photoPreviewGrid = document.getElementById('photoPreviewGrid');
+        const step2Back = document.getElementById('step2Back');
+        const step2Skip = document.getElementById('step2Skip');
+        const step2Next = document.getElementById('step2Next');
+        
+        if (photoUploadArea && photoInput) {
+            photoUploadArea.addEventListener('click', function() {
+                photoInput.click();
+            });
+            
+            photoInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            reviewData.photos.push({
+                                file: file,
+                                preview: event.target.result
+                            });
+                            updatePhotoPreview();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+        }
+        
+        function updatePhotoPreview() {
+            if (photoPreviewGrid) {
+                photoPreviewGrid.innerHTML = '';
+                reviewData.photos.forEach((photo, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'photo-preview-item';
+                    item.innerHTML = `
+                        <img src="${photo.preview}" alt="Preview">
+                        <button class="photo-remove" onclick="removePhoto(${index})">×</button>
+                    `;
+                    photoPreviewGrid.appendChild(item);
+                });
+            }
+        }
+        
+        window.removePhoto = function(index) {
+            reviewData.photos.splice(index, 1);
+            updatePhotoPreview();
+        };
+        
+        if (step2Back) {
+            step2Back.addEventListener('click', function() {
+                showStep(1);
+            });
+        }
+        
+        if (step2Skip) {
+            step2Skip.addEventListener('click', function() {
+                showStep(3);
+            });
+        }
+        
+        if (step2Next) {
+            step2Next.addEventListener('click', function() {
+                showStep(3);
+            });
+        }
+        
+        // Step 3: Review Text
+        const reviewText = document.getElementById('reviewText');
+        const step3Back = document.getElementById('step3Back');
+        const step3Next = document.getElementById('step3Next');
+        
+        if (reviewText) {
+            reviewText.addEventListener('input', function() {
+                reviewData.text = this.value;
+            });
+        }
+        
+        if (step3Back) {
+            step3Back.addEventListener('click', function() {
+                showStep(2);
+            });
+        }
+        
+        if (step3Next) {
+            step3Next.addEventListener('click', function() {
+                showStep(4);
+            });
+        }
+        
+        // Step 4: User Info
+        const firstName = document.getElementById('firstName');
+        const lastName = document.getElementById('lastName');
+        const userEmail = document.getElementById('userEmail');
+        const step4Back = document.getElementById('step4Back');
+        const step4Done = document.getElementById('step4Done');
+        
+        if (firstName) {
+            firstName.addEventListener('input', function() {
+                reviewData.firstName = this.value;
+            });
+        }
+        
+        if (lastName) {
+            lastName.addEventListener('input', function() {
+                reviewData.lastName = this.value;
+            });
+        }
+        
+        if (userEmail) {
+            userEmail.addEventListener('input', function() {
+                reviewData.email = this.value;
+            });
+        }
+        
+        if (step4Back) {
+            step4Back.addEventListener('click', function() {
+                showStep(3);
+            });
+        }
+        
+        if (step4Done) {
+            step4Done.addEventListener('click', async function() {
+                // Validate required fields
+                if (!reviewData.firstName || !reviewData.email) {
+                    alert('Please fill in all required fields (First name and Email)');
+                    return;
+                }
+                
+                // Submit review
+                this.disabled = true;
+                this.textContent = 'Submitting...';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('shopify_product_id', productId);
+                    formData.append('rating', reviewData.rating);
+                    formData.append('text', reviewData.text);
+                    formData.append('reviewer_name', `${reviewData.firstName} ${reviewData.lastName}`.trim());
+                    formData.append('reviewer_email', reviewData.email);
+                    
+                    // Add photos
+                    reviewData.photos.forEach((photo, index) => {
+                        formData.append(`photo_${index}`, photo.file);
+                    });
+                    
+                    const response = await fetch(`/widget/${shopId}/reviews/${productId}/submit`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showStep(5);
+                    } else {
+                        alert('Failed to submit review: ' + (result.error || 'Unknown error'));
+                        this.disabled = false;
+                        this.textContent = 'Done';
+                    }
+                } catch (error) {
+                    console.error('Error submitting review:', error);
+                    alert('Error submitting review. Please try again.');
+                    this.disabled = false;
+                    this.textContent = 'Done';
+                }
+            });
+        }
+        
+        // Step 5: Confirmation
+        const step5Close = document.getElementById('step5Close');
+        const shareDiscountBtn = document.getElementById('shareDiscountBtn');
+        
+        if (step5Close) {
+            step5Close.addEventListener('click', function() {
+                closeModal();
+                // Reload page to show new review
+                window.location.reload();
+            });
+        }
+        
+        if (shareDiscountBtn) {
+            shareDiscountBtn.addEventListener('click', function() {
+                // Generate referral link (placeholder)
+                const referralLink = `${window.location.origin}/referral/${shopId}?ref=${reviewData.email}`;
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Get 10% off!',
+                        text: 'Check out this store and get 10% off your purchase!',
+                        url: referralLink
+                    });
+                } else {
+                    // Fallback: copy to clipboard
+                    navigator.clipboard.writeText(referralLink).then(() => {
+                        alert('Referral link copied to clipboard!');
+                    });
+                }
+            });
+        }
+        
         // Auto-resize iframe
         function resizeIframe() {
             const height = document.body.scrollHeight;
@@ -359,91 +1542,68 @@
         window.addEventListener('load', resizeIframe);
         window.addEventListener('resize', resizeIframe);
         
-        // Track widget views
-        fetch('/widget/{{ shop_id }}/reviews/{{ product_id }}/analytics', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                event: 'widget_view',
-                shop_id: '{{ shop_id }}',
-                product_id: '{{ product_id }}',
-                timestamp: new Date().toISOString()
-            })
-        }).catch(console.error);
-        
         // Load More Reviews functionality
         const loadMoreBtn = document.getElementById('load-more-btn');
-        const loadMoreSpinner = document.getElementById('load-more-spinner');
-        const reviewsContainer = document.querySelector('.reviews-container');
-        let currentOffset = {{ reviews|length }};
-        const limit = 15;
-        const totalCount = {{ total_count }};
-        
-        function renderReview(review) {
-            const reviewCard = document.createElement('div');
-            reviewCard.className = 'review-card';
-            
-            // Build stars
-            let stars = '';
-            for (let i = 0; i < review.rating; i++) {
-                stars += '<span class="star">★</span>';
-            }
-            
-            // Build media
-            let mediaHtml = '';
-            if (review.media && review.media.length > 0) {
-                mediaHtml = '<div class="review-media"><div class="media-grid">';
-                review.media.forEach(m => {
-                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" onclick="window.open('${m.media_url}', '_blank')"></div>`;
-                });
-                mediaHtml += '</div></div>';
-            }
-            
-            // Build meta badges
-            let metaHtml = '';
-            if (review.verified) {
-                metaHtml += '<span class="meta-badge verified">✓ Verified</span>';
-            }
-            if (review.ai_score > 8) {
-                metaHtml += '<span class="meta-badge ai-recommended">🤖 AI Recommended</span>';
-            }
-            metaHtml += `<span class="meta-badge quality-score">Quality: ${review.ai_score}/10</span>`;
-            
-            reviewCard.innerHTML = `
-                <div class="review-header">
-                    <div class="reviewer-avatar">${(review.author || review.reviewer_name || 'C')[0]}</div>
-                    <div class="reviewer-info">
-                        <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
-                        <div class="review-date">${review.date || review.review_date}</div>
-                    </div>
-                    <div class="review-rating">${stars}</div>
-                </div>
-                <div class="review-text">${review.text || review.body || ''}</div>
-                ${mediaHtml}
-                <div class="review-meta">${metaHtml}</div>
-            `;
-            
-            return reviewCard;
-        }
-        
         if (loadMoreBtn) {
+            let currentOffset = {{ reviews|length }};
+            const limit = 20;
+            const totalCount = {{ total_count }};
+            
             loadMoreBtn.addEventListener('click', async function() {
                 if (this.disabled) return;
                 
                 this.disabled = true;
-                loadMoreSpinner.style.display = 'block';
+                this.textContent = 'Loading...';
                 
                 try {
-                    const response = await fetch(`/widget/{{ shop_id }}/reviews/{{ product_id }}/api?offset=${currentOffset}&limit=${limit}`);
+                    const response = await fetch(`/widget/${shopId}/reviews/${productId}/api?offset=${currentOffset}&limit=${limit}&sort=${currentSort}`);
                     const data = await response.json();
                     
                     if (data.success && data.reviews) {
-                        // Insert new reviews before the load more button
+                        const reviewsContainer = document.querySelector('.reviews-container');
                         const loadMoreContainer = document.getElementById('load-more-container');
+                        
                         data.reviews.forEach(review => {
-                            const reviewCard = renderReview(review);
+                            const reviewCard = document.createElement('div');
+                            reviewCard.className = 'review-card';
+                            
+                            let stars = '';
+                            for (let i = 0; i < review.rating; i++) {
+                                stars += '<span class="star">★</span>';
+                            }
+                            
+                            let mediaHtml = '';
+                            if (review.media && review.media.length > 0) {
+                                mediaHtml = '<div class="review-media"><div class="media-grid">';
+                                review.media.forEach(m => {
+                                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" onclick="window.open('${m.media_url}', '_blank')"></div>`;
+                                });
+                                mediaHtml += '</div></div>';
+                            }
+                            
+                            let metaHtml = '';
+                            if (review.verified) {
+                                metaHtml += '<span class="meta-badge verified">✓ Verified</span>';
+                            }
+                            if (review.ai_score > 8) {
+                                metaHtml += '<span class="meta-badge ai-recommended">🤖 AI Recommended</span>';
+                            }
+                            metaHtml += `<span class="meta-badge quality-score">Quality: ${review.ai_score}/10</span>`;
+                            
+                            reviewCard.innerHTML = `
+                                <div class="review-header">
+                                    <div class="reviewer-avatar">${(review.author || review.reviewer_name || 'C')[0]}</div>
+                                    <div class="reviewer-info">
+                                        <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
+                                        <div class="review-date">${review.date || review.review_date}</div>
+                                    </div>
+                                    <div class="review-rating">${stars}</div>
+                                </div>
+                                <div class="review-text">${review.text || review.body || ''}</div>
+                                ${mediaHtml}
+                                <div class="review-meta">${metaHtml}</div>
+                            `;
+                            
                             reviewsContainer.insertBefore(reviewCard, loadMoreContainer);
                         });
                         
@@ -454,21 +1614,19 @@
                             loadMoreContainer.remove();
                         } else {
                             this.disabled = false;
+                            this.textContent = 'Load More Reviews';
                         }
                         
-                        // Resize iframe after adding content
                         resizeIframe();
                     } else {
                         console.error('Failed to load more reviews:', data);
-                        alert('Failed to load more reviews. Please try again.');
                         this.disabled = false;
+                        this.textContent = 'Load More Reviews';
                     }
                 } catch (error) {
                     console.error('Error loading more reviews:', error);
-                    alert('Error loading more reviews. Please try again.');
                     this.disabled = false;
-                } finally {
-                    loadMoreSpinner.style.display = 'none';
+                    this.textContent = 'Load More Reviews';
                 }
             });
         }
