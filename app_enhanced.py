@@ -68,7 +68,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'reviewking-secret-' + str(uuid.uuid4()))
     API_VERSION = '2.0.0'
     WIDGET_SECRET = os.environ.get('WIDGET_SECRET', 'sakura-widget-secret-key')
-    WIDGET_BASE_URL = os.environ.get('WIDGET_BASE_URL', 'https://sakura-reviews-sak-rev-test-srv.utztjw.easypanel.host')
+    WIDGET_BASE_URL = os.environ.get('WIDGET_BASE_URL', 'https://sakura-reviews-sakrev-v15.utztjw.easypanel.host')
     
     # Shopify API Configuration (priority: env vars > remote config)
     # NOTE: No hardcoded defaults for security - must be set via environment or config.json
