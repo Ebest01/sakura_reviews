@@ -88,7 +88,7 @@ class Config:
     LOOX_ENDPOINT = "https://loox.io/-/admin/reviews/import/url"
     
     # Scopes (from your app configuration)
-    SHOPIFY_SCOPES = 'read_products,write_products,read_content,write_content'
+    SHOPIFY_SCOPES = 'read_products,write_products,read_content,write_content,write_script_tags'
     
     # Better pricing than Loox
     PRICING = {
