@@ -3828,9 +3828,7 @@ def sakura_reviews_block():
     html = f"""
     <!-- Sakura Reviews Widget - Superior to Loox -->
     <section id="{section_id}" class="sakura-reviews-widget sakura-theme-{theme}">
-        <div class="sakura-reviews-header">
-            <h2 class="sakura-reviews-title">{title}</h2>
-        </div>
+        <div class="sakura-reviews-separator"></div>
         
         <div id="{widget_id}" class="sakura-reviews-container" data-limit="{limit}" data-product-id="{product_id}">
             <iframe 
@@ -3853,23 +3851,12 @@ def sakura_reviews_block():
     <style>
     .sakura-reviews-widget {{
         margin: 20px 0;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         background: white;
     }}
     
-    .sakura-reviews-header {{
-        background: linear-gradient(135deg, #ff69b4, #8b4a8b);
-        color: white;
-        padding: 20px;
-        text-align: center;
-    }}
-    
-    .sakura-reviews-title {{
-        font-size: 24px;
-        font-weight: 700;
-        margin: 0;
+    .sakura-reviews-separator {{
+        border-top: 1px solid #e2e8f0;
+        margin: 20px 0;
     }}
     
     .sakura-reviews-container {{
@@ -4190,23 +4177,12 @@ def shopify_auto_inject():
             &lt;style&gt;
             .sakura-reviews-widget {
                 margin: 40px 0;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
                 background: white;
             }
             
-            .sakura-reviews-header {
-                background: linear-gradient(135deg, #ff69b4, #8b4a8b);
-                color: white;
-                padding: 20px;
-                text-align: center;
-            }
-            
-            .sakura-reviews-title {
-                font-size: 24px;
-                font-weight: 700;
-                margin: 0;
+            .sakura-reviews-separator {
+                border-top: 1px solid #e2e8f0;
+                margin: 20px 0;
             }
             
             .sakura-reviews-container {
@@ -4499,9 +4475,7 @@ def sakura_reviews_js():
         
         return `
             <section id="${sectionId}" class="sakura-reviews-widget sakura-auto-injected">
-                <div class="sakura-reviews-header">
-                    <h2 class="sakura-reviews-title">Customer Reviews</h2>
-                </div>
+                <div class="sakura-reviews-separator"></div>
                 <div class="sakura-reviews-container" data-product-id="${SAKURA_CONFIG.productId}">
                     <iframe 
                         id="${frameId}"
@@ -4522,23 +4496,12 @@ def sakura_reviews_js():
             <style>
             .sakura-reviews-widget {
                 margin: 40px 0;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
                 background: white;
             }
             
-            .sakura-reviews-header {
-                background: linear-gradient(135deg, #ff69b4, #8b4a8b);
-                color: white;
-                padding: 20px;
-                text-align: center;
-            }
-            
-            .sakura-reviews-title {
-                font-size: 24px;
-                font-weight: 700;
-                margin: 0;
+            .sakura-reviews-separator {
+                border-top: 1px solid #e2e8f0;
+                margin: 20px 0;
             }
             
             .sakura-reviews-container {
