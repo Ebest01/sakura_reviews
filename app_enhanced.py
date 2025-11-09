@@ -4456,7 +4456,7 @@ def sakura_reviews_js():
     // Configuration
     const SAKURA_CONFIG = {
         apiUrl: '__WIDGET_BASE_URL__',
-        shopId: window.Shopify?.shop || 'demo-shop',
+        shopId: '1', // Use shop_id=1 (can be made dynamic based on shop domain later)
         productId: window.ShopifyAnalytics?.meta?.product?.id || null,
         theme: 'default',
         limit: 20
@@ -4485,7 +4485,8 @@ def sakura_reviews_js():
             platform: 'shopify'
         });
         
-        return `${SAKURA_CONFIG.apiUrl}/widget/${SAKURA_CONFIG.shopId}/reviews/${SAKURA_CONFIG.productId}?${params}`;
+        // Use shop_id=1 for widget URL
+        return `${SAKURA_CONFIG.apiUrl}/widget/1/reviews/${SAKURA_CONFIG.productId}?${params}`;
     }
     
     // Create review section HTML
