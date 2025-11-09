@@ -4154,9 +4154,7 @@ def shopify_auto_inject():
         
         return `
             &lt;section id="${sectionId}" class="sakura-reviews-widget sakura-auto-injected"&gt;
-                &lt;div class="sakura-reviews-header"&gt;
-                    &lt;h2 class="sakura-reviews-title"&gt;Customer Reviews&lt;/h2&gt;
-                &lt;/div&gt;
+                &lt;div class="sakura-reviews-separator"&gt;&lt;/div&gt;
                 &lt;div class="sakura-reviews-container" data-product-id="${SAKURA_CONFIG.productId}"&gt;
                     &lt;iframe 
                         id="${frameId}"
