@@ -1008,7 +1008,7 @@
                         <div class="media-grid">
                             {% for media in review.media %}
                             <div class="media-item">
-                                <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" onclick="window.open('{{ media.media_url }}', '_blank')">
+                                <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="{{ media.media_url }}" data-review-id="{{ review.id }}">
                             </div>
                             {% endfor %}
                         </div>
@@ -1536,6 +1536,129 @@
         window.addEventListener('load', resizeIframe);
         window.addEventListener('resize', resizeIframe);
         
+        // Photo Modal/Lightbox
+        let currentPhotoIndex = 0;
+        let currentPhotos = [];
+        
+        // Create photo modal HTML
+        const photoModalHTML = `
+            <div class="photo-modal-overlay" id="photoModalOverlay">
+                <button class="photo-modal-close" id="photoModalClose">×</button>
+                <button class="photo-modal-nav prev" id="photoModalPrev">‹</button>
+                <button class="photo-modal-nav next" id="photoModalNext">›</button>
+                <div class="photo-modal" id="photoModal">
+                    <img id="photoModalImage" src="" alt="Review photo">
+                </div>
+                <div class="photo-modal-counter" id="photoModalCounter"></div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', photoModalHTML);
+        
+        const photoModalOverlay = document.getElementById('photoModalOverlay');
+        const photoModalImage = document.getElementById('photoModalImage');
+        const photoModalClose = document.getElementById('photoModalClose');
+        const photoModalPrev = document.getElementById('photoModalPrev');
+        const photoModalNext = document.getElementById('photoModalNext');
+        const photoModalCounter = document.getElementById('photoModalCounter');
+        
+        function openPhotoModal(photoUrl, allPhotos, startIndex) {
+            currentPhotos = allPhotos;
+            currentPhotoIndex = startIndex;
+            updatePhotoModal();
+            photoModalOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        function closePhotoModal() {
+            photoModalOverlay.classList.remove('show');
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        
+        function updatePhotoModal() {
+            if (currentPhotos.length === 0) return;
+            
+            const photo = currentPhotos[currentPhotoIndex];
+            photoModalImage.src = photo.url;
+            photoModalCounter.textContent = `${currentPhotoIndex + 1} / ${currentPhotos.length}`;
+            
+            // Update nav buttons
+            photoModalPrev.disabled = currentPhotoIndex === 0;
+            photoModalNext.disabled = currentPhotoIndex === currentPhotos.length - 1;
+        }
+        
+        function showPrevPhoto() {
+            if (currentPhotoIndex > 0) {
+                currentPhotoIndex--;
+                updatePhotoModal();
+            }
+        }
+        
+        function showNextPhoto() {
+            if (currentPhotoIndex < currentPhotos.length - 1) {
+                currentPhotoIndex++;
+                updatePhotoModal();
+            }
+        }
+        
+        // Close modal handlers
+        if (photoModalClose) {
+            photoModalClose.addEventListener('click', closePhotoModal);
+        }
+        
+        if (photoModalOverlay) {
+            photoModalOverlay.addEventListener('click', function(e) {
+                if (e.target === photoModalOverlay) {
+                    closePhotoModal();
+                }
+            });
+        }
+        
+        // Navigation handlers
+        if (photoModalPrev) {
+            photoModalPrev.addEventListener('click', showPrevPhoto);
+        }
+        
+        if (photoModalNext) {
+            photoModalNext.addEventListener('click', showNextPhoto);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (!photoModalOverlay || !photoModalOverlay.classList.contains('show')) return;
+            
+            if (e.key === 'Escape') {
+                closePhotoModal();
+            } else if (e.key === 'ArrowLeft') {
+                showPrevPhoto();
+            } else if (e.key === 'ArrowRight') {
+                showNextPhoto();
+            }
+        });
+        
+        // Handle photo clicks - collect all photos from the same review
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('review-photo')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const clickedPhotoUrl = e.target.getAttribute('data-photo-url');
+                const reviewId = e.target.getAttribute('data-review-id');
+                
+                // Find all photos from the same review
+                const reviewCard = e.target.closest('.review-card');
+                if (!reviewCard) return;
+                
+                const allPhotoElements = reviewCard.querySelectorAll('.review-photo');
+                const photos = Array.from(allPhotoElements).map((img, index) => ({
+                    url: img.getAttribute('data-photo-url'),
+                    index: index
+                }));
+                
+                const startIndex = photos.findIndex(p => p.url === clickedPhotoUrl);
+                openPhotoModal(clickedPhotoUrl, photos, startIndex >= 0 ? startIndex : 0);
+            }
+        });
+        
         // Load More Reviews functionality
         const loadMoreBtn = document.getElementById('load-more-btn');
         if (loadMoreBtn) {
@@ -1570,7 +1693,7 @@
                             if (review.media && review.media.length > 0) {
                                 mediaHtml = '<div class="review-media"><div class="media-grid">';
                                 review.media.forEach(m => {
-                                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" onclick="window.open('${m.media_url}', '_blank')"></div>`;
+                                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="${m.media_url}" data-review-id="${review.id}"></div>`;
                                 });
                                 mediaHtml += '</div></div>';
                             }
