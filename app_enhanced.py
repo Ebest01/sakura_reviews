@@ -4689,12 +4689,90 @@ def create_scripttag():
             'error': f'Error creating ScriptTag: {str(e)}'
         }), 500
 
-@app.route('/shopify/scripttag/update', methods=['POST'])
+@app.route('/shopify/scripttag/update', methods=['POST', 'GET'])
 def update_scripttag():
     """
     Update ScriptTag by deleting old ones and creating a new one
     This forces Shopify to load the new JavaScript file
+    
+    GET: Simple form to update ScriptTag
+    POST: Update ScriptTag with shop_domain and access_token
     """
+    if request.method == 'GET':
+        # Return a simple HTML form
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Update Sakura Reviews ScriptTag</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                .form-group { margin-bottom: 20px; }
+                label { display: block; margin-bottom: 5px; font-weight: bold; }
+                input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+                button { background: #ff69b4; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+                button:hover { opacity: 0.9; }
+                .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+                .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+            </style>
+        </head>
+        <body>
+            <h1>🌸 Update Sakura Reviews ScriptTag</h1>
+            <p>This will delete old ScriptTags and create a new one with the updated domain.</p>
+            <form id="updateForm">
+                <div class="form-group">
+                    <label>Shop Domain:</label>
+                    <input type="text" name="shop_domain" value="sakura-rev-test-store.myshopify.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Access Token:</label>
+                    <input type="text" name="access_token" placeholder="shpat_..." required>
+                </div>
+                <button type="submit">Update ScriptTag</button>
+            </form>
+            <div id="result"></div>
+            <script>
+                document.getElementById('updateForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const data = {
+                        shop_domain: formData.get('shop_domain'),
+                        access_token: formData.get('access_token')
+                    };
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = '<p>Updating...</p>';
+                    try {
+                        const response = await fetch('/shopify/scripttag/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            resultDiv.innerHTML = `<div class="result success">
+                                <h3>✅ Success!</h3>
+                                <p>${result.message}</p>
+                                <p><strong>New ScriptTag URL:</strong> ${result.new_url}</p>
+                            </div>`;
+                        } else {
+                            resultDiv.innerHTML = `<div class="result error">
+                                <h3>❌ Error</h3>
+                                <p>${result.error}</p>
+                            </div>`;
+                        }
+                    } catch (error) {
+                        resultDiv.innerHTML = `<div class="result error">
+                            <h3>❌ Error</h3>
+                            <p>${error.message}</p>
+                        </div>`;
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        """
+    
     try:
         # Get shop domain and access token from request
         shop_domain = request.json.get('shop_domain')
