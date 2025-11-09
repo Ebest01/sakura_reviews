@@ -4776,12 +4776,30 @@ def auth_callback():
             
             return f"""
             <html>
-            <head><title>Installation Successful</title></head>
-            <body style="font-family: Arial; text-align: center; padding: 50px;">
-                <h1>✅ Installation Successful!</h1>
-                <p>Your access token: <code>{access_token[:20]}...</code></p>
-                <p>Shop: {shop}</p>
-                <p><a href="/shopify/scripttag/update">Update ScriptTag</a> | <a href="/">Go Home</a></p>
+            <head>
+                <title>Installation Successful</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }}
+                    .token-box {{ background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; word-break: break-all; }}
+                    .token-box code {{ font-size: 14px; }}
+                    .copy-btn {{ background: #ff69b4; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; }}
+                    .copy-btn:hover {{ opacity: 0.9; }}
+                    .success {{ color: #28a745; font-size: 24px; margin-bottom: 20px; }}
+                </style>
+            </head>
+            <body>
+                <h1 class="success">✅ Installation Successful!</h1>
+                <p><strong>Shop:</strong> {shop}</p>
+                <div class="token-box">
+                    <strong>Full Access Token:</strong><br>
+                    <code id="fullToken">{access_token}</code>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('{access_token}').then(() => alert('Token copied!'))">Copy</button>
+                </div>
+                <p><strong>⚠️ Save this token!</strong> You'll need it to update the ScriptTag.</p>
+                <p>
+                    <a href="/shopify/scripttag/update" style="background: #ff69b4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px;">Update ScriptTag</a>
+                    <a href="/" style="background: #6c757d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px;">Go Home</a>
+                </p>
             </body>
             </html>
             """
@@ -4829,7 +4847,10 @@ def update_scripttag():
                 </div>
                 <div class="form-group">
                     <label>Access Token:</label>
-                    <input type="text" name="access_token" placeholder="shpat_..." required>
+                    <input type="text" name="access_token" id="accessTokenInput" placeholder="shpat_... or shpua_..." required>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        💡 Tip: If you just installed the app, check the installation success page for your full token.
+                    </p>
                 </div>
                 <button type="submit">Update ScriptTag</button>
             </form>
