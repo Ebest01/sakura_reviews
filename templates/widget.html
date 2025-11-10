@@ -1993,15 +1993,6 @@
             });
         }
         
-        // Navigation handlers
-        if (photoModalPrev) {
-            photoModalPrev.addEventListener('click', showPrevPhoto);
-        }
-        
-        if (photoModalNext) {
-            photoModalNext.addEventListener('click', showNextPhoto);
-        }
-        
         // Keyboard navigation
         document.addEventListener('keydown', function(e) {
             if (!photoModalOverlay || !photoModalOverlay.classList.contains('show')) return;
