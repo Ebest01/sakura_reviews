@@ -299,12 +299,10 @@
         .review-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 0;
-            margin-bottom: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
             background: white;
             transition: all 0.2s ease;
-            display: flex;
-            overflow: hidden;
         }
         
         .review-card:hover {
@@ -312,25 +310,16 @@
             transform: translateY(-2px);
         }
         
-        /* Left Column - Review Details */
-        .review-content {
-            flex: 1;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            min-width: 0; /* Allows text to wrap */
-        }
-        
         .review-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .reviewer-avatar {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #ff69b4, #8b4a8b);
             display: flex;
@@ -338,20 +327,15 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 18px;
-            flex-shrink: 0;
         }
         
         .reviewer-info {
             flex: 1;
-            min-width: 0;
         }
         
         .reviewer-name {
             font-weight: 600;
             color: #2d3748;
-            font-size: 16px;
-            margin-bottom: 4px;
         }
         
         .review-date {
@@ -362,157 +346,56 @@
         .review-rating {
             display: flex;
             gap: 2px;
-            margin-top: 12px;
         }
         
         .star {
             color: #ffd700;
-            font-size: 18px;
+            font-size: 16px;
         }
         
         .review-text {
             color: #4a5568;
-            line-height: 1.7;
-            margin: 16px 0;
-            font-size: 15px;
-            flex: 1;
+            line-height: 1.6;
+            margin: 12px 0;
+        }
+        
+        .review-media {
+            margin: 12px 0;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .media-item {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .media-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
         
         .review-meta {
             display: flex;
             gap: 12px;
             align-items: center;
-            margin-top: auto;
-            padding-top: 12px;
-        }
-        
-        /* Right Column - Photo Slider */
-        .review-media-slider {
-            width: 400px;
-            min-width: 400px;
-            position: relative;
-            background: #f7fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .review-media-slider.no-photos {
-            background: #f7fafc;
-        }
-        
-        .photo-slider-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            min-height: 300px;
-            overflow: hidden;
-        }
-        
-        .photo-slider-wrapper {
-            display: flex;
-            transition: transform 0.4s ease;
-            height: 100%;
-        }
-        
-        .photo-slide {
-            min-width: 100%;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        
-        .photo-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            cursor: pointer;
-            display: block;
-        }
-        
-        .photo-slider-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 36px;
-            height: 36px;
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            border-radius: 50%;
-            font-size: 20px;
-            color: #1a202c;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        .photo-slider-nav:hover {
-            background: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            transform: translateY(-50%) scale(1.1);
-        }
-        
-        .photo-slider-nav.prev {
-            left: 12px;
-        }
-        
-        .photo-slider-nav.next {
-            right: 12px;
-        }
-        
-        .photo-slider-nav:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        
-        .photo-slider-dots {
-            position: absolute;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            z-index: 10;
-        }
-        
-        .photo-slider-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .photo-slider-dot.active {
-            background: white;
-            width: 24px;
-            border-radius: 4px;
-        }
-        
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .review-card {
-                flex-direction: column;
-            }
-            
-            .review-media-slider {
-                width: 100%;
-                min-width: 100%;
-                height: 300px;
-            }
-            
-            .review-content {
-                padding: 20px;
-            }
+            margin-top: 12px;
         }
         
         /* Photo Modal/Lightbox - Loox-inspired stable full-page modal */
@@ -546,20 +429,198 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 60px 80px;
+            padding: 40px;
             box-sizing: border-box;
             margin: 0 auto;
         }
         
-        .photo-modal img {
-            max-width: 90vw;
+        .photo-modal-content {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             max-height: 90vh;
-            width: auto;
-            height: auto;
+        }
+        
+        .photo-modal-left {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .photo-modal-review-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .photo-modal-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff69b4, #8b4a8b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .photo-modal-reviewer-info {
+            flex: 1;
+        }
+        
+        .photo-modal-reviewer-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .photo-modal-review-date {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .photo-modal-rating {
+            display: flex;
+            gap: 2px;
+            margin: 16px 0;
+        }
+        
+        .photo-modal-star {
+            color: #ffd700;
+            font-size: 18px;
+        }
+        
+        .photo-modal-text {
+            color: #4a5568;
+            line-height: 1.7;
+            margin: 16px 0;
+            font-size: 15px;
+            flex: 1;
+        }
+        
+        .photo-modal-meta {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 16px;
+        }
+        
+        .photo-modal-right {
+            width: 500px;
+            min-width: 500px;
+            position: relative;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .photo-modal-slider-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            overflow: hidden;
+        }
+        
+        .photo-modal-slider-wrapper {
+            display: flex;
+            transition: transform 0.4s ease;
+            height: 100%;
+        }
+        
+        .photo-modal-slide {
+            min-width: 100%;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .photo-modal-slide img {
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             display: block;
+        }
+        
+        .photo-modal-slider-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            color: #1a202c;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .photo-modal-slider-nav:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .photo-modal-slider-nav.prev {
+            left: 16px;
+        }
+        
+        .photo-modal-slider-nav.next {
+            right: 16px;
+        }
+        
+        .photo-modal-slider-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .photo-modal-slider-dots {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        
+        .photo-modal-slider-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .photo-modal-slider-dot.active {
+            background: white;
+            width: 24px;
+            border-radius: 4px;
         }
         
         .photo-modal-close {
@@ -585,60 +646,6 @@
         .photo-modal-close:hover {
             background: white;
             transform: scale(1.1);
-        }
-        
-        .photo-modal-nav {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 50%;
-            font-size: 28px;
-            font-weight: bold;
-            color: #1a202c;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2147483647;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .photo-modal-nav:hover {
-            background: white;
-            transform: translateY(-50%) scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .photo-modal-nav.prev {
-            left: 20px;
-        }
-        
-        .photo-modal-nav.next {
-            right: 20px;
-        }
-        
-        .photo-modal-nav:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        
-        .photo-modal-counter {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            z-index: 2147483647;
-            font-weight: 500;
         }
         
         /* Mobile responsive adjustments */
@@ -1275,62 +1282,40 @@
             {% if reviews and reviews|length > 0 %}
                 {% for review in reviews %}
                 <div class="review-card" data-review-id="{{ review.id }}">
-                    <!-- Left Column: Review Details -->
-                    <div class="review-content">
-                        <div class="review-header">
-                            <div class="reviewer-avatar">
-                                {{ review.author[0] if review.author else 'C' }}
-                            </div>
-                            <div class="reviewer-info">
-                                <div class="reviewer-name">{{ review.author or 'Anonymous' }}</div>
-                                <div class="review-date">{{ review.date }}</div>
-                            </div>
+                    <div class="review-header">
+                        <div class="reviewer-avatar">
+                            {{ review.author[0] if review.author else 'C' }}
                         </div>
-                        
+                        <div class="reviewer-info">
+                            <div class="reviewer-name">{{ review.author or 'Anonymous' }}</div>
+                            <div class="review-date">{{ review.date }}</div>
+                        </div>
                         <div class="review-rating">
                             {% for i in range(review.rating) %}
                                 <span class="star">★</span>
                             {% endfor %}
                         </div>
-                        
-                        <div class="review-text">
-                            {{ review.text }}
-                        </div>
-                        
-                        <div class="review-meta">
-                            {% if review.verified %}
-                            <span class="meta-badge verified">✓ Verified</span>
-                            {% endif %}
-                        </div>
                     </div>
                     
-                    <!-- Right Column: Photo Slider -->
-                    <div class="review-media-slider {% if not review.media or review.media|length == 0 %}no-photos{% endif %}">
-                        {% if review.media and review.media|length > 0 %}
-                        <div class="photo-slider-container" data-review-id="{{ review.id }}">
-                            <div class="photo-slider-wrapper" id="slider-{{ review.id }}">
-                                {% for media in review.media %}
-                                <div class="photo-slide">
-                                    <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="{{ media.media_url }}" data-review-id="{{ review.id }}">
-                                </div>
-                                {% endfor %}
+                    <div class="review-text">
+                        {{ review.text }}
+                    </div>
+                    
+                    {% if review.media and review.media|length > 0 %}
+                    <div class="review-media">
+                        <div class="media-grid">
+                            {% for media in review.media %}
+                            <div class="media-item">
+                                <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="{{ media.media_url }}" data-review-id="{{ review.id }}">
                             </div>
-                            
-                            {% if review.media|length > 1 %}
-                            <button class="photo-slider-nav prev" data-review-id="{{ review.id }}" aria-label="Previous photo">‹</button>
-                            <button class="photo-slider-nav next" data-review-id="{{ review.id }}" aria-label="Next photo">›</button>
-                            <div class="photo-slider-dots" id="dots-{{ review.id }}">
-                                {% for i in range(review.media|length) %}
-                                <span class="photo-slider-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}" data-review-id="{{ review.id }}"></span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
-                        {% else %}
-                        <div style="color: #a0aec0; text-align: center; padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
-                            <div style="font-size: 14px;">No photos</div>
-                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="review-meta">
+                        {% if review.verified %}
+                        <span class="meta-badge verified">✓ Verified</span>
                         {% endif %}
                     </div>
                 </div>
@@ -1853,30 +1838,45 @@
         let currentPhotoIndex = 0;
         let currentPhotos = [];
         
-        // Create photo modal HTML
+        // Create photo modal HTML with two-column layout
         const photoModalHTML = `
             <div class="photo-modal-overlay" id="photoModalOverlay">
                 <button class="photo-modal-close" id="photoModalClose">×</button>
-                <button class="photo-modal-nav prev" id="photoModalPrev">‹</button>
-                <button class="photo-modal-nav next" id="photoModalNext">›</button>
                 <div class="photo-modal" id="photoModal">
-                    <img id="photoModalImage" src="" alt="Review photo">
+                    <div class="photo-modal-content">
+                        <div class="photo-modal-left" id="photoModalLeft">
+                            <!-- Review details will be populated here -->
+                        </div>
+                        <div class="photo-modal-right">
+                            <div class="photo-modal-slider-container" id="photoModalSliderContainer">
+                                <div class="photo-modal-slider-wrapper" id="photoModalSliderWrapper">
+                                    <!-- Slides will be populated here -->
+                                </div>
+                                <button class="photo-modal-slider-nav prev" id="photoModalSliderPrev" aria-label="Previous photo">‹</button>
+                                <button class="photo-modal-slider-nav next" id="photoModalSliderNext" aria-label="Next photo">›</button>
+                                <div class="photo-modal-slider-dots" id="photoModalSliderDots"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="photo-modal-counter" id="photoModalCounter"></div>
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', photoModalHTML);
         
         const photoModalOverlay = document.getElementById('photoModalOverlay');
-        const photoModalImage = document.getElementById('photoModalImage');
+        const photoModalLeft = document.getElementById('photoModalLeft');
+        const photoModalSliderWrapper = document.getElementById('photoModalSliderWrapper');
+        const photoModalSliderPrev = document.getElementById('photoModalSliderPrev');
+        const photoModalSliderNext = document.getElementById('photoModalSliderNext');
+        const photoModalSliderDots = document.getElementById('photoModalSliderDots');
         const photoModalClose = document.getElementById('photoModalClose');
-        const photoModalPrev = document.getElementById('photoModalPrev');
-        const photoModalNext = document.getElementById('photoModalNext');
-        const photoModalCounter = document.getElementById('photoModalCounter');
         
-        function openPhotoModal(photoUrl, allPhotos, startIndex) {
+        let currentReviewData = null;
+        
+        function openPhotoModal(photoUrl, allPhotos, startIndex, reviewData = null) {
             currentPhotos = allPhotos;
             currentPhotoIndex = startIndex;
+            currentReviewData = reviewData;
             
             // Prevent background scrolling
             document.body.style.overflow = 'hidden';
@@ -1884,22 +1884,8 @@
             // Show overlay first
             photoModalOverlay.classList.add('show');
             
-            // Update modal content and wait for image to load
+            // Update modal content
             updatePhotoModal();
-            
-            // Ensure image is loaded before showing (for better stability)
-            if (photoModalImage) {
-                photoModalImage.onload = function() {
-                    // Image loaded, ensure proper centering
-                    photoModalImage.style.opacity = '1';
-                };
-                photoModalImage.onerror = function() {
-                    console.error('Failed to load image:', photoUrl);
-                };
-                // Set initial opacity for smooth fade-in
-                photoModalImage.style.opacity = '0';
-                photoModalImage.style.transition = 'opacity 0.3s ease-in';
-            }
         }
         
         function closePhotoModal() {
@@ -1910,44 +1896,93 @@
         function updatePhotoModal() {
             if (currentPhotos.length === 0) return;
             
-            const photo = currentPhotos[currentPhotoIndex];
-            
-            // Update image with fade effect
-            if (photoModalImage) {
-                photoModalImage.style.opacity = '0';
-                photoModalImage.src = photo.url;
+            // Update left column with review details
+            if (currentReviewData && photoModalLeft) {
+                let stars = '';
+                for (let i = 0; i < (currentReviewData.rating || 5); i++) {
+                    stars += '<span class="photo-modal-star">★</span>';
+                }
                 
-                // Wait for image to load before showing
-                photoModalImage.onload = function() {
-                    photoModalImage.style.opacity = '1';
-                };
+                let verifiedBadge = '';
+                if (currentReviewData.verified) {
+                    verifiedBadge = '<span class="meta-badge verified">✓ Verified</span>';
+                }
+                
+                const reviewerName = currentReviewData.author || currentReviewData.reviewer_name || 'Anonymous';
+                const reviewerInitial = reviewerName[0] || 'C';
+                const reviewDate = currentReviewData.date || currentReviewData.review_date || '';
+                const reviewText = currentReviewData.text || currentReviewData.body || '';
+                
+                photoModalLeft.innerHTML = `
+                    <div class="photo-modal-review-header">
+                        <div class="photo-modal-avatar">${reviewerInitial}</div>
+                        <div class="photo-modal-reviewer-info">
+                            <div class="photo-modal-reviewer-name">${reviewerName}</div>
+                            <div class="photo-modal-review-date">${reviewDate}</div>
+                        </div>
+                    </div>
+                    <div class="photo-modal-rating">${stars}</div>
+                    <div class="photo-modal-text">${reviewText}</div>
+                    <div class="photo-modal-meta">${verifiedBadge}</div>
+                `;
             }
             
-            // Update counter
-            if (photoModalCounter) {
-                photoModalCounter.textContent = `${currentPhotoIndex + 1} / ${currentPhotos.length}`;
+            // Update right column with photo slider
+            if (photoModalSliderWrapper) {
+                photoModalSliderWrapper.innerHTML = currentPhotos.map((photo, index) => `
+                    <div class="photo-modal-slide">
+                        <img src="${photo.url}" alt="Review photo" loading="lazy">
+                    </div>
+                `).join('');
+                
+                // Update dots
+                if (photoModalSliderDots) {
+                    photoModalSliderDots.innerHTML = currentPhotos.map((_, index) => `
+                        <span class="photo-modal-slider-dot ${index === currentPhotoIndex ? 'active' : ''}" data-index="${index}"></span>
+                    `).join('');
+                }
+                
+                // Update slider position
+                updateModalSlider();
             }
+        }
+        
+        function updateModalSlider() {
+            if (!photoModalSliderWrapper) return;
+            
+            const translateX = -currentPhotoIndex * 100;
+            photoModalSliderWrapper.style.transform = `translateX(${translateX}%)`;
+            
+            // Update dots
+            const dots = photoModalSliderDots.querySelectorAll('.photo-modal-slider-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentPhotoIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
             
             // Update nav buttons
-            if (photoModalPrev) {
-                photoModalPrev.disabled = currentPhotoIndex === 0;
+            if (photoModalSliderPrev) {
+                photoModalSliderPrev.disabled = currentPhotoIndex === 0;
             }
-            if (photoModalNext) {
-                photoModalNext.disabled = currentPhotoIndex === currentPhotos.length - 1;
+            if (photoModalSliderNext) {
+                photoModalSliderNext.disabled = currentPhotoIndex === currentPhotos.length - 1;
             }
         }
         
         function showPrevPhoto() {
             if (currentPhotoIndex > 0) {
                 currentPhotoIndex--;
-                updatePhotoModal();
+                updateModalSlider();
             }
         }
         
         function showNextPhoto() {
             if (currentPhotoIndex < currentPhotos.length - 1) {
                 currentPhotoIndex++;
-                updatePhotoModal();
+                updateModalSlider();
             }
         }
         
@@ -1985,6 +2020,30 @@
                 showNextPhoto();
             }
         });
+        
+        // Touch/swipe support for modal slider
+        if (photoModalSliderWrapper) {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            photoModalSliderWrapper.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            photoModalSliderWrapper.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+                
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        showNextPhoto(); // Swipe left = next
+                    } else {
+                        showPrevPhoto(); // Swipe right = prev
+                    }
+                }
+            });
+        }
         
         // Photo Slider Functionality
         const photoSliders = {};
@@ -2113,9 +2172,39 @@
                 }));
                 
                 const startIndex = photos.findIndex(p => p.url === clickedPhotoUrl);
-                openPhotoModal(clickedPhotoUrl, photos, startIndex >= 0 ? startIndex : 0);
+                
+                // Extract review data from the card
+                const reviewData = {
+                    author: reviewCard.querySelector('.reviewer-name')?.textContent || '',
+                    date: reviewCard.querySelector('.review-date')?.textContent || '',
+                    rating: reviewCard.querySelectorAll('.star').length || 5,
+                    text: reviewCard.querySelector('.review-text')?.textContent || '',
+                    verified: reviewCard.querySelector('.meta-badge.verified') !== null
+                };
+                
+                openPhotoModal(clickedPhotoUrl, photos, startIndex >= 0 ? startIndex : 0, reviewData);
             }
         });
+        
+        // Modal slider navigation
+        if (photoModalSliderPrev) {
+            photoModalSliderPrev.addEventListener('click', showPrevPhoto);
+        }
+        
+        if (photoModalSliderNext) {
+            photoModalSliderNext.addEventListener('click', showNextPhoto);
+        }
+        
+        // Dot navigation
+        if (photoModalSliderDots) {
+            photoModalSliderDots.addEventListener('click', function(e) {
+                if (e.target.classList.contains('photo-modal-slider-dot')) {
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    currentPhotoIndex = index;
+                    updateModalSlider();
+                }
+            });
+        }
         
         // Load More Reviews functionality
         const loadMoreBtn = document.getElementById('load-more-btn');
