@@ -299,10 +299,12 @@
         .review-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
+            padding: 0;
+            margin-bottom: 24px;
             background: white;
             transition: all 0.2s ease;
+            display: flex;
+            overflow: hidden;
         }
         
         .review-card:hover {
@@ -310,16 +312,25 @@
             transform: translateY(-2px);
         }
         
+        /* Left Column - Review Details */
+        .review-content {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0; /* Allows text to wrap */
+        }
+        
         .review-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
         
         .reviewer-avatar {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: linear-gradient(135deg, #ff69b4, #8b4a8b);
             display: flex;
@@ -327,15 +338,20 @@
             justify-content: center;
             color: white;
             font-weight: 600;
+            font-size: 18px;
+            flex-shrink: 0;
         }
         
         .reviewer-info {
             flex: 1;
+            min-width: 0;
         }
         
         .reviewer-name {
             font-weight: 600;
             color: #2d3748;
+            font-size: 16px;
+            margin-bottom: 4px;
         }
         
         .review-date {
@@ -346,49 +362,157 @@
         .review-rating {
             display: flex;
             gap: 2px;
+            margin-top: 12px;
         }
         
         .star {
             color: #ffd700;
-            font-size: 16px;
+            font-size: 18px;
         }
         
         .review-text {
             color: #4a5568;
-            line-height: 1.6;
-            margin: 12px 0;
+            line-height: 1.7;
+            margin: 16px 0;
+            font-size: 15px;
+            flex: 1;
         }
         
-        .review-media {
-            margin: 12px 0;
+        .review-meta {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 12px;
         }
         
-        .media-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-            margin-top: 12px;
+        /* Right Column - Photo Slider */
+        .review-media-slider {
+            width: 400px;
+            min-width: 400px;
+            position: relative;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .media-item {
-            aspect-ratio: 1;
-            border-radius: 8px;
+        .review-media-slider.no-photos {
+            background: #f7fafc;
+        }
+        
+        .photo-slider-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
             overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            border: 1px solid #e2e8f0;
         }
         
-        .media-item:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .photo-slider-wrapper {
+            display: flex;
+            transition: transform 0.4s ease;
+            height: 100%;
         }
         
-        .media-item img {
+        .photo-slide {
+            min-width: 100%;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .photo-slide img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            cursor: pointer;
             display: block;
+        }
+        
+        .photo-slider-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            color: #1a202c;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .photo-slider-nav:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .photo-slider-nav.prev {
+            left: 12px;
+        }
+        
+        .photo-slider-nav.next {
+            right: 12px;
+        }
+        
+        .photo-slider-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .photo-slider-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+        
+        .photo-slider-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .photo-slider-dot.active {
+            background: white;
+            width: 24px;
+            border-radius: 4px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .review-card {
+                flex-direction: column;
+            }
+            
+            .review-media-slider {
+                width: 100%;
+                min-width: 100%;
+                height: 300px;
+            }
+            
+            .review-content {
+                padding: 20px;
+            }
         }
         
         /* Photo Modal/Lightbox - Loox-inspired stable full-page modal */
@@ -1150,41 +1274,63 @@
         <div class="reviews-container">
             {% if reviews and reviews|length > 0 %}
                 {% for review in reviews %}
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="reviewer-avatar">
-                            {{ review.author[0] if review.author else 'C' }}
+                <div class="review-card" data-review-id="{{ review.id }}">
+                    <!-- Left Column: Review Details -->
+                    <div class="review-content">
+                        <div class="review-header">
+                            <div class="reviewer-avatar">
+                                {{ review.author[0] if review.author else 'C' }}
+                            </div>
+                            <div class="reviewer-info">
+                                <div class="reviewer-name">{{ review.author or 'Anonymous' }}</div>
+                                <div class="review-date">{{ review.date }}</div>
+                            </div>
                         </div>
-                        <div class="reviewer-info">
-                            <div class="reviewer-name">{{ review.author or 'Anonymous' }}</div>
-                            <div class="review-date">{{ review.date }}</div>
-                        </div>
+                        
                         <div class="review-rating">
                             {% for i in range(review.rating) %}
                                 <span class="star">★</span>
                             {% endfor %}
                         </div>
-                    </div>
-                    
-                    <div class="review-text">
-                        {{ review.text }}
-                    </div>
-                    
-                    {% if review.media and review.media|length > 0 %}
-                    <div class="review-media">
-                        <div class="media-grid">
-                            {% for media in review.media %}
-                            <div class="media-item">
-                                <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="{{ media.media_url }}" data-review-id="{{ review.id }}">
-                            </div>
-                            {% endfor %}
+                        
+                        <div class="review-text">
+                            {{ review.text }}
+                        </div>
+                        
+                        <div class="review-meta">
+                            {% if review.verified %}
+                            <span class="meta-badge verified">✓ Verified</span>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
                     
-                    <div class="review-meta">
-                        {% if review.verified %}
-                        <span class="meta-badge verified">✓ Verified</span>
+                    <!-- Right Column: Photo Slider -->
+                    <div class="review-media-slider {% if not review.media or review.media|length == 0 %}no-photos{% endif %}">
+                        {% if review.media and review.media|length > 0 %}
+                        <div class="photo-slider-container" data-review-id="{{ review.id }}">
+                            <div class="photo-slider-wrapper" id="slider-{{ review.id }}">
+                                {% for media in review.media %}
+                                <div class="photo-slide">
+                                    <img src="{{ media.media_url }}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="{{ media.media_url }}" data-review-id="{{ review.id }}">
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if review.media|length > 1 %}
+                            <button class="photo-slider-nav prev" data-review-id="{{ review.id }}" aria-label="Previous photo">‹</button>
+                            <button class="photo-slider-nav next" data-review-id="{{ review.id }}" aria-label="Next photo">›</button>
+                            <div class="photo-slider-dots" id="dots-{{ review.id }}">
+                                {% for i in range(review.media|length) %}
+                                <span class="photo-slider-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}" data-review-id="{{ review.id }}"></span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div style="color: #a0aec0; text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
+                            <div style="font-size: 14px;">No photos</div>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -1840,6 +1986,113 @@
             }
         });
         
+        // Photo Slider Functionality
+        const photoSliders = {};
+        
+        function initPhotoSlider(reviewId) {
+            if (photoSliders[reviewId]) return; // Already initialized
+            
+            const sliderWrapper = document.getElementById(`slider-${reviewId}`);
+            const prevBtn = document.querySelector(`.photo-slider-nav.prev[data-review-id="${reviewId}"]`);
+            const nextBtn = document.querySelector(`.photo-slider-nav.next[data-review-id="${reviewId}"]`);
+            const dots = document.querySelectorAll(`.photo-slider-dot[data-review-id="${reviewId}"]`);
+            
+            if (!sliderWrapper) return;
+            
+            let currentIndex = 0;
+            const slides = sliderWrapper.querySelectorAll('.photo-slide');
+            const totalSlides = slides.length;
+            
+            if (totalSlides <= 1) return; // No slider needed for single photo
+            
+            function updateSlider() {
+                const translateX = -currentIndex * 100;
+                sliderWrapper.style.transform = `translateX(${translateX}%)`;
+                
+                // Update dots
+                dots.forEach((dot, index) => {
+                    if (index === currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+                
+                // Update nav buttons
+                if (prevBtn) prevBtn.disabled = currentIndex === 0;
+                if (nextBtn) nextBtn.disabled = currentIndex === totalSlides - 1;
+            }
+            
+            function goToSlide(index) {
+                if (index < 0 || index >= totalSlides) return;
+                currentIndex = index;
+                updateSlider();
+            }
+            
+            function nextSlide() {
+                if (currentIndex < totalSlides - 1) {
+                    goToSlide(currentIndex + 1);
+                }
+            }
+            
+            function prevSlide() {
+                if (currentIndex > 0) {
+                    goToSlide(currentIndex - 1);
+                }
+            }
+            
+            // Navigation buttons
+            if (prevBtn) {
+                prevBtn.addEventListener('click', prevSlide);
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', nextSlide);
+            }
+            
+            // Dot navigation
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => goToSlide(index));
+            });
+            
+            // Touch/swipe support
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            sliderWrapper.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            sliderWrapper.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+            
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+                
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        nextSlide(); // Swipe left = next
+                    } else {
+                        prevSlide(); // Swipe right = prev
+                    }
+                }
+            }
+            
+            // Initialize
+            updateSlider();
+            photoSliders[reviewId] = { goToSlide, nextSlide, prevSlide, currentIndex: () => currentIndex };
+        }
+        
+        // Initialize all sliders on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.photo-slider-container').forEach(container => {
+                const reviewId = container.getAttribute('data-review-id');
+                if (reviewId) initPhotoSlider(reviewId);
+            });
+        });
+        
         // Handle photo clicks - collect all photos from the same review
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('review-photo')) {
@@ -1894,13 +2147,41 @@
                                 stars += '<span class="star">★</span>';
                             }
                             
+                            // Build photo slider HTML
                             let mediaHtml = '';
                             if (review.media && review.media.length > 0) {
-                                mediaHtml = '<div class="review-media"><div class="media-grid">';
-                                review.media.forEach(m => {
-                                    mediaHtml += `<div class="media-item"><img src="${m.media_url}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="${m.media_url}" data-review-id="${review.id}"></div>`;
-                                });
-                                mediaHtml += '</div></div>';
+                                const hasMultiple = review.media.length > 1;
+                                mediaHtml = `
+                                    <div class="review-media-slider">
+                                        <div class="photo-slider-container" data-review-id="${review.id}">
+                                            <div class="photo-slider-wrapper" id="slider-${review.id}">
+                                                ${review.media.map(m => `
+                                                    <div class="photo-slide">
+                                                        <img src="${m.media_url}" alt="Review photo" loading="lazy" class="review-photo" data-photo-url="${m.media_url}" data-review-id="${review.id}">
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                            ${hasMultiple ? `
+                                                <button class="photo-slider-nav prev" data-review-id="${review.id}" aria-label="Previous photo">‹</button>
+                                                <button class="photo-slider-nav next" data-review-id="${review.id}" aria-label="Next photo">›</button>
+                                                <div class="photo-slider-dots" id="dots-${review.id}">
+                                                    ${review.media.map((_, i) => `
+                                                        <span class="photo-slider-dot ${i === 0 ? 'active' : ''}" data-index="${i}" data-review-id="${review.id}"></span>
+                                                    `).join('')}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                mediaHtml = `
+                                    <div class="review-media-slider no-photos">
+                                        <div style="color: #a0aec0; text-align: center; padding: 40px;">
+                                            <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
+                                            <div style="font-size: 14px;">No photos</div>
+                                        </div>
+                                    </div>
+                                `;
                             }
                             
                             let metaHtml = '';
@@ -1909,18 +2190,25 @@
                             }
                             
                             reviewCard.innerHTML = `
-                                <div class="review-header">
-                                    <div class="reviewer-avatar">${(review.author || review.reviewer_name || 'C')[0]}</div>
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
-                                        <div class="review-date">${review.date || review.review_date}</div>
+                                <div class="review-content">
+                                    <div class="review-header">
+                                        <div class="reviewer-avatar">${(review.author || review.reviewer_name || 'C')[0]}</div>
+                                        <div class="reviewer-info">
+                                            <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
+                                            <div class="review-date">${review.date || review.review_date}</div>
+                                        </div>
                                     </div>
                                     <div class="review-rating">${stars}</div>
+                                    <div class="review-text">${review.text || review.body || ''}</div>
+                                    <div class="review-meta">${metaHtml}</div>
                                 </div>
-                                <div class="review-text">${review.text || review.body || ''}</div>
                                 ${mediaHtml}
-                                <div class="review-meta">${metaHtml}</div>
                             `;
+                            
+                            // Initialize slider for this review
+                            if (review.media && review.media.length > 0) {
+                                setTimeout(() => initPhotoSlider(review.id), 100);
+                            }
                             
                             reviewsContainer.insertBefore(reviewCard, loadMoreContainer);
                         });
