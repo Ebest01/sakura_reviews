@@ -4832,6 +4832,349 @@ def auth_callback():
     except Exception as e:
         return f"Error: {str(e)}", 500
 
+# =============================================================================
+# SHOPIFY BILLING API - Subscription Management
+# =============================================================================
+
+class ShopifyBilling:
+    """
+    Shopify Billing API integration for subscription management
+    Handles recurring charges for Basic ($19.99) and Pro ($39.99) plans
+    """
+    
+    PLANS = {
+        'free': {
+            'name': 'Free Forever',
+            'price': 0,
+            'reviews_limit': 50,
+            'features': ['50 reviews', 'Basic widget', 'Single platform import']
+        },
+        'basic': {
+            'name': 'Basic Plan',
+            'price': 19.99,
+            'reviews_limit': 500,
+            'features': ['500 reviews', 'Custom widget styling', 'All platform imports', 'Priority support']
+        },
+        'pro': {
+            'name': 'Pro Plan',
+            'price': 39.99,
+            'reviews_limit': 5000,
+            'features': ['5000 reviews', 'Advanced customization', 'All platform imports', 'AI quality scoring', 'White-label option', 'Priority support']
+        }
+    }
+    
+    @staticmethod
+    def create_subscription(shop_domain, access_token, plan_name, return_url=None):
+        """
+        Create a recurring application charge (subscription)
+        Returns confirmation_url for merchant to approve
+        """
+        if plan_name not in ShopifyBilling.PLANS or plan_name == 'free':
+            return {'error': 'Invalid plan or free plan selected'}
+        
+        plan = ShopifyBilling.PLANS[plan_name]
+        
+        if not return_url:
+            return_url = f"{Config.WIDGET_BASE_URL}/billing/confirm?shop={shop_domain}"
+        
+        api_version = Config.SHOPIFY_API_VERSION or '2025-10'
+        url = f"https://{shop_domain}/admin/api/{api_version}/recurring_application_charges.json"
+        
+        payload = {
+            'recurring_application_charge': {
+                'name': f"Sakura Reviews - {plan['name']}",
+                'price': plan['price'],
+                'return_url': return_url,
+                'test': True,  # Set to False for production!
+                'trial_days': 7  # 7-day free trial
+            }
+        }
+        
+        headers = {
+            'X-Shopify-Access-Token': access_token,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+            if response.status_code == 201:
+                charge = response.json().get('recurring_application_charge', {})
+                return {
+                    'success': True,
+                    'charge_id': charge.get('id'),
+                    'confirmation_url': charge.get('confirmation_url'),
+                    'status': charge.get('status')
+                }
+            else:
+                return {'error': f"Shopify API error: {response.text}"}
+        except Exception as e:
+            return {'error': str(e)}
+    
+    @staticmethod
+    def activate_subscription(shop_domain, access_token, charge_id):
+        """
+        Activate a subscription after merchant approves
+        """
+        api_version = Config.SHOPIFY_API_VERSION or '2025-10'
+        url = f"https://{shop_domain}/admin/api/{api_version}/recurring_application_charges/{charge_id}/activate.json"
+        
+        headers = {
+            'X-Shopify-Access-Token': access_token,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = requests.post(url, headers=headers)
+            if response.status_code == 200:
+                charge = response.json().get('recurring_application_charge', {})
+                return {
+                    'success': True,
+                    'status': charge.get('status'),
+                    'activated_on': charge.get('activated_on')
+                }
+            else:
+                return {'error': f"Activation failed: {response.text}"}
+        except Exception as e:
+            return {'error': str(e)}
+    
+    @staticmethod
+    def get_subscription_status(shop_domain, access_token):
+        """
+        Get current subscription status for a shop
+        """
+        api_version = Config.SHOPIFY_API_VERSION or '2025-10'
+        url = f"https://{shop_domain}/admin/api/{api_version}/recurring_application_charges.json"
+        
+        headers = {
+            'X-Shopify-Access-Token': access_token
+        }
+        
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                charges = response.json().get('recurring_application_charges', [])
+                # Find active charge
+                active_charge = None
+                for charge in charges:
+                    if charge.get('status') == 'active':
+                        active_charge = charge
+                        break
+                
+                if active_charge:
+                    return {
+                        'has_subscription': True,
+                        'plan_name': active_charge.get('name'),
+                        'price': active_charge.get('price'),
+                        'status': active_charge.get('status'),
+                        'charge_id': active_charge.get('id'),
+                        'trial_ends_on': active_charge.get('trial_ends_on')
+                    }
+                else:
+                    return {
+                        'has_subscription': False,
+                        'plan_name': 'Free',
+                        'status': 'free'
+                    }
+            else:
+                return {'error': f"API error: {response.text}"}
+        except Exception as e:
+            return {'error': str(e)}
+    
+    @staticmethod
+    def cancel_subscription(shop_domain, access_token, charge_id):
+        """
+        Cancel a subscription
+        """
+        api_version = Config.SHOPIFY_API_VERSION or '2025-10'
+        url = f"https://{shop_domain}/admin/api/{api_version}/recurring_application_charges/{charge_id}.json"
+        
+        headers = {
+            'X-Shopify-Access-Token': access_token
+        }
+        
+        try:
+            response = requests.delete(url, headers=headers)
+            if response.status_code == 200:
+                return {'success': True, 'message': 'Subscription cancelled'}
+            else:
+                return {'error': f"Cancellation failed: {response.text}"}
+        except Exception as e:
+            return {'error': str(e)}
+
+
+# Billing Routes
+
+@app.route('/billing/plans')
+def billing_plans():
+    """Show available pricing plans"""
+    return render_template('billing-plans.html') if 'billing-plans.html' in os.listdir('templates') else jsonify({
+        'plans': ShopifyBilling.PLANS,
+        'currency': 'USD',
+        'billing_period': 'monthly'
+    })
+
+@app.route('/billing/subscribe/<plan_name>')
+def billing_subscribe(plan_name):
+    """
+    Start subscription process
+    Requires: ?shop=domain.myshopify.com&token=access_token
+    Or uses session data
+    """
+    shop = request.args.get('shop') or session.get('shop_domain')
+    access_token = request.args.get('token') or session.get('access_token')
+    
+    if not shop or not access_token:
+        return jsonify({'error': 'Missing shop or access token. Please reinstall the app.'}), 400
+    
+    if plan_name == 'free':
+        return jsonify({
+            'success': True,
+            'message': 'You are on the Free plan. No payment required!',
+            'plan': ShopifyBilling.PLANS['free']
+        })
+    
+    result = ShopifyBilling.create_subscription(shop, access_token, plan_name)
+    
+    if result.get('confirmation_url'):
+        # Redirect to Shopify for approval
+        return redirect(result['confirmation_url'])
+    else:
+        return jsonify(result), 400
+
+@app.route('/billing/confirm')
+def billing_confirm():
+    """
+    Callback after merchant approves/declines subscription
+    Shopify redirects here with charge_id
+    """
+    shop = request.args.get('shop')
+    charge_id = request.args.get('charge_id')
+    
+    if not shop or not charge_id:
+        return "Error: Missing parameters", 400
+    
+    # Get access token from session or database
+    access_token = session.get('access_token')
+    
+    if not access_token and db_integration:
+        try:
+            from backend.models_v2 import Shop
+            shop_record = Shop.query.filter_by(shop_domain=shop).first()
+            if shop_record:
+                access_token = shop_record.access_token
+        except:
+            pass
+    
+    if not access_token:
+        return "Error: Could not find access token. Please reinstall the app.", 400
+    
+    # Activate the subscription
+    result = ShopifyBilling.activate_subscription(shop, access_token, charge_id)
+    
+    if result.get('success'):
+        # Update shop's plan in database
+        if db_integration:
+            try:
+                from backend.models_v2 import Shop
+                shop_record = Shop.query.filter_by(shop_domain=shop).first()
+                if shop_record:
+                    # Store plan info (you may want to add a plan column to Shop model)
+                    logger.info(f"✅ Subscription activated for {shop}")
+            except Exception as e:
+                logger.error(f"Error updating shop plan: {e}")
+        
+        return f"""
+        <html>
+        <head>
+            <title>Subscription Activated!</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }}
+                .success {{ color: #28a745; font-size: 48px; }}
+                h1 {{ color: #333; }}
+                .message {{ font-size: 18px; margin: 20px 0; color: #666; }}
+                .btn {{ background: #ff69b4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="success">🎉</div>
+            <h1>Subscription Activated!</h1>
+            <p class="message">Thank you for subscribing to Sakura Reviews!</p>
+            <p class="message">Your premium features are now active.</p>
+            <a href="https://{shop}/admin/apps" class="btn">Return to Shopify</a>
+        </body>
+        </html>
+        """
+    else:
+        return f"""
+        <html>
+        <head>
+            <title>Subscription Error</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }}
+                .error {{ color: #dc3545; font-size: 48px; }}
+                h1 {{ color: #333; }}
+                .message {{ font-size: 16px; margin: 20px 0; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="error">❌</div>
+            <h1>Subscription Not Activated</h1>
+            <p class="message">The subscription was not completed.</p>
+            <p class="message">Error: {result.get('error', 'Unknown error')}</p>
+            <a href="/billing/plans" style="color: #ff69b4;">Try again</a>
+        </body>
+        </html>
+        """
+
+@app.route('/billing/status')
+def billing_status():
+    """
+    Check current subscription status
+    """
+    shop = request.args.get('shop') or session.get('shop_domain')
+    access_token = request.args.get('token') or session.get('access_token')
+    
+    if not shop or not access_token:
+        return jsonify({'error': 'Missing shop or access token'}), 400
+    
+    result = ShopifyBilling.get_subscription_status(shop, access_token)
+    return jsonify(result)
+
+@app.route('/billing/cancel', methods=['POST'])
+def billing_cancel():
+    """
+    Cancel subscription
+    """
+    shop = request.args.get('shop') or session.get('shop_domain')
+    access_token = request.args.get('token') or session.get('access_token')
+    charge_id = request.args.get('charge_id') or request.json.get('charge_id')
+    
+    if not shop or not access_token or not charge_id:
+        return jsonify({'error': 'Missing required parameters'}), 400
+    
+    result = ShopifyBilling.cancel_subscription(shop, access_token, charge_id)
+    return jsonify(result)
+
+@app.route('/webhooks/app_subscriptions/update', methods=['POST'])
+def webhook_subscription_update():
+    """
+    Webhook for subscription updates (cancellation, etc.)
+    Configure this webhook in your Shopify Partner Dashboard
+    """
+    try:
+        data = request.get_json()
+        logger.info(f"📬 Subscription webhook received: {data}")
+        
+        # Verify webhook (in production, verify HMAC)
+        
+        # Handle subscription update
+        # Update your database accordingly
+        
+        return '', 200
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return '', 500
+
 @app.route('/shopify/scripttag/update', methods=['POST', 'GET'])
 def update_scripttag():
     """

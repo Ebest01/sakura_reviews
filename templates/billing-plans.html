@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Plans - Sakura Reviews</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #fff5f8 0%, #ffffff 50%, #f8fff5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #2d3436;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #636e72;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .plans-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .plan-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .plan-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+        }
+        .plan-card.featured {
+            border: 3px solid #ff6b9d;
+            transform: scale(1.05);
+        }
+        .plan-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3436;
+            margin-bottom: 10px;
+        }
+        .plan-price {
+            margin: 20px 0;
+        }
+        .price-amount {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #ff6b9d;
+        }
+        .price-amount.free {
+            color: #00b894;
+        }
+        .price-currency {
+            font-size: 1.5rem;
+            vertical-align: super;
+            color: #636e72;
+        }
+        .price-period {
+            font-size: 1rem;
+            color: #636e72;
+        }
+        .plan-description {
+            color: #636e72;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            min-height: 50px;
+        }
+        .features-list {
+            list-style: none;
+            margin: 25px 0;
+            text-align: left;
+        }
+        .features-list li {
+            padding: 10px 0;
+            color: #4a4a4a;
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+        .features-list li::before {
+            content: "✓";
+            color: #00b894;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 16px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        .cta-button.primary {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            color: white;
+        }
+        .cta-button.primary:hover {
+            background: linear-gradient(135deg, #ff5588, #ff6b9d);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
+        }
+        .cta-button.secondary {
+            background: #f8f9fa;
+            color: #2d3436;
+            border: 2px solid #e9ecef;
+        }
+        .cta-button.secondary:hover {
+            background: #e9ecef;
+        }
+        .comparison-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+        .comparison-section h2 {
+            font-size: 2rem;
+            color: #2d3436;
+            margin-bottom: 40px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 18px 20px;
+            text-align: center;
+            border-bottom: 1px solid #f1f2f6;
+        }
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2d3436;
+        }
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+        .check {
+            color: #00b894;
+            font-size: 1.3rem;
+        }
+        .cross {
+            color: #ddd;
+            font-size: 1.3rem;
+        }
+        .guarantee {
+            margin-top: 60px;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        }
+        .guarantee h3 {
+            font-size: 1.5rem;
+            color: #2d3436;
+            margin-bottom: 15px;
+        }
+        .guarantee p {
+            color: #636e72;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .trial-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            color: #636e72;
+            font-size: 0.9rem;
+        }
+        .footer a {
+            color: #ff6b9d;
+            text-decoration: none;
+        }
+        @media (max-width: 768px) {
+            .plans-container {
+                grid-template-columns: 1fr;
+            }
+            .plan-card.featured {
+                transform: none;
+            }
+            .plan-card.featured:hover {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🌸</div>
+            <h1>Simple, Transparent Pricing</h1>
+            <p class="subtitle">Choose the perfect plan for your store. All plans include a 7-day free trial. No credit card required.</p>
+        </div>
+
+        <div class="plans-container">
+            <!-- Free Plan -->
+            <div class="plan-card">
+                <h2 class="plan-name">Free Forever</h2>
+                <div class="plan-price">
+                    <span class="price-amount free">$0</span>
+                    <span class="price-period">/month</span>
+                </div>
+                <p class="plan-description">Perfect for getting started and testing the waters.</p>
+                <ul class="features-list">
+                    <li>Up to 50 reviews</li>
+                    <li>Basic review widget</li>
+                    <li>Single platform import</li>
+                    <li>Standard support</li>
+                </ul>
+                <a href="/billing/subscribe/free" class="cta-button secondary">Get Started Free</a>
+            </div>
+
+            <!-- Basic Plan -->
+            <div class="plan-card featured">
+                <div class="popular-badge">Most Popular</div>
+                <h2 class="plan-name">Basic</h2>
+                <div class="plan-price">
+                    <span class="price-currency">$</span>
+                    <span class="price-amount">19.99</span>
+                    <span class="price-period">/month</span>
+                </div>
+                <p class="plan-description">Great for growing stores looking to boost sales.</p>
+                <ul class="features-list">
+                    <li>Up to 500 reviews</li>
+                    <li>Custom widget styling</li>
+                    <li>All platform imports</li>
+                    <li>Photo & video reviews</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="/billing/subscribe/basic" class="cta-button primary">Start 7-Day Trial</a>
+                <div class="trial-badge">🎁 7 days free</div>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="plan-card">
+                <h2 class="plan-name">Pro</h2>
+                <div class="plan-price">
+                    <span class="price-currency">$</span>
+                    <span class="price-amount">39.99</span>
+                    <span class="price-period">/month</span>
+                </div>
+                <p class="plan-description">For established stores with high-volume needs.</p>
+                <ul class="features-list">
+                    <li>Up to 5,000 reviews</li>
+                    <li>Advanced customization</li>
+                    <li>AI quality scoring</li>
+                    <li>White-label option</li>
+                    <li>API access</li>
+                    <li>Dedicated support</li>
+                </ul>
+                <a href="/billing/subscribe/pro" class="cta-button primary">Start 7-Day Trial</a>
+                <div class="trial-badge">🎁 7 days free</div>
+            </div>
+        </div>
+
+        <div class="comparison-section">
+            <h2>Feature Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Free</th>
+                        <th>Basic</th>
+                        <th>Pro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Number of reviews</td>
+                        <td>50</td>
+                        <td>500</td>
+                        <td>5,000</td>
+                    </tr>
+                    <tr>
+                        <td>AliExpress import</td>
+                        <td><span class="check">✓</span></td>
+                        <td><span class="check">✓</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Amazon import</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Photo & video reviews</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Custom widget styling</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>AI quality scoring</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>White-label option</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>API access</td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="cross">—</span></td>
+                        <td><span class="check">✓</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="guarantee">
+            <h3>💯 30-Day Money-Back Guarantee</h3>
+            <p>Not satisfied? Get a full refund within 30 days, no questions asked. We're confident you'll love Sakura Reviews!</p>
+        </div>
+
+        <div class="footer">
+            <p>Questions? Contact us at <a href="mailto:sakura.revs@gmail.com">sakura.revs@gmail.com</a></p>
+            <p style="margin-top: 10px;"><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></p>
+            <p style="margin-top: 20px;">© 2025 Sakura Reviews. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+
