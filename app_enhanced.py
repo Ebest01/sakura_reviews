@@ -3244,6 +3244,38 @@ def health():
     })
 
 # =============================================================================
+# LEGAL PAGES - Required for Shopify App Store
+# =============================================================================
+
+@app.route('/privacy')
+def privacy_policy():
+    """Privacy Policy page"""
+    return render_template('privacy-policy.html')
+
+@app.route('/terms')
+def terms_of_service():
+    """Terms of Service page"""
+    return render_template('terms-of-service.html')
+
+@app.route('/dpa')
+def data_processing_addendum():
+    """Data Processing Addendum page"""
+    return render_template('dpa.html')
+
+@app.route('/legal')
+def legal_index():
+    """Legal pages index"""
+    return jsonify({
+        'pages': {
+            'privacy_policy': '/privacy',
+            'terms_of_service': '/terms',
+            'data_processing_addendum': '/dpa'
+        },
+        'company': 'Sakura Reviews',
+        'contact': 'support@sakurareviews.app'
+    })
+
+# =============================================================================
 # SAKURA WIDGET SYSTEM - Superior to Loox
 # =============================================================================
 
