@@ -536,13 +536,14 @@ def calculate_stats(reviews):
     }
 
 @app.route('/bookmarklet.js', methods=['GET'])
+@app.route('/js/bookmarklet.js', methods=['GET'])  # Also support /js/bookmarklet.js
 def bookmarklet():
     """
     Simplified bookmarklet - Extract ONLY productId and sellerId
     Like Loox does it!
     """
-    # Force HTTPS for production (avoid mixed content errors)
-    host = request.host_url.rstrip('/').replace('http://', 'https://')
+    # Use current request host (supports localhost for dev)
+    host = request.host_url.rstrip('/')
     
     js = f"""
 (function() {{
@@ -824,11 +825,17 @@ def bookmarklet():
 }})();
     """
     
-    return js, 200, {'Content-Type': 'application/javascript'}
+    # Return with cache-busting headers
+    return js, 200, {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    }
 
 if __name__ == '__main__':
     import os
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))  # Default to 5001 to avoid cache
     
     print("=" * 70)
     print("🌸 SAKURA REVIEWS - Beautiful reviews, naturally")
@@ -844,7 +851,8 @@ if __name__ == '__main__':
     print("=" * 70)
     print()
     print("BOOKMARKLET:")
-    print(f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/bookmarklet.js';document.head.appendChild(s);}})();")
+    bookmarklet_code = f"javascript:(function(){{var s=document.createElement('script');s.src='http://localhost:{port}/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
+    print(bookmarklet_code)
     print("=" * 70)
     print()
     

@@ -4716,6 +4716,19 @@ def auth_callback():
             session['shop_domain'] = shop
             session['access_token'] = access_token
             
+            # Save shop and access token to database
+            if db_integration:
+                try:
+                    saved_shop = db_integration.get_or_create_shop(
+                        shop_domain=shop,
+                        access_token=access_token
+                    )
+                    logger.info(f"✅ Shop saved to database: {shop} (ID: {saved_shop.id})")
+                except Exception as e:
+                    logger.error(f"Error saving shop to database: {str(e)}")
+            else:
+                logger.warning("Database integration not available - shop not saved to database")
+            
             # Auto-create ScriptTag after successful auth
             try:
                 import time
@@ -4735,30 +4748,28 @@ def auth_callback():
             except:
                 pass  # ScriptTag creation is optional
             
+            # Redirect to Shopify admin or show success page
+            shopify_admin_url = f"https://{shop}/admin/apps"
             return f"""
             <html>
             <head>
                 <title>Installation Successful</title>
+                <meta http-equiv="refresh" content="3;url={shopify_admin_url}">
                 <style>
-                    body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }}
-                    .token-box {{ background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; word-break: break-all; }}
-                    .token-box code {{ font-size: 14px; }}
-                    .copy-btn {{ background: #ff69b4; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; }}
-                    .copy-btn:hover {{ opacity: 0.9; }}
-                    .success {{ color: #28a745; font-size: 24px; margin-bottom: 20px; }}
+                    body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; text-align: center; }}
+                    .success {{ color: #28a745; font-size: 32px; margin-bottom: 20px; }}
+                    .message {{ font-size: 18px; margin: 20px 0; }}
+                    .redirect {{ color: #666; font-size: 14px; margin-top: 30px; }}
                 </style>
             </head>
             <body>
                 <h1 class="success">✅ Installation Successful!</h1>
-                <p><strong>Shop:</strong> {shop}</p>
-                <div class="token-box">
-                    <strong>Full Access Token:</strong><br>
-                    <code id="fullToken">{access_token}</code>
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('{access_token}').then(() => alert('Token copied!'))">Copy</button>
-                </div>
-                <p><strong>⚠️ Save this token!</strong> You'll need it to update the ScriptTag.</p>
+                <p class="message"><strong>Shop:</strong> {shop}</p>
+                <p class="message">ReviewKing has been installed and configured.</p>
+                <p class="message">ScriptTag created automatically - reviews will appear on your product pages!</p>
+                <p class="redirect">Redirecting to Shopify admin in 3 seconds...</p>
                 <p>
-                    <a href="/shopify/scripttag/update" style="background: #ff69b4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px;">Update ScriptTag</a>
+                    <a href="{shopify_admin_url}" style="background: #ff69b4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px;">Go to Shopify Admin</a>
                     <a href="/" style="background: #6c757d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px;">Go Home</a>
                 </p>
             </body>
@@ -4934,6 +4945,169 @@ def list_routes():
         'routes': sorted(output),
         'total': len(output)
     })
+
+# ============================================================================
+# GDPR Webhooks (Required for Shopify App Store)
+# ============================================================================
+
+@app.route('/webhooks/customers/data_request', methods=['POST'])
+def customers_data_request():
+    """
+    GDPR: Handle customer data request
+    Shopify will send customer data requests here
+    """
+    try:
+        # Verify HMAC signature
+        hmac_header = request.headers.get('X-Shopify-Hmac-Sha256')
+        if not verify_webhook_hmac(request.data, hmac_header):
+            logger.warning("Invalid HMAC signature for customers/data_request")
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        data = request.get_json()
+        shop_domain = data.get('shop_domain')
+        customer_id = data.get('customer', {}).get('id')
+        
+        logger.info(f"GDPR: Customer data request for shop {shop_domain}, customer {customer_id}")
+        
+        # TODO: Return customer data if stored
+        # For now, we don't store customer data, so return empty
+        
+        return jsonify({'status': 'ok'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error handling customers/data_request: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/webhooks/customers/redact', methods=['POST'])
+def customers_redact():
+    """
+    GDPR: Handle customer data deletion request
+    Shopify will send customer deletion requests here
+    """
+    try:
+        # Verify HMAC signature
+        hmac_header = request.headers.get('X-Shopify-Hmac-Sha256')
+        if not verify_webhook_hmac(request.data, hmac_header):
+            logger.warning("Invalid HMAC signature for customers/redact")
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        data = request.get_json()
+        shop_domain = data.get('shop_domain')
+        customer_id = data.get('customer', {}).get('id')
+        
+        logger.info(f"GDPR: Customer data deletion for shop {shop_domain}, customer {customer_id}")
+        
+        # TODO: Delete customer data if stored
+        # For now, we don't store customer data, so just acknowledge
+        
+        return jsonify({'status': 'ok'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error handling customers/redact: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/webhooks/shop/redact', methods=['POST'])
+def shop_redact():
+    """
+    GDPR: Handle shop data deletion request
+    Shopify will send shop deletion requests here
+    """
+    try:
+        # Verify HMAC signature
+        hmac_header = request.headers.get('X-Shopify-Hmac-Sha256')
+        if not verify_webhook_hmac(request.data, hmac_header):
+            logger.warning("Invalid HMAC signature for shop/redact")
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        data = request.get_json()
+        shop_domain = data.get('shop_domain')
+        
+        logger.info(f"GDPR: Shop data deletion for shop {shop_domain}")
+        
+        # Delete shop data from database
+        from backend.models_v2 import Shop
+        try:
+            shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+            if shop:
+                # Delete associated data (reviews, products, etc.)
+                # Note: This should cascade delete related records
+                db.session.delete(shop)
+                db.session.commit()
+                logger.info(f"Deleted shop data for {shop_domain}")
+        except Exception as e:
+            logger.error(f"Error deleting shop data: {str(e)}")
+        
+        return jsonify({'status': 'ok'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error handling shop/redact: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/webhooks/app/uninstalled', methods=['POST'])
+def app_uninstalled():
+    """
+    Handle app uninstallation
+    Clean up shop data when app is uninstalled
+    """
+    try:
+        # Verify HMAC signature
+        hmac_header = request.headers.get('X-Shopify-Hmac-Sha256')
+        if not verify_webhook_hmac(request.data, hmac_header):
+            logger.warning("Invalid HMAC signature for app/uninstalled")
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        data = request.get_json()
+        shop_domain = data.get('domain') or data.get('shop_domain')
+        
+        logger.info(f"App uninstalled for shop {shop_domain}")
+        
+        # Mark shop as uninstalled (don't delete, just mark)
+        from backend.models_v2 import Shop
+        try:
+            shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+            if shop:
+                shop.status = 'uninstalled'
+                shop.access_token = None  # Remove access token
+                db.session.commit()
+                logger.info(f"Marked shop {shop_domain} as uninstalled")
+        except Exception as e:
+            logger.error(f"Error handling app uninstall: {str(e)}")
+        
+        return jsonify({'status': 'ok'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error handling app/uninstalled: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def verify_webhook_hmac(data, hmac_header):
+    """
+    Verify Shopify webhook HMAC signature
+    """
+    if not hmac_header:
+        return False
+    
+    try:
+        import base64
+        api_secret = Config.SHOPIFY_API_SECRET
+        if not api_secret:
+            logger.warning("SHOPIFY_API_SECRET not configured")
+            return False
+        
+        # Calculate HMAC
+        calculated_hmac = base64.b64encode(
+            hmac.new(
+                api_secret.encode('utf-8'),
+                data,
+                hashlib.sha256
+            ).digest()
+        ).decode('utf-8')
+        
+        # Compare with provided HMAC
+        return hmac.compare_digest(calculated_hmac, hmac_header)
+        
+    except Exception as e:
+        logger.error(f"Error verifying webhook HMAC: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5016))  # Use 5016 for fresh start (avoid cache)

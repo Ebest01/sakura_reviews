@@ -13,141 +13,224 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            min-height: 100vh;
+            background: #f8fafc;
+            color: #2d3748;
+            line-height: 1.6;
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
         }
         
-        .upgrade-container {
-            text-align: center;
+        .payment-required {
             max-width: 500px;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
         }
         
-        .sakura-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
+        .header {
+            background: linear-gradient(135deg, #ff69b4, #8b4a8b);
+            color: white;
+            padding: 32px 24px;
         }
         
-        .upgrade-title {
-            font-size: 32px;
-            font-weight: 700;
+        .icon {
+            font-size: 48px;
             margin-bottom: 16px;
         }
         
-        .upgrade-subtitle {
-            font-size: 18px;
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
             opacity: 0.9;
-            margin-bottom: 32px;
+        }
+        
+        .content {
+            padding: 32px 24px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 24px;
             line-height: 1.6;
         }
         
-        .features-list {
+        .shop-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .upgrade-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff69b4, #8b4a8b);
+            color: white;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+        }
+        
+        .upgrade-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+        }
+        
+        .features {
+            margin-top: 32px;
             text-align: left;
-            margin: 32px 0;
+        }
+        
+        .features-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
         }
         
         .feature-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
-            font-size: 16px;
+            padding: 8px 0;
+            color: #4a5568;
         }
         
         .feature-icon {
             color: #48bb78;
-            font-size: 20px;
+            font-weight: bold;
         }
         
-        .upgrade-button {
-            background: white;
-            color: #667eea;
-            padding: 16px 32px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
-        }
-        
-        .upgrade-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-        
-        .pricing-info {
-            margin-top: 24px;
+        .footer {
+            background: #f7fafc;
+            padding: 20px 24px;
+            border-top: 1px solid #e2e8f0;
             font-size: 14px;
-            opacity: 0.8;
+            color: #718096;
+        }
+        
+        .footer a {
+            color: #ff69b4;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .payment-required {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 24px 20px;
+            }
+            
+            .content {
+                padding: 24px 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .upgrade-button {
+                padding: 14px 28px;
+                font-size: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="upgrade-container">
-        <div class="sakura-icon">🌸</div>
-        <h1 class="upgrade-title">Upgrade to Sakura Reviews</h1>
-        <p class="upgrade-subtitle">
-            Unlock the full power of AI-powered reviews and multi-platform integration
-        </p>
+    <div class="payment-required">
+        <div class="header">
+            <div class="icon">🔒</div>
+            <div class="title">Upgrade Required</div>
+            <div class="subtitle">Unlock your reviews</div>
+        </div>
         
-        <div class="features-list">
-            <div class="feature-item">
-                <span class="feature-icon">🤖</span>
-                <span>AI Quality Scoring & Recommendations</span>
+        <div class="content">
+            <div class="message">
+                Reviews for <span class="shop-name">{{ shop_name }}</span> are currently hidden. 
+                Upgrade your plan to display customer reviews on your product pages.
             </div>
-            <div class="feature-item">
-                <span class="feature-icon">🌍</span>
-                <span>Multi-Platform Reviews (AliExpress, Amazon, eBay)</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">📊</span>
-                <span>Advanced Analytics Dashboard</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">🎨</span>
-                <span>Customizable Themes & Branding</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">⚡</span>
-                <span>Real-time Sync & Updates</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">💰</span>
-                <span>50% Cheaper than Loox</span>
+            
+            <a href="{{ upgrade_url }}" class="upgrade-button" target="_blank">
+                Upgrade Now
+            </a>
+            
+            <div class="features">
+                <div class="features-title">What you get:</div>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Display reviews on product pages</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>AI-powered quality scoring</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Multi-platform review import</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Beautiful review widgets</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Priority support</span>
+                    </li>
+                </ul>
             </div>
         </div>
         
-        <a href="{{ upgrade_url }}" class="upgrade-button">
-            Upgrade Now - Starting at $9/month
-        </a>
-        
-        <div class="pricing-info">
-            Cancel anytime • 14-day free trial • No setup fees
+        <div class="footer">
+            <p>Need help? <a href="mailto:support@sakura-reviews.com">Contact Support</a></p>
+            <p>Already upgraded? <a href="{{ upgrade_url }}">Refresh</a></p>
         </div>
     </div>
     
     <script>
-        // Track upgrade prompt views
-        fetch('/analytics/upgrade-prompt', {
+        // Auto-resize iframe
+        function resizeIframe() {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({
+                type: 'resize',
+                height: height
+            }, '*');
+        }
+        
+        window.addEventListener('load', resizeIframe);
+        
+        // Track upgrade page views
+        fetch('/analytics/upgrade-page-view', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                event: 'upgrade_prompt_view',
                 shop_id: '{{ shop_id }}',
+                shop_name: '{{ shop_name }}',
                 timestamp: new Date().toISOString()
             })
         }).catch(console.error);
