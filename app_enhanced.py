@@ -4650,6 +4650,25 @@ def create_scripttag():
             'error': f'Error creating ScriptTag: {str(e)}'
         }), 500
 
+@app.route('/auth')
+def auth_index():
+    """
+    Base auth route - provides guidance for OAuth installation
+    """
+    shop = request.args.get('shop')
+    if shop:
+        # If shop parameter provided, redirect to install
+        return redirect(f'/auth/install?shop={shop}')
+    
+    return jsonify({
+        'message': 'Sakura Reviews OAuth',
+        'endpoints': {
+            'install': '/auth/install?shop=your-store.myshopify.com',
+            'callback': '/auth/callback (used by Shopify)'
+        },
+        'usage': 'To install the app, visit /auth/install?shop=your-store.myshopify.com'
+    })
+
 @app.route('/auth/install')
 def auth_install():
     """
