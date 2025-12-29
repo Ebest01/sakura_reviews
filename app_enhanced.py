@@ -964,8 +964,9 @@ def featured_reviews():
             WHERE status = 'published'
             AND rating >= 4
             AND images IS NOT NULL 
-            AND images != '[]'
-            AND images != 'null'
+            AND images::text != '[]'
+            AND images::text != 'null'
+            AND images::text != ''
             AND LENGTH(images::text) > 5
             ORDER BY 
                 ai_recommended DESC,
