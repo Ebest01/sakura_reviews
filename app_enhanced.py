@@ -2371,6 +2371,17 @@ def bookmarklet():
                     this.pagination = result.pagination;
                     this.stats = result.stats;
                     console.log('All reviews loaded:', this.allReviews.length);
+                    
+                    // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
+                    const aiRecommendedCount = this.allReviews.filter(r => r.ai_recommended).length;
+                    if (this.currentFilter === 'ai_recommended' && aiRecommendedCount < 3) {{
+                        console.log(`[Smart Fallback] Only ${{aiRecommendedCount}} AI recommended reviews, falling back to 'all' with smart sorting`);
+                        this.currentFilter = 'all';
+                        this.useSmartSort = true;  // Flag for smart sorting
+                    }} else {{
+                        this.useSmartSort = false;
+                    }}
+                    
                     this.applyFilter();  // Apply current filter and display
                 }} else {{
                     console.error('Error loading reviews:', result.error);
@@ -2408,6 +2419,10 @@ def bookmarklet():
                 filtered = filtered.filter(r => r.country === this.selectedCountry);
             }}
             
+            // Step 3: Smart sorting - prioritize photos, then rating, then quality
+            // Applied when falling back from AI recommended OR always for best UX
+            filtered = this.smartSort(filtered);
+            
             this.reviews = filtered;
             
             console.log(`[Filter] Applied filter "${{this.currentFilter}}" + country "${{this.selectedCountry}}": ${{this.reviews.length}} of ${{this.allReviews.length}} reviews`);
@@ -2424,6 +2439,38 @@ def bookmarklet():
             }};
             
             this.displayReview();
+        }}
+        
+        smartSort(reviews) {{
+            // Smart sorting algorithm: Best reviews first
+            // Priority: AI Recommended > Has Photos > High Rating > Good Quality Score > Text Length
+            return reviews.sort((a, b) => {{
+                // 1. AI Recommended first
+                if (a.ai_recommended && !b.ai_recommended) return -1;
+                if (!a.ai_recommended && b.ai_recommended) return 1;
+                
+                // 2. Has photos (prioritize reviews with more photos)
+                const aPhotos = (a.images && a.images.length) || 0;
+                const bPhotos = (b.images && b.images.length) || 0;
+                if (aPhotos > 0 && bPhotos === 0) return -1;
+                if (aPhotos === 0 && bPhotos > 0) return 1;
+                if (aPhotos !== bPhotos) return bPhotos - aPhotos;  // More photos first
+                
+                // 3. Higher rating first
+                const aRating = a.rating || 0;
+                const bRating = b.rating || 0;
+                if (aRating !== bRating) return bRating - aRating;
+                
+                // 4. Higher quality score first
+                const aQuality = a.quality_score || 0;
+                const bQuality = b.quality_score || 0;
+                if (aQuality !== bQuality) return bQuality - aQuality;
+                
+                // 5. Longer text (more detailed reviews) first
+                const aTextLen = (a.text || a.body || '').length;
+                const bTextLen = (b.text || b.body || '').length;
+                return bTextLen - aTextLen;
+            }});
         }}
         
         setFilter(filter) {{

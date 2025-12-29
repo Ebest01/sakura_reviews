@@ -689,6 +689,14 @@ def bookmarklet():
             if (result.success) {{
                 console.log('[ReviewKing] Calling displayReviews with', result.reviews.length, 'reviews');
                 allReviews = result.reviews;  // Store globally
+                
+                // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
+                const aiRecommendedCount = allReviews.filter(r => r.ai_recommended).length;
+                if (currentFilter === 'ai_recommended' && aiRecommendedCount < 3) {{
+                    console.log('[Smart Fallback] Only ' + aiRecommendedCount + ' AI recommended reviews, falling back to all with smart sorting');
+                    currentFilter = 'all';
+                }}
+                
                 displayReviews();
             }} else {{
                 console.error('[ReviewKing] API returned error:', result.error);
@@ -723,6 +731,35 @@ def bookmarklet():
         }} else if (currentFilter === '3stars') {{
             filteredReviews = allReviews.filter(r => r.rating >= 50 && r.rating < 70);
         }}
+        
+        // Smart sorting: Best reviews first (AI Recommended > Photos > Rating > Quality)
+        filteredReviews = filteredReviews.sort((a, b) => {{
+            // 1. AI Recommended first
+            if (a.ai_recommended && !b.ai_recommended) return -1;
+            if (!a.ai_recommended && b.ai_recommended) return 1;
+            
+            // 2. Has photos (more photos = better)
+            const aPhotos = (a.images && a.images.length) || 0;
+            const bPhotos = (b.images && b.images.length) || 0;
+            if (aPhotos > 0 && bPhotos === 0) return -1;
+            if (aPhotos === 0 && bPhotos > 0) return 1;
+            if (aPhotos !== bPhotos) return bPhotos - aPhotos;
+            
+            // 3. Higher rating first
+            const aRating = a.rating || 0;
+            const bRating = b.rating || 0;
+            if (aRating !== bRating) return bRating - aRating;
+            
+            // 4. Higher quality score first
+            const aQuality = a.quality_score || 0;
+            const bQuality = b.quality_score || 0;
+            if (aQuality !== bQuality) return bQuality - aQuality;
+            
+            // 5. Longer text first
+            const aTextLen = (a.text || a.body || '').length;
+            const bTextLen = (b.text || b.body || '').length;
+            return bTextLen - aTextLen;
+        }});
         
         console.log('[displayReviews] Filtered to', filteredReviews.length, 'reviews with filter:', currentFilter);
         
