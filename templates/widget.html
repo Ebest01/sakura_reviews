@@ -336,28 +336,27 @@
         
         .review-card {
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
             background: white;
             transition: all 0.2s ease;
         }
         
         .review-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .review-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
         
         .reviewer-avatar {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(135deg, #ff69b4, #8b4a8b);
             display: flex;
@@ -365,6 +364,7 @@
             justify-content: center;
             color: white;
             font-weight: 600;
+            font-size: 14px;
         }
         
         .reviewer-info {
@@ -374,38 +374,50 @@
         .reviewer-name {
             font-weight: 600;
             color: #2d3748;
+            font-size: 14px;
         }
         
         .review-date {
-            font-size: 14px;
+            font-size: 13px;
             color: #718096;
         }
         
         .review-rating {
             display: flex;
             gap: 2px;
+            margin-bottom: 6px;
         }
         
         .star {
             color: #ffd700;
-            font-size: 16px;
+            font-size: 14px;
         }
         
         .review-text {
             color: #4a5568;
-            line-height: 1.6;
-            margin: 12px 0;
+            line-height: 1.5;
+            margin: 8px 0;
+            font-size: 14px;
         }
         
         .review-media {
-            margin: 12px 0;
+            margin: 8px 0;
+        }
+        
+        .review-media:empty {
+            display: none;
         }
         
         .media-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .review-media-slider:empty,
+        .review-media-slider.no-photos:empty {
+            display: none;
         }
         
         .media-item {
@@ -445,9 +457,9 @@
         
         .review-meta {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
-            margin-top: 12px;
+            margin-top: 8px;
             flex-wrap: wrap;
         }
         
@@ -461,21 +473,21 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 16px;
-            padding-top: 12px;
+            margin-top: 10px;
+            padding-top: 10px;
             border-top: 1px solid #f1f5f9;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 8px;
         }
         
         .helpful-section {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         
         .helpful-label {
-            font-size: 13px;
+            font-size: 12px;
             color: #64748b;
         }
         
@@ -483,12 +495,12 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border: 1px solid #e2e8f0;
             background: white;
-            border-radius: 20px;
+            border-radius: 16px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             color: #64748b;
             transition: all 0.2s ease;
         }
@@ -2456,14 +2468,8 @@
                                     </div>
                                 `;
                             } else {
-                                mediaHtml = `
-                                    <div class="review-media-slider no-photos">
-                                        <div style="color: #a0aec0; text-align: center; padding: 40px;">
-                                            <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
-                                            <div style="font-size: 14px;">No photos</div>
-                                        </div>
-                                    </div>
-                                `;
+                                // Don't show "No photos" placeholder - just leave it empty (like Amazon/Etsy)
+                                mediaHtml = '';
                             }
                             
                             let metaHtml = '';
