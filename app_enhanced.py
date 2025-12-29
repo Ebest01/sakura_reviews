@@ -4031,23 +4031,52 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
             status='published'
         )
         
+        # Use subquery to get media count for each review (used in multiple sort options)
+        media_subquery = db.session.query(
+            ReviewMedia.review_id,
+            func.count(ReviewMedia.id).label('media_count')
+        ).filter(
+            ReviewMedia.status == 'active'
+        ).group_by(ReviewMedia.review_id).subquery()
+        
         # Apply sorting based on sort parameter
         if sort == 'newest':
-            reviews_query = reviews_query.order_by(Review.imported_at.desc())
+            # Newest first, but still prefer reviews with content
+            reviews_query = reviews_query.outerjoin(
+                media_subquery, Review.id == media_subquery.c.review_id
+            ).order_by(
+                Review.imported_at.desc(),
+                case((func.length(func.coalesce(Review.body, '')) > 10, 0), else_=1),
+                case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1)
+            )
         elif sort == 'highest_ratings':
-            reviews_query = reviews_query.order_by(Review.rating.desc(), Review.imported_at.desc())
+            # Highest ratings first, but within same rating, prefer content
+            reviews_query = reviews_query.outerjoin(
+                media_subquery, Review.id == media_subquery.c.review_id
+            ).order_by(
+                # 1. Rating first (5 star > 4 star > etc)
+                Review.rating.desc(),
+                # 2. Within same rating: has text content
+                case((func.length(func.coalesce(Review.body, '')) > 10, 0), else_=1),
+                # 3. Within same rating: has photos
+                case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1),
+                # 4. More photos first
+                func.coalesce(media_subquery.c.media_count, 0).desc(),
+                # 5. Longer text first
+                func.length(func.coalesce(Review.body, '')).desc()
+            )
         elif sort == 'lowest_ratings':
-            reviews_query = reviews_query.order_by(Review.rating.asc(), Review.imported_at.desc())
+            # Lowest ratings first (for merchants to see complaints), but prefer content
+            reviews_query = reviews_query.outerjoin(
+                media_subquery, Review.id == media_subquery.c.review_id
+            ).order_by(
+                Review.rating.asc(),
+                case((func.length(func.coalesce(Review.body, '')) > 10, 0), else_=1),
+                case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1),
+                func.length(func.coalesce(Review.body, '')).desc()
+            )
         else:  # 'default' or 'ai_recommended' - SMART SORT
             # Smart sorting: AI Recommended > Has Text > Has Photos > High Rating > Quality Score
-            # Use subquery to get media count for each review
-            media_subquery = db.session.query(
-                ReviewMedia.review_id,
-                func.count(ReviewMedia.id).label('media_count')
-            ).filter(
-                ReviewMedia.status == 'active'
-            ).group_by(ReviewMedia.review_id).subquery()
-            
             reviews_query = reviews_query.outerjoin(
                 media_subquery, Review.id == media_subquery.c.review_id
             ).order_by(
