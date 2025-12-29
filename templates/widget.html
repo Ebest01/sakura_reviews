@@ -349,7 +349,7 @@
         
         .review-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
             margin-bottom: 8px;
         }
@@ -365,6 +365,7 @@
             color: white;
             font-weight: 600;
             font-size: 14px;
+            flex-shrink: 0;
         }
         
         .reviewer-info {
@@ -380,17 +381,25 @@
         .review-date {
             font-size: 13px;
             color: #718096;
+            margin-bottom: 4px;
         }
         
         .review-rating {
             display: flex;
-            gap: 2px;
-            margin-bottom: 6px;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
         }
         
         .star {
             color: #ffd700;
             font-size: 14px;
+        }
+        
+        .rating-number {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
         }
         
         .review-text {
@@ -476,14 +485,21 @@
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px solid #f1f5f9;
-            flex-wrap: wrap;
-            gap: 8px;
+            gap: 12px;
         }
         
         .helpful-section {
             display: flex;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0;
+        }
+        
+        .share-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
         }
         
         .helpful-label {
@@ -519,12 +535,6 @@
         
         .helpful-count {
             font-weight: 600;
-        }
-        
-        .share-section {
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
         
         .share-btn {
@@ -1476,11 +1486,12 @@
                         <div class="reviewer-info">
                             <div class="reviewer-name">{{ review.author or 'Anonymous' }}</div>
                             <div class="review-date">{{ review.date }}</div>
-                        </div>
-                        <div class="review-rating">
-                            {% for i in range(review.rating) %}
-                                <span class="star">★</span>
-                            {% endfor %}
+                            <div class="review-rating">
+                                {% for i in range(review.rating) %}
+                                    <span class="star">★</span>
+                                {% endfor %}
+                                <span class="rating-number">({{ review.rating }})</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -2477,6 +2488,30 @@
                                 metaHtml += '<span class="meta-badge verified">✓ Verified</span>';
                             }
                             
+                            // Build helpful and share actions HTML
+                            const helpfulHtml = `
+                                <div class="helpful-section">
+                                    <span class="helpful-label">Was this helpful?</span>
+                                    <button class="helpful-btn" data-review-id="${review.id}" data-vote="yes" title="Yes, helpful">
+                                        👍 <span class="helpful-count">${review.helpful_yes || 0}</span>
+                                    </button>
+                                    <button class="helpful-btn" data-review-id="${review.id}" data-vote="no" title="Not helpful">
+                                        👎 <span class="helpful-count">${review.helpful_no || 0}</span>
+                                    </button>
+                                </div>
+                                <div class="share-section">
+                                    <button class="share-btn" data-platform="facebook" data-review-id="${review.id}" title="Share on Facebook">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                                    </button>
+                                    <button class="share-btn" data-platform="twitter" data-review-id="${review.id}" title="Share on Twitter/X">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                    </button>
+                                    <button class="share-btn" data-platform="copy" data-review-id="${review.id}" title="Copy link">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                    </button>
+                                </div>
+                            `;
+                            
                             reviewCard.innerHTML = `
                                 <div class="review-content">
                                     <div class="review-header">
@@ -2484,13 +2519,19 @@
                                         <div class="reviewer-info">
                                             <div class="reviewer-name">${review.author || review.reviewer_name || 'Anonymous'}</div>
                                             <div class="review-date">${review.date || review.review_date}</div>
+                                            <div class="review-rating">
+                                                ${stars}
+                                                <span class="rating-number">(${review.rating})</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="review-rating">${stars}</div>
                                     <div class="review-text">${review.text || review.body || ''}</div>
                                     <div class="review-meta">${metaHtml}</div>
                                 </div>
                                 ${mediaHtml}
+                                <div class="review-actions">
+                                    ${helpfulHtml}
+                                </div>
                             `;
                             
                             // Initialize slider for this review
