@@ -1527,9 +1527,6 @@
                             <button class="helpful-btn" data-review-id="{{ review.id }}" data-vote="yes" title="Yes, helpful">
                                 👍 <span class="helpful-count">{{ review.helpful_yes | default(0) }}</span>
                             </button>
-                            <button class="helpful-btn" data-review-id="{{ review.id }}" data-vote="no" title="Not helpful">
-                                👎 <span class="helpful-count">{{ review.helpful_no | default(0) }}</span>
-                            </button>
                         </div>
                         <div class="share-section">
                             <button class="share-btn" data-platform="facebook" data-review-id="{{ review.id }}" title="Share on Facebook">
@@ -2494,9 +2491,6 @@
                                     <span class="helpful-label">Was this helpful?</span>
                                     <button class="helpful-btn" data-review-id="${review.id}" data-vote="yes" title="Yes, helpful">
                                         👍 <span class="helpful-count">${review.helpful_yes || 0}</span>
-                                    </button>
-                                    <button class="helpful-btn" data-review-id="${review.id}" data-vote="no" title="Not helpful">
-                                        👎 <span class="helpful-count">${review.helpful_no || 0}</span>
                                     </button>
                                 </div>
                                 <div class="share-section">
