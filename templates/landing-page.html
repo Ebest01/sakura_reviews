@@ -1320,17 +1320,29 @@
                 const response = await fetch('/api/featured-reviews');
                 const data = await response.json();
                 
+                console.log('Featured reviews response:', data);
+                
                 if (data.success && data.reviews && data.reviews.length > 0) {
-                    container.innerHTML = data.reviews.map((review, index) => 
-                        createReviewCard(review, index)
-                    ).join('');
+                    // Check if reviews actually have photos
+                    const reviewsWithPhotos = data.reviews.filter(r => r.photos && r.photos.length > 0);
                     
-                    // Initialize slideshows
-                    initializeSlideshows();
+                    if (reviewsWithPhotos.length > 0) {
+                        container.innerHTML = reviewsWithPhotos.slice(0, 3).map((review, index) => 
+                            createReviewCard(review, index)
+                        ).join('');
+                        
+                        // Initialize slideshows
+                        initializeSlideshows();
+                        return;
+                    }
                 }
+                
+                // No reviews with photos - show fallback
+                console.log('No reviews with photos found, showing fallback');
+                container.innerHTML = getFallbackReviews();
+                
             } catch (error) {
                 console.error('Failed to load featured reviews:', error);
-                // Keep skeleton or show fallback
                 container.innerHTML = getFallbackReviews();
             }
         }
