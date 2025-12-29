@@ -1159,7 +1159,7 @@ def featured_reviews():
         # Query reviews that have photos in review_media table
         # Join reviews with review_media to find reviews with images
         # NOTE: Only check status='published', NOT the published column (which is NULL)
-        # Uses subquery to get distinct reviews, then randomize
+        # Filter: 4+ stars, has photos, has text content
         cursor.execute("""
             SELECT * FROM (
                 SELECT DISTINCT ON (r.id)
@@ -1174,6 +1174,9 @@ def featured_reviews():
                 AND rm.media_url IS NOT NULL
                 AND rm.media_url != ''
                 AND r.rating >= 4
+                AND r.body IS NOT NULL
+                AND TRIM(r.body) != ''
+                AND LENGTH(TRIM(r.body)) >= 10
                 ORDER BY r.id
             ) AS reviews_with_photos
             ORDER BY rating DESC, RANDOM()
