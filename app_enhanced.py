@@ -980,15 +980,30 @@ def debug_reviews():
                 'published': row[6]
             })
         
-        # Also check reviews with images specifically
+        # Check review_media table
+        cursor.execute("SELECT COUNT(*) FROM review_media;")
+        total_media = cursor.fetchone()[0]
+        
+        # Check distinct media types
+        cursor.execute("SELECT DISTINCT media_type FROM review_media;")
+        media_types = [row[0] for row in cursor.fetchall()]
+        
+        # Sample media entries
         cursor.execute("""
-            SELECT COUNT(*) FROM reviews 
-            WHERE images IS NOT NULL 
-            AND images::text != '[]' 
-            AND images::text != 'null'
-            AND LENGTH(images::text) > 5;
+            SELECT id, review_id, media_type, media_url, status
+            FROM review_media 
+            ORDER BY id DESC 
+            LIMIT 5;
         """)
-        reviews_with_images = cursor.fetchone()[0]
+        media_samples = []
+        for row in cursor.fetchall():
+            media_samples.append({
+                'id': row[0],
+                'review_id': row[1],
+                'media_type': row[2],
+                'media_url': row[3][:100] if row[3] else None,
+                'status': row[4]
+            })
         
         cursor.close()
         conn.close()
@@ -996,8 +1011,10 @@ def debug_reviews():
         return jsonify({
             'total_all_reviews': total_all,
             'total_published_reviews': total_published,
-            'reviews_with_images_any_status': reviews_with_images,
-            'sample_reviews': samples
+            'review_media_count': total_media,
+            'media_types_found': media_types,
+            'sample_reviews': samples,
+            'sample_media': media_samples
         })
         
     except Exception as e:
@@ -1008,69 +1025,62 @@ def debug_reviews():
 def featured_reviews():
     """
     Get 3 featured reviews with photos for the landing page showcase
-    Returns actual reviews from the database using direct SQL query
+    Returns actual reviews from database
     
-    The images are stored as JSON in the 'images' column of the reviews table
+    Images are stored in the review_media table, NOT the images column!
     """
     import psycopg2
     
     try:
-        # Direct database connection for raw SQL query
-        # Images are stored as JSON array in the 'images' column
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # Query reviews with photos (images JSON array not empty)
-        # Prioritize: 5-star, has photos, AI recommended
-        # NOTE: Need both status='published' AND published=true
+        # Query reviews that have photos in review_media table
+        # Join reviews with review_media to find reviews with images
+        # Check for both 'image' and 'photo' media_type values
         cursor.execute("""
-            SELECT 
-                id, reviewer_name, rating, body, 
-                verified_purchase, review_date, images,
-                quality_score, ai_recommended
-            FROM reviews 
-            WHERE status = 'published'
-            AND published = true
-            AND images IS NOT NULL 
-            AND images::text != '[]'
-            AND images::text != 'null'
-            AND images::text != ''
-            AND LENGTH(images::text) > 5
-            ORDER BY 
-                rating DESC,
-                ai_recommended DESC,
-                quality_score DESC NULLS LAST,
-                review_date DESC NULLS LAST
-            LIMIT 6;
+            SELECT DISTINCT ON (r.id)
+                r.id, r.reviewer_name, r.rating, r.body, 
+                r.verified_purchase, r.review_date,
+                r.quality_score, r.ai_recommended
+            FROM reviews r
+            INNER JOIN review_media rm ON r.id = rm.review_id
+            WHERE r.status = 'published'
+            AND rm.status = 'active'
+            AND rm.media_type IN ('image', 'photo')
+            AND rm.media_url IS NOT NULL
+            AND rm.media_url != ''
+            ORDER BY r.id, r.rating DESC, r.quality_score DESC NULLS LAST
+            LIMIT 10;
         """)
         
         rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        logger.info(f"Found {len(rows)} reviews with photos in review_media table")
         
         featured = []
         for row in rows:
-            rev_id, name, rating, body, verified, review_date, images_json, quality, ai_rec = row
+            rev_id, name, rating, body, verified, review_date, quality, ai_rec = row
             
-            # Parse images JSON
-            photos = []
-            if images_json:
-                try:
-                    photos = json.loads(images_json) if isinstance(images_json, str) else images_json
-                    if not isinstance(photos, list):
-                        photos = []
-                except:
-                    photos = []
+            # Get all photos for this review from review_media table
+            cursor.execute("""
+                SELECT media_url FROM review_media 
+                WHERE review_id = %s AND status = 'active' AND media_type = 'image'
+                AND media_url IS NOT NULL AND media_url != ''
+                LIMIT 5;
+            """, (rev_id,))
             
-            if photos and len(photos) > 0:  # Only include reviews WITH photos
+            photo_rows = cursor.fetchall()
+            photos = [p[0] for p in photo_rows if p[0]]
+            
+            if photos:
                 featured.append({
                     'id': rev_id,
                     'reviewer_name': name or 'Anonymous',
-                    'rating': rating,
+                    'rating': rating or 5,
                     'body': (body[:200] + '...') if body and len(body) > 200 else (body or ''),
                     'verified_purchase': verified or False,
                     'review_date': review_date.strftime('%Y-%m-%d') if review_date else None,
-                    'photos': photos[:5],  # Limit to 5 photos per review
+                    'photos': photos,
                     'photo_count': len(photos),
                     'ai_recommended': ai_rec or False,
                     'quality_score': float(quality) if quality else 0
@@ -1079,23 +1089,25 @@ def featured_reviews():
                 if len(featured) >= 3:
                     break
         
-        logger.info(f"Featured reviews: Found {len(featured)} reviews with photos from {len(rows)} total rows")
+        cursor.close()
+        conn.close()
         
-        # If we got at least 1 real review, return them
+        logger.info(f"Featured reviews: Returning {len(featured)} reviews with photos")
+        
         if len(featured) > 0:
             return jsonify({
                 'success': True,
                 'reviews': featured,
                 'count': len(featured),
-                'source': 'database'
+                'source': 'database_review_media'
             })
         
-        # No reviews with photos found - return message
+        # No reviews with photos - check if review_media has any data
         return jsonify({
             'success': True,
             'reviews': [],
             'count': 0,
-            'message': 'No reviews with photos found in database. Import some reviews first!',
+            'message': 'No reviews with photos found. Reviews exist but images may not have been imported.',
             'fallback': True
         })
         
@@ -1104,7 +1116,6 @@ def featured_reviews():
         import traceback
         traceback.print_exc()
         
-        # Return error info for debugging
         return jsonify({
             'success': False,
             'error': str(e),
