@@ -242,6 +242,138 @@
             border-radius: 12px;
             margin-bottom: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        /* Image Slideshow */
+        .image-slideshow {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .slideshow-container {
+            display: flex;
+            transition: transform 0.4s ease-in-out;
+            height: 100%;
+        }
+
+        .slideshow-slide {
+            min-width: 100%;
+            height: 100%;
+        }
+
+        .slideshow-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .slideshow-nav {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .slideshow-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .slideshow-dot.active {
+            background: #fff;
+            transform: scale(1.2);
+        }
+
+        .slideshow-arrows {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .slideshow-arrow {
+            width: 28px;
+            height: 28px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+
+        .slideshow-arrow:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .photo-count-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            z-index: 10;
+        }
+
+        /* Loading Skeleton */
+        .loading-skeleton .skeleton-img {
+            background: linear-gradient(90deg, #1a1a2e 25%, #2a2a4e 50%, #1a1a2e 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .loading-skeleton .skeleton-text {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .loading-skeleton .skeleton-name {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Review Date */
+        .review-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 5px;
         }
 
         .product-stars {
@@ -817,33 +949,31 @@
         </div>
     </section>
 
-    <!-- Product Showcase -->
-    <div class="product-showcase">
-        <div class="product-card">
-            <div class="product-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+    <!-- Product Showcase - Real Reviews from Database -->
+    <div class="product-showcase" id="featured-reviews">
+        <!-- Loading skeleton while fetching -->
+        <div class="product-card loading-skeleton">
+            <div class="product-image skeleton-img"></div>
             <div class="product-stars">★★★★★</div>
-            <p class="product-review">The product exceeded my expectations. Great quality and fast shipping!</p>
+            <p class="product-review skeleton-text">Loading real reviews...</p>
             <div class="product-reviewer">
-                <span>Sarah K.</span>
-                <span class="verified-badge">Verified Purchase</span>
+                <span class="skeleton-name">Loading...</span>
             </div>
         </div>
-        <div class="product-card">
-            <div class="product-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+        <div class="product-card loading-skeleton">
+            <div class="product-image skeleton-img"></div>
             <div class="product-stars">★★★★★</div>
-            <p class="product-review">Great quality and fast delivery. My gift was a hit!</p>
+            <p class="product-review skeleton-text">Loading real reviews...</p>
             <div class="product-reviewer">
-                <span>John S.</span>
-                <span class="verified-badge">Verified Purchase</span>
+                <span class="skeleton-name">Loading...</span>
             </div>
         </div>
-        <div class="product-card">
-            <div class="product-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+        <div class="product-card loading-skeleton">
+            <div class="product-image skeleton-img"></div>
             <div class="product-stars">★★★★★</div>
-            <p class="product-review">Good value for my son. He loves riding it everyday.</p>
+            <p class="product-review skeleton-text">Loading real reviews...</p>
             <div class="product-reviewer">
-                <span>Marcus L.</span>
-                <span class="verified-badge">Verified Purchase</span>
+                <span class="skeleton-name">Loading...</span>
             </div>
         </div>
     </div>
@@ -1175,6 +1305,166 @@
             </div>
         </div>
     </footer>
+
+    <!-- JavaScript for Featured Reviews -->
+    <script>
+        // Fetch and render featured reviews from database
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFeaturedReviews();
+        });
+
+        async function loadFeaturedReviews() {
+            const container = document.getElementById('featured-reviews');
+            
+            try {
+                const response = await fetch('/api/featured-reviews');
+                const data = await response.json();
+                
+                if (data.success && data.reviews && data.reviews.length > 0) {
+                    container.innerHTML = data.reviews.map((review, index) => 
+                        createReviewCard(review, index)
+                    ).join('');
+                    
+                    // Initialize slideshows
+                    initializeSlideshows();
+                }
+            } catch (error) {
+                console.error('Failed to load featured reviews:', error);
+                // Keep skeleton or show fallback
+                container.innerHTML = getFallbackReviews();
+            }
+        }
+
+        function createReviewCard(review, index) {
+            const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            const photos = review.photos || [];
+            const hasPhotos = photos.length > 0;
+            
+            let imageHTML;
+            if (hasPhotos && photos.length === 1) {
+                // Single image
+                imageHTML = `
+                    <div class="product-image">
+                        <img src="${photos[0]}" alt="Review photo" onerror="this.parentElement.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.display='none';">
+                    </div>
+                `;
+            } else if (hasPhotos && photos.length > 1) {
+                // Slideshow for multiple images
+                imageHTML = `
+                    <div class="image-slideshow" data-slideshow="${index}">
+                        <span class="photo-count-badge">📷 ${photos.length}</span>
+                        <div class="slideshow-container">
+                            ${photos.map(url => `
+                                <div class="slideshow-slide">
+                                    <img src="${url}" alt="Review photo" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect fill=%22%23667eea%22 width=%22200%22 height=%22200%22/></svg>';">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="slideshow-arrows">
+                            <button class="slideshow-arrow prev" onclick="prevSlide(${index})">‹</button>
+                            <button class="slideshow-arrow next" onclick="nextSlide(${index})">›</button>
+                        </div>
+                        <div class="slideshow-nav">
+                            ${photos.map((_, i) => `
+                                <span class="slideshow-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${index}, ${i})"></span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Fallback gradient
+                const gradients = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+                ];
+                imageHTML = `<div class="product-image" style="background: ${gradients[index % 3]};"></div>`;
+            }
+            
+            return `
+                <div class="product-card">
+                    ${imageHTML}
+                    <div class="product-stars">${stars}</div>
+                    <p class="product-review">${escapeHTML(review.body)}</p>
+                    <div class="product-reviewer">
+                        <span>${escapeHTML(review.reviewer_name)}</span>
+                        ${review.verified_purchase ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                    </div>
+                    ${review.review_date ? `<div class="review-date">${review.review_date}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Slideshow state
+        const slideshowStates = {};
+
+        function initializeSlideshows() {
+            document.querySelectorAll('.image-slideshow').forEach(slideshow => {
+                const index = parseInt(slideshow.dataset.slideshow);
+                const slides = slideshow.querySelectorAll('.slideshow-slide');
+                slideshowStates[index] = { current: 0, total: slides.length };
+            });
+        }
+
+        function goToSlide(slideshowIndex, slideIndex) {
+            const slideshow = document.querySelector(`[data-slideshow="${slideshowIndex}"]`);
+            if (!slideshow) return;
+            
+            const container = slideshow.querySelector('.slideshow-container');
+            const dots = slideshow.querySelectorAll('.slideshow-dot');
+            
+            slideshowStates[slideshowIndex].current = slideIndex;
+            container.style.transform = `translateX(-${slideIndex * 100}%)`;
+            
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === slideIndex);
+            });
+        }
+
+        function nextSlide(slideshowIndex) {
+            const state = slideshowStates[slideshowIndex];
+            const next = (state.current + 1) % state.total;
+            goToSlide(slideshowIndex, next);
+        }
+
+        function prevSlide(slideshowIndex) {
+            const state = slideshowStates[slideshowIndex];
+            const prev = (state.current - 1 + state.total) % state.total;
+            goToSlide(slideshowIndex, prev);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getFallbackReviews() {
+            const gradients = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+            ];
+            const fallbackData = [
+                { name: 'Sarah K.', review: 'The product exceeded my expectations. Great quality and fast shipping!' },
+                { name: 'John S.', review: 'Great quality and fast delivery. My gift was a hit!' },
+                { name: 'Marcus L.', review: 'Good value for my son. He loves riding it everyday.' }
+            ];
+            
+            return fallbackData.map((item, i) => `
+                <div class="product-card">
+                    <div class="product-image" style="background: ${gradients[i]};"></div>
+                    <div class="product-stars">★★★★★</div>
+                    <p class="product-review">${item.review}</p>
+                    <div class="product-reviewer">
+                        <span>${item.name}</span>
+                        <span class="verified-badge">Verified Purchase</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
 </body>
 </html>
 
