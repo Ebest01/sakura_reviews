@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakura Reviews Carousel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: transparent;
+        }
+        
+        .sakura-carousel {
+            max-width: 100%;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .carousel-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .carousel-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        
+        .carousel-subtitle {
+            font-size: 16px;
+            color: #64748b;
+        }
+        
+        .carousel-stats {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 16px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: #475569;
+        }
+        
+        .stat-stars {
+            color: #fbbf24;
+            font-size: 18px;
+        }
+        
+        .stat-number {
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .carousel-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .carousel-track {
+            display: flex;
+            gap: 20px;
+            transition: transform 0.5s ease;
+            padding: 10px 0;
+        }
+        
+        .carousel-card {
+            flex: 0 0 320px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            border-color: #ff69b4;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .card-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .card-info {
+            flex: 1;
+        }
+        
+        .card-name {
+            font-weight: 600;
+            color: #1a202c;
+            font-size: 15px;
+        }
+        
+        .card-date {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        
+        .card-rating {
+            color: #fbbf24;
+            font-size: 16px;
+        }
+        
+        .card-text {
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .card-photos {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .card-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .card-photo:hover {
+            transform: scale(1.1);
+        }
+        
+        .card-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .card-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-verified {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .badge-ai {
+            background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+            color: #db2777;
+        }
+        
+        .carousel-nav {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .nav-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid #ff69b4;
+            background: white;
+            color: #ff69b4;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #ff69b4;
+            color: white;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dot.active {
+            background: #ff69b4;
+            width: 24px;
+            border-radius: 5px;
+        }
+        
+        .powered-by {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .powered-by a {
+            color: #ff69b4;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-card {
+            flex: 0 0 320px;
+            height: 280px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .carousel-card {
+                flex: 0 0 280px;
+            }
+            
+            .carousel-title {
+                font-size: 22px;
+            }
+            
+            .carousel-stats {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sakura-carousel" id="sakuraCarousel">
+        <div class="carousel-header">
+            <h2 class="carousel-title">{{ title | default('What Our Customers Say') }}</h2>
+            <p class="carousel-subtitle">{{ subtitle | default('Real reviews from verified customers') }}</p>
+            <div class="carousel-stats">
+                <div class="stat-item">
+                    <span class="stat-stars">★★★★★</span>
+                    <span class="stat-number">{{ average_rating | default('4.8') }}</span>
+                    <span>average rating</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_reviews | default('1,000+') }}</span>
+                    <span>verified reviews</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="carousel-container">
+            <div class="carousel-track" id="carouselTrack">
+                {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="carousel-card">
+                        <div class="card-header">
+                            <div class="card-avatar">{{ review.author[0] if review.author else 'C' }}</div>
+                            <div class="card-info">
+                                <div class="card-name">{{ review.author | default('Customer') }}</div>
+                                <div class="card-date">{{ review.date }}</div>
+                            </div>
+                            <div class="card-rating">
+                                {% for i in range(review.rating | default(5)) %}★{% endfor %}
+                            </div>
+                        </div>
+                        
+                        {% if review.text %}
+                        <div class="card-text">"{{ review.text }}"</div>
+                        {% endif %}
+                        
+                        {% if review.media and review.media|length > 0 %}
+                        <div class="card-photos">
+                            {% for media in review.media[:3] %}
+                            <img src="{{ media.media_url }}" alt="Review photo" class="card-photo" loading="lazy">
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-badges">
+                            {% if review.verified %}
+                            <span class="card-badge badge-verified">✓ Verified</span>
+                            {% endif %}
+                            {% if review.ai_recommended %}
+                            <span class="card-badge badge-ai">🌸 AI Pick</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Loading skeletons -->
+                    <div class="carousel-card skeleton skeleton-card"></div>
+                    <div class="carousel-card skeleton skeleton-card"></div>
+                    <div class="carousel-card skeleton skeleton-card"></div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="carousel-nav">
+            <button class="nav-btn" id="prevBtn" onclick="moveCarousel(-1)">←</button>
+            <button class="nav-btn" id="nextBtn" onclick="moveCarousel(1)">→</button>
+        </div>
+        
+        <div class="carousel-dots" id="carouselDots"></div>
+        
+        <div class="powered-by">
+            Powered by <a href="https://sakurareviews.app" target="_blank">Sakura Reviews</a>
+        </div>
+    </div>
+    
+    <script>
+        let currentIndex = 0;
+        const track = document.getElementById('carouselTrack');
+        const cards = track.querySelectorAll('.carousel-card');
+        const totalCards = cards.length;
+        const cardWidth = 340; // card width + gap
+        
+        // Create dots
+        const dotsContainer = document.getElementById('carouselDots');
+        for (let i = 0; i < Math.ceil(totalCards / 3); i++) {
+            const dot = document.createElement('span');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.onclick = () => goToSlide(i);
+            dotsContainer.appendChild(dot);
+        }
+        
+        function moveCarousel(direction) {
+            const maxIndex = Math.max(0, totalCards - 3);
+            currentIndex = Math.max(0, Math.min(currentIndex + direction, maxIndex));
+            updateCarousel();
+        }
+        
+        function goToSlide(index) {
+            currentIndex = index * 3;
+            updateCarousel();
+        }
+        
+        function updateCarousel() {
+            const offset = currentIndex * cardWidth;
+            track.style.transform = `translateX(-${offset}px)`;
+            
+            // Update dots
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === Math.floor(currentIndex / 3));
+            });
+            
+            // Update nav buttons
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex >= totalCards - 3;
+        }
+        
+        // Auto-scroll every 5 seconds
+        let autoScroll = setInterval(() => {
+            if (currentIndex >= totalCards - 3) {
+                currentIndex = 0;
+            } else {
+                currentIndex++;
+            }
+            updateCarousel();
+        }, 5000);
+        
+        // Pause auto-scroll on hover
+        track.addEventListener('mouseenter', () => clearInterval(autoScroll));
+        track.addEventListener('mouseleave', () => {
+            autoScroll = setInterval(() => {
+                if (currentIndex >= totalCards - 3) currentIndex = 0;
+                else currentIndex++;
+                updateCarousel();
+            }, 5000);
+        });
+        
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        track.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+        track.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].clientX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                moveCarousel(diff > 0 ? 1 : -1);
+            }
+        });
+    </script>
+</body>
+</html>
+

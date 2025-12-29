@@ -4,6 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sakura Reviews Widget</title>
+    
+    <!-- Google Rich Snippets - SEO Stars in Search Results -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "{{ product_name | default('Product') }}",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "{{ average_rating }}",
+            "reviewCount": "{{ total_count }}",
+            "bestRating": "5",
+            "worstRating": "1"
+        }
+        {% if reviews and reviews|length > 0 %},
+        "review": [
+            {% for review in reviews[:5] %}
+            {
+                "@type": "Review",
+                "author": {
+                    "@type": "Person",
+                    "name": "{{ review.author | default('Customer') }}"
+                },
+                "datePublished": "{{ review.date }}",
+                "reviewBody": "{{ review.text | replace('"', '\\"') | truncate(200) if review.text else '' }}",
+                "reviewRating": {
+                    "@type": "Rating",
+                    "ratingValue": "{{ review.rating }}",
+                    "bestRating": "5",
+                    "worstRating": "1"
+                }
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+        {% endif %}
+    }
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -410,6 +448,135 @@
             gap: 12px;
             align-items: center;
             margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-badge.ai-recommended {
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            color: white;
+        }
+        
+        /* Review Actions - Helpful & Share */
+        .review-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .helpful-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .helpful-label {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .helpful-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+        
+        .helpful-btn:hover {
+            background: #f8fafc;
+            border-color: #ff69b4;
+            color: #ff69b4;
+        }
+        
+        .helpful-btn.voted {
+            background: #fdf2f8;
+            border-color: #ff69b4;
+            color: #ff69b4;
+        }
+        
+        .helpful-count {
+            font-weight: 600;
+        }
+        
+        .share-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+        
+        .share-btn:hover {
+            background: #f8fafc;
+            border-color: #ff69b4;
+            color: #ff69b4;
+            transform: scale(1.1);
+        }
+        
+        .share-btn[data-platform="facebook"]:hover {
+            background: #1877f2;
+            border-color: #1877f2;
+            color: white;
+        }
+        
+        .share-btn[data-platform="twitter"]:hover {
+            background: #000;
+            border-color: #000;
+            color: white;
+        }
+        
+        .share-btn[data-platform="copy"]:hover {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+        
+        /* Toast notification for copy */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a202c;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+        }
+        
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        @keyframes toastOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
         
         /* Photo Modal/Lightbox - Loox-inspired stable full-page modal */
@@ -1325,6 +1492,33 @@
                         {% if review.verified %}
                         <span class="meta-badge verified">✓ Verified</span>
                         {% endif %}
+                        {% if review.ai_recommended %}
+                        <span class="meta-badge ai-recommended">🌸 AI Recommended</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Helpful & Share Actions -->
+                    <div class="review-actions">
+                        <div class="helpful-section">
+                            <span class="helpful-label">Was this helpful?</span>
+                            <button class="helpful-btn" data-review-id="{{ review.id }}" data-vote="yes" title="Yes, helpful">
+                                👍 <span class="helpful-count">{{ review.helpful_yes | default(0) }}</span>
+                            </button>
+                            <button class="helpful-btn" data-review-id="{{ review.id }}" data-vote="no" title="Not helpful">
+                                👎 <span class="helpful-count">{{ review.helpful_no | default(0) }}</span>
+                            </button>
+                        </div>
+                        <div class="share-section">
+                            <button class="share-btn" data-platform="facebook" data-review-id="{{ review.id }}" title="Share on Facebook">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                            </button>
+                            <button class="share-btn" data-platform="twitter" data-review-id="{{ review.id }}" title="Share on Twitter/X">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            </button>
+                            <button class="share-btn" data-platform="copy" data-review-id="{{ review.id }}" title="Copy link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -2324,6 +2518,96 @@
                 }
             });
         }
+        
+        // ==================== HELPFUL BUTTONS ====================
+        document.addEventListener('click', function(e) {
+            const helpfulBtn = e.target.closest('.helpful-btn');
+            if (helpfulBtn) {
+                e.preventDefault();
+                const reviewId = helpfulBtn.dataset.reviewId;
+                const vote = helpfulBtn.dataset.vote;
+                
+                // Check if already voted (stored in localStorage)
+                const votedReviews = JSON.parse(localStorage.getItem('sakura_voted_reviews') || '{}');
+                if (votedReviews[reviewId]) {
+                    showToast('You already voted on this review');
+                    return;
+                }
+                
+                // Update UI immediately
+                helpfulBtn.classList.add('voted');
+                const countEl = helpfulBtn.querySelector('.helpful-count');
+                if (countEl) {
+                    countEl.textContent = parseInt(countEl.textContent || 0) + 1;
+                }
+                
+                // Store in localStorage
+                votedReviews[reviewId] = vote;
+                localStorage.setItem('sakura_voted_reviews', JSON.stringify(votedReviews));
+                
+                // Send to server (fire and forget)
+                fetch(`/api/reviews/${reviewId}/helpful`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vote: vote })
+                }).catch(err => console.log('Helpful vote sent'));
+                
+                showToast('Thanks for your feedback!');
+            }
+        });
+        
+        // ==================== SHARE BUTTONS ====================
+        document.addEventListener('click', function(e) {
+            const shareBtn = e.target.closest('.share-btn');
+            if (shareBtn) {
+                e.preventDefault();
+                const platform = shareBtn.dataset.platform;
+                const reviewId = shareBtn.dataset.reviewId;
+                
+                // Get review text from the card
+                const reviewCard = shareBtn.closest('.review-card');
+                const reviewText = reviewCard?.querySelector('.review-text')?.textContent?.trim() || 'Check out this great review!';
+                const reviewRating = reviewCard?.querySelectorAll('.star')?.length || 5;
+                
+                const pageUrl = window.location.href;
+                const shareText = `${'★'.repeat(reviewRating)} "${reviewText.substring(0, 100)}${reviewText.length > 100 ? '...' : ''}"`;
+                
+                if (platform === 'facebook') {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank', 'width=600,height=400');
+                } else if (platform === 'twitter') {
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(pageUrl)}`, '_blank', 'width=600,height=400');
+                } else if (platform === 'copy') {
+                    navigator.clipboard.writeText(pageUrl).then(() => {
+                        showToast('Link copied to clipboard!');
+                    }).catch(() => {
+                        showToast('Failed to copy link');
+                    });
+                }
+            }
+        });
+        
+        // ==================== TOAST NOTIFICATION ====================
+        function showToast(message) {
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Mark already voted reviews on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const votedReviews = JSON.parse(localStorage.getItem('sakura_voted_reviews') || '{}');
+            Object.keys(votedReviews).forEach(reviewId => {
+                const btn = document.querySelector(`.helpful-btn[data-review-id="${reviewId}"][data-vote="${votedReviews[reviewId]}"]`);
+                if (btn) btn.classList.add('voted');
+            });
+        });
     </script>
 </body>
 </html>

@@ -455,3 +455,160 @@ class ContactMessage(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+
+class EmailSettings(db.Model):
+    """
+    Email Settings per Shop - Controls review request emails
+    """
+    __tablename__ = 'email_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, unique=True, index=True)
+    
+    # Email Enabled
+    enabled = db.Column(db.Boolean, default=True)
+    
+    # Timing
+    delay_days = db.Column(db.Integer, default=7)  # Days after order to send email
+    send_time = db.Column(db.String(10), default='10:00')  # Time to send (HH:MM)
+    
+    # Reminders
+    reminder_enabled = db.Column(db.Boolean, default=True)
+    reminder_delay_days = db.Column(db.Integer, default=14)  # Days after first email
+    max_reminders = db.Column(db.Integer, default=2)
+    
+    # Incentives
+    discount_enabled = db.Column(db.Boolean, default=False)
+    discount_percent = db.Column(db.Integer, default=10)
+    photo_discount_enabled = db.Column(db.Boolean, default=False)
+    photo_discount_percent = db.Column(db.Integer, default=15)
+    
+    # Email Content
+    email_subject = db.Column(db.String(255), default="We'd love your feedback!")
+    email_from_name = db.Column(db.String(255))  # Custom from name
+    
+    # Filters
+    min_order_value = db.Column(db.Float, default=0)  # Minimum order value to send email
+    exclude_products = db.Column(db.Text)  # JSON array of product IDs to exclude
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<EmailSettings shop_id={self.shop_id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'shop_id': self.shop_id,
+            'enabled': self.enabled,
+            'delay_days': self.delay_days,
+            'send_time': self.send_time,
+            'reminder_enabled': self.reminder_enabled,
+            'reminder_delay_days': self.reminder_delay_days,
+            'max_reminders': self.max_reminders,
+            'discount_enabled': self.discount_enabled,
+            'discount_percent': self.discount_percent,
+            'photo_discount_enabled': self.photo_discount_enabled,
+            'photo_discount_percent': self.photo_discount_percent,
+            'email_subject': self.email_subject,
+            'email_from_name': self.email_from_name,
+            'min_order_value': self.min_order_value,
+            'exclude_products': json.loads(self.exclude_products) if self.exclude_products else []
+        }
+
+
+class ReviewRequest(db.Model):
+    """
+    Review Request Tracking - Tracks email requests sent to customers
+    """
+    __tablename__ = 'review_requests'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    
+    # Order Information
+    order_id = db.Column(db.String(255), nullable=False, index=True)
+    order_number = db.Column(db.String(255))
+    order_date = db.Column(db.DateTime)
+    order_total = db.Column(db.Float)
+    
+    # Customer Information
+    customer_email = db.Column(db.String(255), nullable=False, index=True)
+    customer_name = db.Column(db.String(255))
+    
+    # Product Information
+    product_id = db.Column(db.String(255), nullable=False)
+    product_name = db.Column(db.String(255))
+    product_image = db.Column(db.Text)
+    
+    # Email Status
+    status = db.Column(db.String(50), default='pending')  # pending, sent, reminded, reviewed, unsubscribed
+    emails_sent = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    scheduled_at = db.Column(db.DateTime, index=True)  # When to send
+    first_sent_at = db.Column(db.DateTime)
+    last_sent_at = db.Column(db.DateTime)
+    reviewed_at = db.Column(db.DateTime)
+    
+    # Discount Code (if incentives enabled)
+    discount_code = db.Column(db.String(255))
+    discount_used = db.Column(db.Boolean, default=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_review_request_shop_order', 'shop_id', 'order_id'),
+        Index('idx_review_request_scheduled', 'status', 'scheduled_at'),
+    )
+    
+    def __repr__(self):
+        return f'<ReviewRequest {self.order_id} - {self.customer_email}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'order_number': self.order_number,
+            'order_date': self.order_date.isoformat() if self.order_date else None,
+            'customer_email': self.customer_email,
+            'customer_name': self.customer_name,
+            'product_id': self.product_id,
+            'product_name': self.product_name,
+            'product_image': self.product_image,
+            'status': self.status,
+            'emails_sent': self.emails_sent,
+            'scheduled_at': self.scheduled_at.isoformat() if self.scheduled_at else None,
+            'first_sent_at': self.first_sent_at.isoformat() if self.first_sent_at else None,
+            'reviewed_at': self.reviewed_at.isoformat() if self.reviewed_at else None
+        }
+
+
+class EmailUnsubscribe(db.Model):
+    """
+    Email Unsubscribe List - Customers who don't want review request emails
+    """
+    __tablename__ = 'email_unsubscribes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), index=True)  # NULL = global unsubscribe
+    
+    # Reason
+    reason = db.Column(db.String(255))
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_email_unsubscribe_shop', 'email', 'shop_id'),
+    )
+    
+    def __repr__(self):
+        return f'<EmailUnsubscribe {self.email}>'

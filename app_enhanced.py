@@ -226,6 +226,262 @@ def app_dashboard():
     
     return render_template('app-dashboard.html', **stats)
 
+
+# ==================== EMAIL SETTINGS ROUTES ====================
+
+@app.route('/app/email-settings', methods=['GET', 'POST'])
+def app_email_settings():
+    """
+    Email settings page - configure review request emails
+    """
+    from backend.models_v2 import EmailSettings, ReviewRequest, Shop
+    
+    shop_domain = request.args.get('shop') or session.get('shop_domain')
+    message = None
+    
+    # Get shop
+    shop = None
+    if shop_domain:
+        shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+    
+    if not shop:
+        return redirect('/auth/install?error=shop_not_found')
+    
+    # Get or create email settings
+    settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+    if not settings:
+        settings = EmailSettings(shop_id=shop.id)
+        db.session.add(settings)
+        db.session.commit()
+    
+    if request.method == 'POST':
+        # Update settings
+        settings.enabled = 'enabled' in request.form
+        settings.delay_days = int(request.form.get('delay_days', 7))
+        settings.send_time = request.form.get('send_time', '10:00')
+        settings.reminder_enabled = 'reminder_enabled' in request.form
+        settings.reminder_delay_days = int(request.form.get('reminder_delay_days', 14))
+        settings.max_reminders = int(request.form.get('max_reminders', 2))
+        settings.discount_enabled = 'discount_enabled' in request.form
+        settings.discount_percent = int(request.form.get('discount_percent', 10))
+        settings.photo_discount_enabled = 'photo_discount_enabled' in request.form
+        settings.photo_discount_percent = int(request.form.get('photo_discount_percent', 15))
+        settings.email_subject = request.form.get('email_subject', "We'd love your feedback!")
+        settings.email_from_name = request.form.get('email_from_name', '')
+        
+        db.session.commit()
+        message = 'Email settings saved successfully!'
+    
+    # Get email stats
+    stats = {
+        'total_sent': ReviewRequest.query.filter_by(shop_id=shop.id).filter(
+            ReviewRequest.first_sent_at.isnot(None)
+        ).count(),
+        'pending': ReviewRequest.query.filter_by(shop_id=shop.id, status='pending').count(),
+        'reviews_received': ReviewRequest.query.filter_by(shop_id=shop.id, status='reviewed').count(),
+        'conversion_rate': '0%'
+    }
+    
+    if stats['total_sent'] > 0:
+        rate = (stats['reviews_received'] / stats['total_sent']) * 100
+        stats['conversion_rate'] = f"{rate:.1f}%"
+    
+    return render_template('app-email-settings.html',
+                         settings=settings.to_dict(),
+                         stats=stats,
+                         shop_name=shop.shop_name or shop_domain,
+                         message=message)
+
+
+@app.route('/app/email-preview')
+def app_email_preview():
+    """
+    Preview the review request email
+    """
+    from backend.models_v2 import EmailSettings, Shop
+    
+    shop_domain = request.args.get('shop') or session.get('shop_domain')
+    shop = Shop.query.filter_by(shop_domain=shop_domain).first() if shop_domain else None
+    settings = EmailSettings.query.filter_by(shop_id=shop.id).first() if shop else None
+    
+    return render_template('email-review-request.html',
+                         customer_name='John',
+                         shop_name=shop.shop_name if shop else 'Your Store',
+                         shop_url=f"https://{shop_domain}" if shop_domain else '#',
+                         product_name='Sample Product',
+                         product_image='https://via.placeholder.com/100',
+                         order_date='December 25, 2025',
+                         review_url=f"https://{shop_domain}/review",
+                         discount_enabled=settings.discount_enabled if settings else False,
+                         discount_percent=settings.discount_percent if settings else 10,
+                         discount_code='REVIEW10',
+                         unsubscribe_url='#')
+
+
+@app.route('/app/email-test', methods=['POST'])
+def app_email_test():
+    """
+    Send a test review request email
+    """
+    test_email = request.form.get('test_email')
+    shop_domain = request.args.get('shop') or session.get('shop_domain')
+    
+    if not test_email:
+        return redirect(f'/app/email-settings?shop={shop_domain}&error=email_required')
+    
+    # In production, send via SendGrid/Mailgun/SES
+    # For now, just log and redirect with success message
+    logger.info(f"Test email would be sent to: {test_email}")
+    
+    return redirect(f'/app/email-settings?shop={shop_domain}&message=Test email sent to {test_email}')
+
+
+@app.route('/email/unsubscribe/<token>')
+def email_unsubscribe(token):
+    """
+    Handle email unsubscribe
+    """
+    from backend.models_v2 import EmailUnsubscribe, ReviewRequest
+    import base64
+    
+    try:
+        # Decode token (base64 encoded email:shop_id)
+        decoded = base64.b64decode(token).decode('utf-8')
+        email, shop_id = decoded.split(':')
+        
+        # Add to unsubscribe list
+        unsubscribe = EmailUnsubscribe(
+            email=email,
+            shop_id=int(shop_id) if shop_id != 'global' else None
+        )
+        db.session.add(unsubscribe)
+        
+        # Update any pending review requests
+        ReviewRequest.query.filter_by(
+            customer_email=email,
+            shop_id=int(shop_id) if shop_id != 'global' else None,
+            status='pending'
+        ).update({'status': 'unsubscribed'})
+        
+        db.session.commit()
+        
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Unsubscribed - Sakura Reviews</title>
+            <style>
+                body { font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc; }
+                .box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+                h1 { color: #1a202c; margin-bottom: 16px; }
+                p { color: #64748b; }
+            </style>
+        </head>
+        <body>
+            <div class="box">
+                <h1>✓ Unsubscribed</h1>
+                <p>You won't receive any more review request emails from this store.</p>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        logger.error(f"Error processing unsubscribe: {e}")
+        return "Invalid unsubscribe link", 400
+
+
+# Shopify Webhook: Order Fulfilled - Schedule review request email
+@app.route('/webhooks/orders/fulfilled', methods=['POST'])
+def webhook_order_fulfilled():
+    """
+    Handle order fulfilled webhook - schedule review request email
+    """
+    from backend.models_v2 import Shop, EmailSettings, ReviewRequest, EmailUnsubscribe
+    from datetime import timedelta
+    
+    try:
+        # Verify webhook
+        shop_domain = request.headers.get('X-Shopify-Shop-Domain')
+        if not shop_domain:
+            return jsonify({'error': 'Missing shop domain'}), 400
+        
+        shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+        if not shop:
+            return jsonify({'error': 'Shop not found'}), 404
+        
+        # Get email settings
+        settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+        if not settings or not settings.enabled:
+            return jsonify({'status': 'emails_disabled'})
+        
+        data = request.get_json()
+        
+        # Check if customer is unsubscribed
+        customer_email = data.get('email') or data.get('customer', {}).get('email')
+        if not customer_email:
+            return jsonify({'status': 'no_email'})
+        
+        is_unsubscribed = EmailUnsubscribe.query.filter(
+            (EmailUnsubscribe.email == customer_email) &
+            ((EmailUnsubscribe.shop_id == shop.id) | (EmailUnsubscribe.shop_id.is_(None)))
+        ).first()
+        
+        if is_unsubscribed:
+            return jsonify({'status': 'unsubscribed'})
+        
+        # Create review request for each line item
+        customer_name = data.get('customer', {}).get('first_name', 'Customer')
+        order_id = str(data.get('id'))
+        order_number = data.get('order_number')
+        order_date = datetime.utcnow()
+        order_total = float(data.get('total_price', 0))
+        
+        # Check minimum order value
+        if settings.min_order_value and order_total < settings.min_order_value:
+            return jsonify({'status': 'below_min_value'})
+        
+        # Calculate when to send email
+        scheduled_at = datetime.utcnow() + timedelta(days=settings.delay_days)
+        
+        for line_item in data.get('line_items', []):
+            product_id = str(line_item.get('product_id'))
+            product_name = line_item.get('name', 'Product')
+            product_image = line_item.get('image', {}).get('src') if line_item.get('image') else None
+            
+            # Check if request already exists
+            existing = ReviewRequest.query.filter_by(
+                shop_id=shop.id,
+                order_id=order_id,
+                product_id=product_id
+            ).first()
+            
+            if not existing:
+                review_request = ReviewRequest(
+                    shop_id=shop.id,
+                    order_id=order_id,
+                    order_number=order_number,
+                    order_date=order_date,
+                    order_total=order_total,
+                    customer_email=customer_email,
+                    customer_name=customer_name,
+                    product_id=product_id,
+                    product_name=product_name,
+                    product_image=product_image,
+                    scheduled_at=scheduled_at,
+                    status='pending'
+                )
+                db.session.add(review_request)
+        
+        db.session.commit()
+        return jsonify({'status': 'scheduled', 'scheduled_at': scheduled_at.isoformat()})
+    
+    except Exception as e:
+        logger.error(f"Error processing order fulfilled webhook: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 # In-memory storage for demo (use Redis/DB in production)
 import_sessions = {}
 analytics_events = []
@@ -1256,6 +1512,45 @@ def featured_reviews():
             'count': 0,
             'fallback': True
         })
+
+
+@app.route('/api/reviews/<int:review_id>/helpful', methods=['POST'])
+def review_helpful_vote(review_id):
+    """
+    Record a helpful vote for a review
+    """
+    try:
+        from backend.models_v2 import Review
+        
+        data = request.get_json() or {}
+        vote = data.get('vote', 'yes')
+        
+        review = Review.query.get(review_id)
+        if not review:
+            return jsonify({'success': False, 'error': 'Review not found'}), 404
+        
+        # Initialize counters if not exist
+        if not hasattr(review, 'helpful_yes') or review.helpful_yes is None:
+            review.helpful_yes = 0
+        if not hasattr(review, 'helpful_no') or review.helpful_no is None:
+            review.helpful_no = 0
+        
+        # Increment the appropriate counter
+        if vote == 'yes':
+            review.helpful_yes = (review.helpful_yes or 0) + 1
+        else:
+            review.helpful_no = (review.helpful_no or 0) + 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'helpful_yes': review.helpful_yes,
+            'helpful_no': review.helpful_no
+        })
+    except Exception as e:
+        logger.error(f"Error recording helpful vote: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/admin/reviews/import/url', methods=['GET'])
@@ -3237,6 +3532,259 @@ def help_import_custom_file():
     """Help article: Importing Reviews Using a Custom File"""
     return render_template('help-import-custom-file.html')
 
+
+# ==================== IMPORT FROM COMPETITORS ====================
+
+@app.route('/app/import-reviews')
+@app.route('/import/competitors')
+def import_competitors_page():
+    """
+    Page for importing reviews from competitor apps (Loox, Judge.me, Yotpo, etc.)
+    """
+    shop_domain = request.args.get('shop') or session.get('shop_domain')
+    return render_template('import-competitors.html', shop_domain=shop_domain)
+
+
+@app.route('/api/import/competitor', methods=['POST'])
+def api_import_competitor():
+    """
+    API endpoint for importing reviews from competitor CSV exports
+    Supports: Loox, Judge.me, Yotpo, Stamped.io, Shopify Reviews, Custom CSV
+    """
+    import csv
+    import io
+    from backend.models_v2 import Review, ReviewMedia, Product, Shop
+    from datetime import datetime
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        source = request.form.get('source', 'csv').lower()
+        shop_domain = request.form.get('shop')
+        
+        if not file.filename.endswith('.csv'):
+            return jsonify({'success': False, 'error': 'Please upload a CSV file'}), 400
+        
+        # Get shop
+        shop = Shop.query.filter_by(shop_domain=shop_domain).first() if shop_domain else None
+        if not shop:
+            # Try to get from session
+            if 'shop_id' in session:
+                shop = Shop.query.get(session['shop_id'])
+        
+        if not shop:
+            return jsonify({'success': False, 'error': 'Shop not found'}), 404
+        
+        # Read CSV
+        content = file.read().decode('utf-8-sig')  # Handle BOM
+        reader = csv.DictReader(io.StringIO(content))
+        
+        imported = 0
+        photos_imported = 0
+        skipped = 0
+        errors = []
+        
+        # Column mappings for different sources
+        column_maps = {
+            'loox': {
+                'product_id': ['product_id', 'Product ID', 'product id'],
+                'product_title': ['product_title', 'Product Title', 'product title', 'Product Name'],
+                'reviewer_name': ['reviewer_name', 'Reviewer Name', 'name', 'Name', 'Author'],
+                'email': ['email', 'Email', 'reviewer_email'],
+                'rating': ['rating', 'Rating', 'Stars', 'stars'],
+                'body': ['body', 'Body', 'content', 'Content', 'Review', 'review', 'review_text'],
+                'date': ['created_at', 'date', 'Date', 'review_date', 'Review Date'],
+                'photo_urls': ['photo_urls', 'photos', 'Photos', 'images', 'Images', 'media_url'],
+                'verified': ['verified', 'Verified', 'verified_purchase']
+            },
+            'judgeme': {
+                'product_id': ['product_id', 'Product ID'],
+                'product_title': ['product_title', 'Product Title', 'product_name'],
+                'reviewer_name': ['reviewer', 'Reviewer', 'author', 'name'],
+                'email': ['email', 'Email'],
+                'rating': ['rating', 'Rating'],
+                'body': ['body', 'Body', 'content'],
+                'date': ['created_at', 'date'],
+                'photo_urls': ['picture_urls', 'photos'],
+                'verified': ['verified_buyer', 'verified']
+            },
+            'yotpo': {
+                'product_id': ['product_id', 'sku'],
+                'product_title': ['product_title', 'product_name'],
+                'reviewer_name': ['display_name', 'user_display_name', 'name'],
+                'email': ['email', 'user_email'],
+                'rating': ['score', 'rating'],
+                'body': ['content', 'body'],
+                'date': ['created_at', 'date'],
+                'photo_urls': ['images_data', 'images'],
+                'verified': ['verified_buyer']
+            },
+            'csv': {  # Generic/custom CSV
+                'product_id': ['product_id', 'Product ID', 'product'],
+                'product_title': ['product_title', 'Product Title', 'product_name', 'Product Name'],
+                'reviewer_name': ['reviewer_name', 'name', 'Name', 'author', 'Author'],
+                'email': ['email', 'Email'],
+                'rating': ['rating', 'Rating', 'stars', 'Stars'],
+                'body': ['review_text', 'body', 'content', 'review', 'Review', 'text'],
+                'date': ['review_date', 'date', 'Date', 'created_at'],
+                'photo_urls': ['photo_url', 'photos', 'images', 'photo'],
+                'verified': ['verified', 'verified_purchase']
+            }
+        }
+        
+        # Use appropriate mapping
+        mapping = column_maps.get(source, column_maps['csv'])
+        
+        def get_value(row, field):
+            """Get value from row using multiple possible column names"""
+            for col_name in mapping.get(field, []):
+                if col_name in row and row[col_name]:
+                    return row[col_name].strip()
+            return None
+        
+        for row_num, row in enumerate(reader, start=1):
+            try:
+                product_id = get_value(row, 'product_id')
+                rating = get_value(row, 'rating')
+                
+                if not product_id or not rating:
+                    skipped += 1
+                    continue
+                
+                # Parse rating
+                try:
+                    rating = int(float(rating))
+                    rating = max(1, min(5, rating))  # Clamp to 1-5
+                except:
+                    rating = 5
+                
+                # Parse date
+                date_str = get_value(row, 'date')
+                review_date = datetime.utcnow()
+                if date_str:
+                    for fmt in ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%m/%d/%Y', '%Y-%m-%dT%H:%M:%S']:
+                        try:
+                            review_date = datetime.strptime(date_str[:19], fmt)
+                            break
+                        except:
+                            continue
+                
+                # Check for duplicate
+                reviewer_name = get_value(row, 'reviewer_name') or 'Customer'
+                body = get_value(row, 'body') or ''
+                
+                # Anonymize name if generic
+                reviewer_name = anonymize_reviewer_name(reviewer_name)
+                
+                existing = Review.query.filter_by(
+                    shop_id=shop.id,
+                    shopify_product_id=str(product_id),
+                    reviewer_name=reviewer_name,
+                    body=body[:100] if body else None  # Check first 100 chars
+                ).first()
+                
+                if existing:
+                    skipped += 1
+                    continue
+                
+                # Get or create product
+                product = Product.query.filter_by(
+                    shop_id=shop.id,
+                    shopify_product_id=str(product_id)
+                ).first()
+                
+                if not product:
+                    product = Product(
+                        shop_id=shop.id,
+                        shopify_product_id=str(product_id),
+                        shopify_product_title=get_value(row, 'product_title') or 'Imported Product',
+                        source_platform=source,
+                        source_product_id=str(product_id),
+                        status='active'
+                    )
+                    db.session.add(product)
+                    db.session.flush()
+                
+                # Create review
+                verified = get_value(row, 'verified')
+                is_verified = verified and verified.lower() in ['true', 'yes', '1', 'verified']
+                
+                review = Review(
+                    shop_id=shop.id,
+                    product_id=product.id,
+                    shopify_product_id=str(product_id),
+                    source_platform=source,
+                    source_review_id=f"{source}_{row_num}_{datetime.utcnow().timestamp()}",
+                    reviewer_name=reviewer_name,
+                    reviewer_email=get_value(row, 'email'),
+                    rating=rating,
+                    body=body,
+                    review_date=review_date,
+                    verified_purchase=is_verified,
+                    status='published',
+                    imported_at=datetime.utcnow()
+                )
+                db.session.add(review)
+                db.session.flush()
+                
+                # Handle photos
+                photo_urls = get_value(row, 'photo_urls')
+                if photo_urls:
+                    # Parse photo URLs (could be comma-separated or JSON)
+                    urls = []
+                    if photo_urls.startswith('['):
+                        try:
+                            import json
+                            urls = json.loads(photo_urls)
+                        except:
+                            urls = [photo_urls]
+                    else:
+                        urls = [u.strip() for u in photo_urls.split(',') if u.strip()]
+                    
+                    for url in urls:
+                        if url and url.startswith('http'):
+                            media = ReviewMedia(
+                                review_id=review.id,
+                                media_type='image',
+                                media_url=url,
+                                status='active'
+                            )
+                            db.session.add(media)
+                            photos_imported += 1
+                
+                imported += 1
+                
+                # Commit every 100 reviews for performance
+                if imported % 100 == 0:
+                    db.session.commit()
+            
+            except Exception as e:
+                errors.append(f"Row {row_num}: {str(e)}")
+                continue
+        
+        # Final commit
+        db.session.commit()
+        
+        logger.info(f"Import complete: {imported} reviews, {photos_imported} photos, {skipped} skipped from {source}")
+        
+        return jsonify({
+            'success': True,
+            'imported': imported,
+            'photos': photos_imported,
+            'skipped': skipped,
+            'errors': errors[:10] if errors else []  # Return first 10 errors
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error importing competitor reviews: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/help/<path:article>')
 def help_article(article):
     """Generic help article router - handles various help pages"""
@@ -3977,6 +4525,216 @@ def submit_review(shop_id, product_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ==================== HOMEPAGE CAROUSEL WIDGET ====================
+
+@app.route('/widget/carousel/<shop_id>')
+def carousel_widget(shop_id):
+    """
+    Homepage review carousel widget - shows best reviews from all products
+    Can be embedded on any page (homepage, about page, etc.)
+    
+    Query params:
+    - limit: Number of reviews to show (default 10)
+    - title: Custom title
+    - subtitle: Custom subtitle
+    """
+    try:
+        from backend.models_v2 import Review, ReviewMedia, Shop
+        from sqlalchemy import func, case
+        
+        limit = min(int(request.args.get('limit', 10)), 50)
+        title = request.args.get('title', 'What Our Customers Say')
+        subtitle = request.args.get('subtitle', 'Real reviews from verified customers')
+        
+        # Get shop
+        shop = Shop.query.filter(
+            (Shop.sakura_shop_id == str(shop_id)) | 
+            (Shop.shopify_domain == shop_id) |
+            (Shop.shopify_domain.like(f'%{shop_id}%'))
+        ).first()
+        
+        if not shop:
+            try:
+                shop = Shop.query.get(int(shop_id))
+            except:
+                pass
+        
+        if not shop:
+            return render_template('carousel-widget.html', 
+                                 reviews=[], 
+                                 title=title, 
+                                 subtitle=subtitle,
+                                 average_rating='4.8',
+                                 total_reviews='0')
+        
+        # Get store-wide stats
+        total_reviews = Review.query.filter_by(shop_id=shop.id, status='published').count()
+        avg_rating = db.session.query(func.avg(Review.rating)).filter_by(
+            shop_id=shop.id, status='published'
+        ).scalar()
+        avg_rating = round(float(avg_rating) if avg_rating else 4.8, 1)
+        
+        # Get best reviews with photos - SMART SORT
+        # Subquery for media count
+        media_subquery = db.session.query(
+            ReviewMedia.review_id,
+            func.count(ReviewMedia.id).label('media_count')
+        ).filter(
+            ReviewMedia.status == 'active',
+            ReviewMedia.media_type == 'image'
+        ).group_by(ReviewMedia.review_id).subquery()
+        
+        # Get reviews with smart sorting
+        reviews_query = Review.query.filter_by(
+            shop_id=shop.id,
+            status='published'
+        ).filter(
+            Review.rating >= 4  # Only 4-5 star reviews
+        ).outerjoin(
+            media_subquery, Review.id == media_subquery.c.review_id
+        ).order_by(
+            # AI recommended first
+            case((Review.ai_recommended == True, 0), else_=1),
+            # Has photos
+            case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1),
+            # Has text content
+            case((func.length(func.coalesce(Review.body, '')) > 20, 0), else_=1),
+            # Higher rating
+            Review.rating.desc(),
+            # Quality score
+            func.coalesce(Review.quality_score, 0).desc(),
+            # Random for variety
+            func.random()
+        ).limit(limit)
+        
+        reviews_data = reviews_query.all()
+        
+        # Format reviews for template
+        formatted_reviews = []
+        for review in reviews_data:
+            # Get media for this review
+            media = ReviewMedia.query.filter_by(
+                review_id=review.id,
+                status='active',
+                media_type='image'
+            ).limit(3).all()
+            
+            formatted_reviews.append({
+                'id': review.id,
+                'author': review.reviewer_name or 'Customer',
+                'rating': review.rating,
+                'text': review.body[:200] + '...' if review.body and len(review.body) > 200 else review.body,
+                'date': review.review_date.strftime('%B %d, %Y') if review.review_date else '',
+                'verified': review.verified_purchase,
+                'ai_recommended': review.ai_recommended,
+                'media': [{'media_url': m.media_url} for m in media]
+            })
+        
+        return render_template('carousel-widget.html',
+                             reviews=formatted_reviews,
+                             title=title,
+                             subtitle=subtitle,
+                             average_rating=str(avg_rating),
+                             total_reviews=f"{total_reviews:,}" if total_reviews else '0')
+    
+    except Exception as e:
+        logger.error(f"Error loading carousel widget: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template('carousel-widget.html', 
+                             reviews=[], 
+                             title=title if 'title' in dir() else 'What Our Customers Say',
+                             subtitle=subtitle if 'subtitle' in dir() else 'Real reviews from verified customers',
+                             average_rating='4.8',
+                             total_reviews='0')
+
+
+@app.route('/api/carousel/<shop_id>')
+def carousel_api(shop_id):
+    """
+    API endpoint for carousel widget data (for JavaScript embedding)
+    """
+    try:
+        from backend.models_v2 import Review, ReviewMedia, Shop
+        from sqlalchemy import func, case
+        
+        limit = min(int(request.args.get('limit', 10)), 50)
+        
+        # Get shop
+        shop = Shop.query.filter(
+            (Shop.sakura_shop_id == str(shop_id)) | 
+            (Shop.shopify_domain == shop_id) |
+            (Shop.shopify_domain.like(f'%{shop_id}%'))
+        ).first()
+        
+        if not shop:
+            return jsonify({'success': False, 'error': 'Shop not found', 'reviews': []})
+        
+        # Get store-wide stats
+        total_reviews = Review.query.filter_by(shop_id=shop.id, status='published').count()
+        avg_rating = db.session.query(func.avg(Review.rating)).filter_by(
+            shop_id=shop.id, status='published'
+        ).scalar()
+        avg_rating = round(float(avg_rating) if avg_rating else 4.8, 1)
+        
+        # Get best reviews
+        media_subquery = db.session.query(
+            ReviewMedia.review_id,
+            func.count(ReviewMedia.id).label('media_count')
+        ).filter(
+            ReviewMedia.status == 'active',
+            ReviewMedia.media_type == 'image'
+        ).group_by(ReviewMedia.review_id).subquery()
+        
+        reviews_query = Review.query.filter_by(
+            shop_id=shop.id,
+            status='published'
+        ).filter(
+            Review.rating >= 4
+        ).outerjoin(
+            media_subquery, Review.id == media_subquery.c.review_id
+        ).order_by(
+            case((Review.ai_recommended == True, 0), else_=1),
+            case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1),
+            case((func.length(func.coalesce(Review.body, '')) > 20, 0), else_=1),
+            Review.rating.desc(),
+            func.coalesce(Review.quality_score, 0).desc()
+        ).limit(limit).all()
+        
+        formatted_reviews = []
+        for review in reviews_query:
+            media = ReviewMedia.query.filter_by(
+                review_id=review.id,
+                status='active',
+                media_type='image'
+            ).limit(3).all()
+            
+            formatted_reviews.append({
+                'id': review.id,
+                'author': review.reviewer_name or 'Customer',
+                'rating': review.rating,
+                'text': review.body[:200] + '...' if review.body and len(review.body) > 200 else review.body,
+                'date': review.review_date.isoformat() if review.review_date else None,
+                'verified': review.verified_purchase,
+                'ai_recommended': review.ai_recommended,
+                'photos': [m.media_url for m in media]
+            })
+        
+        return jsonify({
+            'success': True,
+            'reviews': formatted_reviews,
+            'stats': {
+                'total_reviews': total_reviews,
+                'average_rating': avg_rating
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"Error loading carousel API: {e}")
+        return jsonify({'success': False, 'error': str(e), 'reviews': []})
+
 
 def check_payment_status(shop_id):
     """
