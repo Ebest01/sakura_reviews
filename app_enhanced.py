@@ -5918,6 +5918,47 @@ def sakura_reviews_js():
             color: #ff69b4;
             text-decoration: underline;
         }
+        
+        /* Amazon-style Product Page Rating (under title) */
+        .sakura-product-rating {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 8px 0 12px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .sakura-product-rating-stars {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            color: #fbbf24;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .sakura-product-rating-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+        .sakura-product-rating-count {
+            font-size: 14px;
+            color: #64748b;
+            text-decoration: none;
+        }
+        .sakura-product-rating-count:hover {
+            color: #ff69b4;
+            text-decoration: underline;
+        }
+        .sakura-product-rating-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: inherit;
+        }
+        .sakura-product-rating-link:hover {
+            text-decoration: none;
+        }
     `;
     
     // Inject styles
@@ -5990,6 +6031,114 @@ def sakura_reviews_js():
             if (el) return el;
         }
         return document.body;
+    }
+    
+    function generateStarRatingHtml(rating, count) {
+        const fullStars = Math.floor(rating);
+        const hasHalf = rating % 1 >= 0.5;
+        let starsHtml = '';
+        for (let i = 0; i < fullStars; i++) starsHtml += '★';
+        if (hasHalf) starsHtml += '★'; // Half star
+        const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+        for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+        
+        return `
+            <div class="sakura-product-rating">
+                <a href="#sakura-reviews" class="sakura-product-rating-link">
+                    <span class="sakura-product-rating-number">${rating.toFixed(1)}</span>
+                    <span class="sakura-product-rating-stars">${starsHtml}</span>
+                    <span class="sakura-product-rating-count">(${count})</span>
+                </a>
+            </div>
+        `;
+    }
+    
+    async function injectProductRating() {
+        // Inject Amazon-style rating under product title
+        if (!isProductPage() || !SAKURA_CONFIG.productId) return;
+        
+        // Skip if already injected
+        if (document.querySelector('.sakura-product-rating')) {
+            console.log('🌸 Product rating already injected');
+            return;
+        }
+        
+        // Find product title (try multiple selectors for different themes)
+        const titleSelectors = [
+            'h1.product__title',
+            'h1.product-title',
+            '.product-single__title',
+            '.product-title',
+            '.product__heading h1',
+            'h1[class*="title"]',
+            '.product-form h1',
+            '.product-details h1',
+            'h1'
+        ];
+        
+        let titleElement = null;
+        for (const sel of titleSelectors) {
+            titleElement = document.querySelector(sel);
+            if (titleElement) {
+                console.log(`🌸 Found product title using selector: ${sel}`);
+                break;
+            }
+        }
+        
+        if (!titleElement) {
+            console.warn('🌸 Could not find product title, will retry...');
+            // Retry after a short delay (for dynamic themes)
+            setTimeout(injectProductRating, 500);
+            return;
+        }
+        
+        // Fetch rating from API
+        try {
+            const response = await fetch(`${SAKURA_CONFIG.apiUrl}/api/products/ratings?product_ids=${SAKURA_CONFIG.productId}`);
+            const data = await response.json();
+            
+            if (!data.success || !data.ratings[SAKURA_CONFIG.productId]) {
+                console.log('🌸 No ratings found for product');
+                return;
+            }
+            
+            const ratings = data.ratings[SAKURA_CONFIG.productId];
+            if (ratings.count === 0) {
+                console.log('🌸 Product has 0 reviews, skipping rating display');
+                return;
+            }
+            
+            // Create and inject rating
+            const ratingHtml = generateStarRatingHtml(ratings.average, ratings.count);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = ratingHtml;
+            const ratingElement = tempDiv.firstElementChild;
+            
+            // Make link scroll to reviews section
+            const link = ratingElement.querySelector('a');
+            if (link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Wait for widget to be injected, then scroll
+                    setTimeout(() => {
+                        const widget = document.querySelector('.sakura-reviews-widget');
+                        if (widget) {
+                            widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        } else {
+                            // Fallback: scroll to bottom
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Insert after title
+            titleElement.parentNode.insertBefore(ratingElement, titleElement.nextSibling);
+            console.log(`🌸 Product rating injected: ${ratings.average} stars (${ratings.count} reviews)`);
+            
+        } catch (error) {
+            console.warn('🌸 Error fetching product rating:', error);
+        }
     }
     
     function injectProductWidget() {
@@ -6376,8 +6525,11 @@ def sakura_reviews_js():
     
     // ==================== INITIALIZE ====================
     function init() {
-        // Product page: inject full widget for main product
-        injectProductWidget();
+        // Product page: inject rating under title (Amazon-style) and full widget
+        if (isProductPage()) {
+            injectProductRating(); // Inject rating under title first
+            injectProductWidget(); // Then inject full widget at bottom
+        }
         
         // ALL pages: inject star badges on product cards
         // (collection pages, related products on product pages, search results, etc.)
