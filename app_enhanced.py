@@ -5932,16 +5932,16 @@ def sakura_reviews_js():
             align-items: center;
             gap: 2px;
             color: #fbbf24;
-            font-size: 18px;
+            font-size: 20px;
             line-height: 1;
         }
         .sakura-product-rating-number {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 600;
             color: #1a202c;
         }
         .sakura-product-rating-count {
-            font-size: 14px;
+            font-size: 18px;
             color: #64748b;
             text-decoration: none;
         }
