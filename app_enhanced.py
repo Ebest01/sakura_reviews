@@ -54,6 +54,29 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from backend.models_v2 import db
 db.init_app(app)
 
+# Database migration flag
+_migrations_run = False
+
+@app.before_request
+def ensure_migrations():
+    """Run database migrations on first request"""
+    global _migrations_run
+    if not _migrations_run:
+        _migrations_run = True
+        try:
+            # Add helpful_yes and helpful_no columns if they don't exist
+            db.session.execute(db.text("""
+                ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_yes INTEGER DEFAULT 0;
+            """))
+            db.session.execute(db.text("""
+                ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_no INTEGER DEFAULT 0;
+            """))
+            db.session.commit()
+            logger.info("✅ Database migrations applied (helpful votes columns)")
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"⚠️ Migration note: {e}")
+
 # Import database integration
 try:
     from database_integration import DatabaseIntegration
@@ -1512,6 +1535,29 @@ def featured_reviews():
             'count': 0,
             'fallback': True
         })
+
+
+@app.route('/api/migrate-helpful-columns')
+def migrate_helpful_columns():
+    """Manually run migration to add helpful_yes and helpful_no columns"""
+    try:
+        db.session.execute(db.text("""
+            ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_yes INTEGER DEFAULT 0;
+        """))
+        db.session.execute(db.text("""
+            ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_no INTEGER DEFAULT 0;
+        """))
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Columns helpful_yes and helpful_no added successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/reviews/<int:review_id>/helpful', methods=['POST'])
@@ -6947,9 +6993,33 @@ def verify_webhook_hmac(data, hmac_header):
         logger.error(f"Error verifying webhook HMAC: {str(e)}")
         return False
 
+def run_database_migrations():
+    """Run any pending database migrations"""
+    try:
+        with app.app_context():
+            # Add helpful_yes and helpful_no columns if they don't exist
+            try:
+                db.session.execute(db.text("""
+                    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_yes INTEGER DEFAULT 0;
+                """))
+                db.session.execute(db.text("""
+                    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_no INTEGER DEFAULT 0;
+                """))
+                db.session.commit()
+                print("✅ Database migrations complete (helpful votes columns)")
+            except Exception as e:
+                db.session.rollback()
+                print(f"⚠️ Migration note: {e}")
+    except Exception as e:
+        print(f"⚠️ Migration skipped: {e}")
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5016))  # Use 5016 for fresh start (avoid cache)
     debug = os.environ.get('FLASK_ENV') == 'development'
+    
+    # Run migrations before starting
+    run_database_migrations()
     
     print("=" * 60)
     print("ReviewKing Enhanced API Starting...")
