@@ -444,7 +444,7 @@ We're not just building an app. We're building a movement.
 
 ### **Use Case 3: Established Store Switching from Loox**
 
-**Challenge:** Paying $49/month for Loox, limited to AliExpress only.
+**Challenge:** Paying $49/month for Loox, limited platform support.
 
 **Solution:** Switch to Sakura Reviews Pro ($39.99/month).
 
