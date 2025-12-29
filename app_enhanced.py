@@ -5872,7 +5872,10 @@ def sakura_reviews_js():
     const styles = `
         .sakura-reviews-widget {
             margin: 40px 0;
+            margin-bottom: 120px !important; /* Extra space to prevent footer overlap */
+            padding-bottom: 80px !important; /* Additional padding for "Load more" button */
             background: white;
+            scroll-margin-bottom: 100px; /* Space when scrolling to this section */
         }
         .sakura-reviews-separator {
             border-top: 1px solid #e2e8f0;
@@ -5883,6 +5886,13 @@ def sakura_reviews_js():
             background: white;
             margin: 0px auto;
             max-width: 1080px;
+            padding-bottom: 60px; /* Extra padding at bottom for "Load more" button */
+            min-height: 200px; /* Ensure minimum height */
+        }
+        .sakura-reviews-spacer {
+            height: 100px; /* Spacer to ensure "Load more" button is visible above footer */
+            width: 100%;
+            display: block;
         }
         
         /* Star Badge Styles for Collection Pages */
@@ -6006,10 +6016,11 @@ def sakura_reviews_js():
                         height="2048px"
                         frameborder="0"
                         scrolling="no"
-                        style="overflow: hidden; height: 2048px; width: 100%; border: none;"
+                        style="overflow: hidden; height: 2048px; width: 100%; border: none; display: block;"
                         title="Sakura Reviews Widget"
                         loading="lazy"
                     ></iframe>
+                    <div class="sakura-reviews-spacer"></div>
                 </div>
             </section>
         `;
@@ -6181,12 +6192,40 @@ def sakura_reviews_js():
         point.appendChild(container);
         console.log(`🌸 Sakura Reviews widget injected for product ${SAKURA_CONFIG.productId}`);
         
-        // Add iframe load error handler
+        // Add iframe load error handler and auto-resize
         const iframe = container.querySelector('iframe');
         if (iframe) {
             iframe.addEventListener('load', function() {
                 console.log('🌸 Widget iframe loaded');
+                
+                // Auto-resize iframe based on content
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const resizeIframe = () => {
+                        try {
+                            const height = iframeDoc.body.scrollHeight || iframeDoc.documentElement.scrollHeight;
+                            if (height > 0) {
+                                iframe.style.height = (height + 100) + 'px'; // Add extra space for "Load more" button
+                                console.log(`🌸 Iframe resized to ${height + 100}px`);
+                            }
+                        } catch (e) {
+                            // Cross-origin restriction - use postMessage instead
+                        }
+                    };
+                    
+                    // Try immediate resize
+                    setTimeout(resizeIframe, 500);
+                    
+                    // Watch for content changes
+                    if (iframeDoc.body) {
+                        const observer = new MutationObserver(resizeIframe);
+                        observer.observe(iframeDoc.body, { childList: true, subtree: true });
+                    }
+                } catch (e) {
+                    console.log('🌸 Using postMessage for iframe resize (cross-origin)');
+                }
             });
+            
             iframe.addEventListener('error', function() {
                 console.error('🌸 Widget iframe failed to load');
             });
@@ -6521,6 +6560,38 @@ def sakura_reviews_js():
         } catch (error) {
             console.error('🌸 Error fetching ratings:', error);
         }
+    }
+    
+    // ==================== GLOBAL IFRAME RESIZE HANDLER ====================
+    // Set up once to handle resize messages from all iframes
+    if (!window.sakuraResizeHandlerSetup) {
+        window.sakuraResizeHandlerSetup = true;
+        
+        window.addEventListener('message', function(event) {
+            // Check if message is from our widget
+            try {
+                const widgetOrigin = new URL(SAKURA_CONFIG.apiUrl).origin;
+                if (event.origin !== widgetOrigin) {
+                    return; // Ignore messages from other origins
+                }
+            } catch (e) {
+                // If URL parsing fails, check if origin contains our domain
+                if (!event.origin.includes(SAKURA_CONFIG.apiUrl.replace('https://', '').replace('http://', '').split('/')[0])) {
+                    return;
+                }
+            }
+            
+            if (event.data && event.data.type === 'resize' && event.data.height) {
+                // Find all Sakura review iframes and resize them
+                const iframes = document.querySelectorAll('iframe[id^="sakuraReviewsFrame"]');
+                for (const iframe of iframes) {
+                    // Add extra space (100px) to ensure "Load more" button is visible above footer
+                    const newHeight = event.data.height + 100;
+                    iframe.style.height = newHeight + 'px';
+                    console.log(`🌸 Iframe ${iframe.id} resized to ${newHeight}px`);
+                }
+            }
+        });
     }
     
     // ==================== INITIALIZE ====================
