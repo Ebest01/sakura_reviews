@@ -5966,15 +5966,17 @@ def sakura_reviews_js():
     }
     
     function findProductCards() {
-        // Common Shopify product card selectors
+        // Shopify product card selectors (prioritize common ones)
+        // Test store uses: <li class="grid__item">
         const cardSelectors = [
+            'li.grid__item',  // Test store structure
+            '.grid__item',    // Alternative
             '.product-card',
             '.card-product',
             '.grid-product',
             '.product-grid-item',
             '.product-item',
             '.collection-product-card',
-            '.grid__item[data-product-id]',
             '[data-product-card]',
             '.product-card-wrapper',
             '.product'
@@ -5985,6 +5987,7 @@ def sakura_reviews_js():
             const found = document.querySelectorAll(sel);
             if (found.length > 0) {
                 cards = Array.from(found);
+                console.log(`🌸 Found ${cards.length} cards using selector: ${sel}`);
                 break;
             }
         }
@@ -6016,12 +6019,27 @@ def sakura_reviews_js():
         }
         
         // 3. Extract from card element IDs (Shopify embeds product ID in template IDs)
-        // Example: id="CardLink-template--25679685058874__product-grid-10045740024122"
-        const cardId = card.id || card.querySelector('[id*="product-grid"]')?.id;
-        if (cardId) {
+        // Test store: id="CardLink-template--25679685058874__product-grid-10045740024122"
+        // Look in card itself and nested elements (especially links)
+        const allIds = [];
+        if (card.id) allIds.push(card.id);
+        
+        // Check all elements with IDs inside the card
+        const elementsWithIds = card.querySelectorAll('[id*="product-grid"]');
+        for (const el of elementsWithIds) {
+            if (el.id) allIds.push(el.id);
+        }
+        
+        // Also check links specifically (test store has ID on the link)
+        const links = card.querySelectorAll('a[id*="product-grid"], a[id*="CardLink"]');
+        for (const link of links) {
+            if (link.id) allIds.push(link.id);
+        }
+        
+        for (const cardId of allIds) {
             const match = cardId.match(/product-grid-(\\d+)/);
             if (match && match[1]) {
-                console.log(`🌸 Found product ID from card ID attribute: ${match[1]}`);
+                console.log(`🌸 Found product ID from ID attribute: ${match[1]}`);
                 return match[1];
             }
         }
@@ -6087,7 +6105,23 @@ def sakura_reviews_js():
     }
     
     function findPriceElement(card) {
-        // Find where to insert the star badge (usually near the price)
+        // Find where to insert the star badge (like Loox does - before price in card-information)
+        // Test store structure: <div class="card-information"> → <div class="price">
+        
+        // First, try to find card-information (where Loox injects)
+        const cardInfo = card.querySelector('.card-information');
+        if (cardInfo) {
+            // Find price inside card-information
+            const price = cardInfo.querySelector('.price');
+            if (price) {
+                // Insert before price (like Loox does)
+                return price;
+            }
+            // If no price, insert at the start of card-information
+            return cardInfo;
+        }
+        
+        // Fallback: find price directly
         const priceSelectors = [
             '.price',
             '.product-price',
