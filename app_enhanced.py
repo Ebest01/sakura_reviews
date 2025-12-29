@@ -950,18 +950,21 @@ def debug_reviews():
         cursor.execute("SELECT COUNT(*) FROM reviews;")
         total_all = cursor.fetchone()[0]
         
-        # Check published reviews
-        cursor.execute("SELECT COUNT(*) FROM reviews WHERE status = 'published' AND published = true;")
-        total_published = cursor.fetchone()[0]
+        # Check reviews by status
+        cursor.execute("SELECT status, COUNT(*) FROM reviews GROUP BY status;")
+        status_counts = {row[0]: row[1] for row in cursor.fetchall()}
         
-        # Check reviews with any images data (published)
+        # Check published column values
+        cursor.execute("SELECT published, COUNT(*) FROM reviews GROUP BY published;")
+        published_counts = {str(row[0]): row[1] for row in cursor.fetchall()}
+        
+        # Check reviews with any images data (ANY status - for debugging)
         cursor.execute("""
             SELECT id, reviewer_name, rating, 
                    images::text as images_raw,
                    LENGTH(images::text) as img_len,
                    status, published
             FROM reviews 
-            WHERE status = 'published' AND published = true
             ORDER BY id DESC 
             LIMIT 10;
         """)
@@ -1010,7 +1013,8 @@ def debug_reviews():
         
         return jsonify({
             'total_all_reviews': total_all,
-            'total_published_reviews': total_published,
+            'status_counts': status_counts,
+            'published_column_counts': published_counts,
             'review_media_count': total_media,
             'media_types_found': media_types,
             'sample_reviews': samples,
