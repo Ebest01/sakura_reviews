@@ -108,6 +108,52 @@ app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def anonymize_reviewer_name(name):
+    """
+    Anonymize reviewer names to hide that reviews came from AliExpress.
+    - "AliExpress Shopper" → random "X***y" format
+    - "Customer" → random "X***y" format  
+    - Already anonymized (contains ***) → keep as is
+    - Regular names → keep as is
+    """
+    import string
+    
+    if not name:
+        # Generate random name
+        first = random.choice(string.ascii_uppercase)
+        last = random.choice(string.ascii_lowercase)
+        return f"{first}***{last}"
+    
+    name_lower = name.lower().strip()
+    
+    # Check if it's a generic/platform name that should be anonymized
+    generic_names = [
+        'aliexpress shopper', 
+        'aliexpress buyer',
+        'aliexpress customer',
+        'customer',
+        'anonymous',
+        'shopper',
+        'buyer'
+    ]
+    
+    if name_lower in generic_names:
+        # Generate random anonymized name like "A***r" or "M***k"
+        first = random.choice(string.ascii_uppercase)
+        last = random.choice(string.ascii_lowercase)
+        return f"{first}***{last}"
+    
+    # If already anonymized (contains ***), keep it
+    if '***' in name:
+        return name
+    
+    # Keep real names as-is
+    return name
+
+# =============================================================================
 # ERROR HANDLERS - User-friendly error pages
 # =============================================================================
 
@@ -439,7 +485,7 @@ class EnhancedReviewExtractor:
                     'id': r.get('evaluationId', str(r.get('id', ''))),
                     'platform': 'aliexpress',
                     'product_id': product_id,
-                    'reviewer_name': r.get('buyerName', 'Customer'),
+                    'reviewer_name': anonymize_reviewer_name(r.get('buyerName', '')),
                     'text': r.get('buyerFeedback', ''),
                     'rating': int(r.get('buyerEval', 100)),
                     'date': r.get('evalTime', datetime.now().strftime('%Y-%m-%d')),
@@ -497,7 +543,7 @@ class EnhancedReviewExtractor:
                         'id': f'dom_{product_id}_{idx}',
                         'platform': 'aliexpress',
                         'product_id': product_id,
-                        'reviewer_name': name,
+                        'reviewer_name': anonymize_reviewer_name(name),
                         'text': text,
                         'rating': rating,
                         'date': datetime.now().strftime('%Y-%m-%d'),
@@ -576,7 +622,7 @@ class EnhancedReviewExtractor:
                     'id': eval_item.get('evaluationId', str(eval_item.get('id', ''))),
                     'platform': 'aliexpress',
                     'product_id': product_id,
-                    'reviewer_name': eval_item.get('buyerName', 'Customer'),
+                    'reviewer_name': anonymize_reviewer_name(eval_item.get('buyerName', '')),
                     'text': eval_item.get('buyerFeedback', ''),
                     'rating': int(eval_item.get('buyerEval', 100)),  # AliExpress uses 0-100 scale
                     'date': eval_item.get('evalTime', datetime.now().strftime('%Y-%m-%d')),
@@ -935,6 +981,77 @@ shopify_helper = ShopifyAPIHelper()
 def index():
     """Beautiful Sakura Reviews landing page"""
     return render_template('landing-page.html')
+
+
+@app.route('/api/fix-aliexpress-names', methods=['POST'])
+def fix_aliexpress_names():
+    """
+    Fix all "AliExpress Shopper" and similar generic names in the database
+    Changes them to random anonymized format like "A***r"
+    """
+    import psycopg2
+    import string
+    
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        
+        # Find all reviews with generic names
+        generic_names = [
+            'AliExpress Shopper',
+            'AliExpress Buyer', 
+            'AliExpress Customer',
+            'Customer',
+            'Anonymous',
+            'Shopper',
+            'Buyer'
+        ]
+        
+        # Count how many need fixing
+        placeholders = ','.join(['%s'] * len(generic_names))
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM reviews 
+            WHERE LOWER(reviewer_name) IN ({placeholders});
+        """, [n.lower() for n in generic_names])
+        count_to_fix = cursor.fetchone()[0]
+        
+        # Update each one with a random name
+        fixed_count = 0
+        cursor.execute(f"""
+            SELECT id, reviewer_name FROM reviews 
+            WHERE LOWER(reviewer_name) IN ({placeholders});
+        """, [n.lower() for n in generic_names])
+        
+        rows = cursor.fetchall()
+        for row in rows:
+            review_id = row[0]
+            # Generate random anonymized name
+            first = random.choice(string.ascii_uppercase)
+            last = random.choice(string.ascii_lowercase)
+            new_name = f"{first}***{last}"
+            
+            cursor.execute("""
+                UPDATE reviews SET reviewer_name = %s WHERE id = %s;
+            """, (new_name, review_id))
+            fixed_count += 1
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Fixed {fixed_count} reviewer names',
+            'total_found': count_to_fix,
+            'fixed': fixed_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fixing names: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/debug-reviews')
