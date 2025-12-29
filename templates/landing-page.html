@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakura Reviews - Visual Reviews That Sell Better</title>
+    <meta name="description" content="Import high-quality reviews from 10+ platforms (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more) in seconds. AI quality scoring. Build trust instantly.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-pink: #ff6b9d;
+            --primary-purple: #9d4edd;
+            --dark-bg: #0a0a0f;
+            --dark-card: #141420;
+            --text-light: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --gradient-primary: linear-gradient(135deg, #ff6b9d 0%, #9d4edd 100%);
+            --gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-pink);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-pink);
+            color: var(--primary-pink);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 80px;
+            padding: 100px 40px;
+            text-align: center;
+            background: var(--gradient-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 107, 157, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 107, 157, 0.1);
+            border: 1px solid rgba(255, 107, 157, 0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+            color: var(--primary-pink);
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            line-height: 1.1;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subtitle {
+            font-size: 1.4rem;
+            color: var(--text-muted);
+            margin-bottom: 50px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 18px 40px;
+            font-size: 1.1rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stats-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+        }
+
+        .hero-stats-item .star {
+            color: #ffd700;
+        }
+
+        /* Product Showcase */
+        .product-showcase {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .product-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .product-stars {
+            color: #ffd700;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .product-review {
+            color: var(--text-light);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .product-reviewer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .verified-badge {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: var(--dark-card);
+            padding: 80px 40px;
+            margin: 80px 0;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .platform-badges {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 60px;
+            flex-wrap: wrap;
+        }
+
+        .platform-badge {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .platform-badge.orange { background: #ff6b35; color: white; }
+        .platform-badge.yellow { background: #ffd93d; color: #333; }
+        .platform-badge.purple { background: #9d4edd; color: white; }
+        .platform-badge.blue { background: #4a90e2; color: white; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .stat-description {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            max-width: 1200px;
+            margin: 100px auto;
+            padding: 0 40px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 60px;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .step-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .step-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 25px;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            width: 40px;
+            height: 40px;
+            background: var(--primary-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .step-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+
+        .step-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Features Section */
+        .features-section {
+            background: var(--dark-card);
+            padding: 100px 40px;
+            margin: 80px 0;
+        }
+
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            background: var(--dark-bg);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary-pink);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon-wrapper {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 107, 157, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Comparison Table */
+        .comparison-section {
+            max-width: 1200px;
+            margin: 100px auto;
+            padding: 0 40px;
+        }
+
+        .comparison-table {
+            background: var(--dark-card);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: var(--dark-bg);
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-light);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table th.highlight {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .comparison-table td {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #4caf50;
+            font-weight: 700;
+        }
+
+        .cross {
+            color: #f44336;
+        }
+
+        /* Testimonials */
+        .testimonials-section {
+            background: var(--dark-card);
+            padding: 100px 40px;
+            margin: 80px 0;
+        }
+
+        .testimonials-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .testimonial-card {
+            background: var(--dark-bg);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .testimonial-text {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .author-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            object-fit: cover;
+        }
+
+        .author-info h4 {
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+
+        .author-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .testimonial-highlight {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        /* Pricing */
+        .pricing-section {
+            max-width: 1200px;
+            margin: 100px auto;
+            padding: 0 40px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .pricing-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pricing-card.popular {
+            border: 2px solid var(--primary-pink);
+            transform: scale(1.05);
+        }
+
+        .pricing-card.popular::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gradient-primary);
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .pricing-period {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            color: var(--text-light);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: #4caf50;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--gradient-dark);
+            padding: 100px 40px;
+            text-align: center;
+            margin: 100px 0;
+        }
+
+        .cta-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .cta-section h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-card);
+            padding: 60px 40px 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h4 {
+            color: var(--text-light);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column ul li {
+            margin-bottom: 12px;
+        }
+
+        .footer-column a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-column a:hover {
+            color: var(--primary-pink);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .product-showcase,
+            .stats-grid,
+            .steps-grid,
+            .features-grid,
+            .testimonials-grid,
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">🌸 Sakura Reviews</div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                </ul>
+            </nav>
+            <div class="nav-buttons">
+                <a href="/admin/login" class="btn-secondary">Sign In</a>
+                <a href="/auth/install" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">Sakura Reviews vs. Loox vs. Yotpo ⭐ 4.9/5</div>
+            <h1>Visual Reviews <span class="gradient-text">Sell Better</span></h1>
+            <p class="subtitle">Import high-quality reviews from 10+ platforms (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more) in seconds. One-click bookmarklet. AI quality scoring. Build trust instantly.</p>
+            <div class="hero-cta">
+                <a href="/auth/install" class="btn-primary btn-large">Start Free Trial</a>
+                <a href="#how-it-works" class="btn-secondary btn-large">Watch Demo</a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stats-item">
+                    <span class="star">⭐</span>
+                    <span>Join 250,000+ merchants</span>
+                </div>
+                <div class="hero-stats-item">
+                    <span>4.9/5 rating</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Showcase -->
+    <div class="product-showcase">
+        <div class="product-card">
+            <div class="product-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            <div class="product-stars">★★★★★</div>
+            <p class="product-review">The product exceeded my expectations. Great quality and fast shipping!</p>
+            <div class="product-reviewer">
+                <span>Sarah K.</span>
+                <span class="verified-badge">Verified Purchase</span>
+            </div>
+        </div>
+        <div class="product-card">
+            <div class="product-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+            <div class="product-stars">★★★★★</div>
+            <p class="product-review">Great quality and fast delivery. My gift was a hit!</p>
+            <div class="product-reviewer">
+                <span>John S.</span>
+                <span class="verified-badge">Verified Purchase</span>
+            </div>
+        </div>
+        <div class="product-card">
+            <div class="product-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+            <div class="product-stars">★★★★★</div>
+            <p class="product-review">Good value for my son. He loves riding it everyday.</p>
+            <div class="product-reviewer">
+                <span>Marcus L.</span>
+                <span class="verified-badge">Verified Purchase</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-container">
+            <div class="platform-badges">
+                <div class="platform-badge orange">AliExpress</div>
+                <div class="platform-badge yellow">Amazon</div>
+                <div class="platform-badge purple">eBay</div>
+                <div class="platform-badge blue">Walmart</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">270%</div>
+                    <div class="stat-label">Average Conversion Increase</div>
+                    <div class="stat-description">review driven conversion</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">50x</div>
+                    <div class="stat-label">Faster Than Competitors</div>
+                    <div class="stat-description">import 150+ reviews in 2 minutes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">10+</div>
+                    <div class="stat-label">Platform Support</div>
+                    <div class="stat-description">AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$240</div>
+                    <div class="stat-label">Saved Per Year</div>
+                    <div class="stat-description">vs Loox and other competitors</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Three simple steps to flood your product pages with social proof!</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-icon">⚡</div>
+                <h3>Add Bookmarklet</h3>
+                <p>Drag the 'Add to Sakura Reviews' bookmarklet to your browser's bookmark bar. One-click import, makes AI scoring.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-icon">⭐</div>
+                <h3>Browse & Click</h3>
+                <p>Visit any product on AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, or other supported platforms. Click and Sakura Reviews imports instantly.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-icon">⬇️</div>
+                <h3>Import Reviews</h3>
+                <p>Select your Shopify store, choose reviews to be imported (or import all 150+ at once), and import. Easy. Import 150+ reviews in 2 minutes.</p>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 40px;">
+            <span style="background: var(--gradient-primary); padding: 10px 30px; border-radius: 50px; font-weight: 600;">2 minutes from zero to 150+ reviews</span>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="features-container">
+            <h2 class="section-title">Everything You Need to Build Trust</h2>
+            <p class="section-subtitle">Powerful features designed and built to help you import, manage, and display high-quality reviews that convert.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">🌍</div>
+                    <h3>10+ Platform Support</h3>
+                    <p>Import from AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more. Share with 250,000+ users and access reviews from all major marketplaces.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">🤖</div>
+                    <h3>AI Quality Scoring</h3>
+                    <p>Advanced AI-driven scoring system evaluates reviews for content, photo quality, authenticity, and engagement. Show only the best.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">⚡</div>
+                    <h3>Bookmarklet Workflow</h3>
+                    <p>One-click import from any product page. No copy-paste, just browse, click, and import. Takes seconds, not hours.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">📦</div>
+                    <h3>Bulk Import Power</h3>
+                    <p>Import 150+ reviews at once. What takes 5+ hours with competitors takes 2 minutes with Sakura Reviews. 50x faster.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">💰</div>
+                    <h3>Better Pricing</h3>
+                    <p>Save $240-$1200 vs competitors. Free plan with 50 reviews forever. Basic at $19.99/month vs Loox $29.99 for 500 reviews.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">📊</div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Track review performance, AI score distribution, and conversion impact. Data-driven insights to scale your store.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section">
+        <h2 class="section-title">Why Merchants Switch from Loox</h2>
+        <p class="section-subtitle">Side-by-side comparison. The choice is clear.</p>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Features</th>
+                        <th class="highlight">Sakura Reviews</th>
+                        <th>Loox</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Platform Supported</strong></td>
+                        <td class="check">AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more</td>
+                        <td>Judge.me, Yotpo, Okendo, AliExpress, Shopify Reviews, Stamped, Reviews.io, Junip, Custom file</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI Quality Scoring</strong></td>
+                        <td class="check">AI score & moderation</td>
+                        <td class="cross">None</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bulk Import</strong></td>
+                        <td class="check">150+ reviews at once</td>
+                        <td class="cross">One-by-one</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Free Plan</strong></td>
+                        <td class="check">50 reviews forever</td>
+                        <td>14-day trial only</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Basic Plan Price</strong></td>
+                        <td class="check">$19.99/month, 500 reviews</td>
+                        <td>$29.99/month, 500 reviews</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pro Plan Price</strong></td>
+                        <td class="check">$39.99/month, 5,000 reviews</td>
+                        <td>$49.99/month, 5,000 reviews</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Review Moderation</strong></td>
+                        <td class="check">Full CRM control</td>
+                        <td>Limited control</td>
+                    </tr>
+                    <tr>
+                        <td><strong>API Access</strong></td>
+                        <td class="check">Included in Pro</td>
+                        <td>Pro plan only</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="#comparison" class="btn-primary">See Sakura Reviews vs. Loox vs. Yotpo</a>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials-section" id="testimonials">
+        <div class="testimonials-container">
+            <h2 class="section-title">Loved by Merchants Worldwide</h2>
+            <p class="section-subtitle">Join thousands of successful merchants who trust Sakura Reviews to grow their business.</p>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"Switched from Loox to Sakura Reviews. Saved $200/month, got 4x more features, and my conversion rate increased by 30%. Best decision I made this year!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar" style="background: var(--gradient-primary);"></div>
+                        <div class="author-info">
+                            <h4>Sarah Chen</h4>
+                            <p>Online Store Owner</p>
+                        </div>
+                    </div>
+                    <div class="testimonial-highlight">30% conversion increase</div>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"The bulk import feature alone saved me 12 hours in the first week. The AI tool helps me find the best reviews. I highly recommend!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar" style="background: var(--gradient-primary);"></div>
+                        <div class="author-info">
+                            <h4>Mike Rodriguez</h4>
+                            <p>eCommerce Store</p>
+                        </div>
+                    </div>
+                    <div class="testimonial-highlight">12 hours saved per week</div>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"Sakura Reviews supports Amazon, AliExpress, eBay, WooCommerce, Etsy. I can import from all marketplaces in one place, which saves me time."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar" style="background: var(--gradient-primary);"></div>
+                        <div class="author-info">
+                            <h4>David Kim</h4>
+                            <p>Multi-Channel Seller</p>
+                        </div>
+                    </div>
+                    <div class="testimonial-highlight">20% increase in time saved</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing-section" id="pricing">
+        <h2 class="section-title">Simple, Transparent Pricing</h2>
+        <p class="section-subtitle">Start free forever. Upgrade when ready. Better features, lower prices than Loox, Judge.me, or Yotpo.</p>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free Forever</h3>
+                <div class="pricing-price">$0</div>
+                <div class="pricing-period">per month</div>
+                <a href="/auth/install" class="btn-primary" style="width: 100%; text-align: center; display: block; margin-bottom: 30px;">Start Free</a>
+                <ul class="pricing-features">
+                    <li>50 reviews forever</li>
+                    <li>Basic widget</li>
+                    <li>Multi-platform import</li>
+                    <li>AI enabled (basic)</li>
+                    <li>No credit card required</li>
+                </ul>
+            </div>
+            <div class="pricing-card popular">
+                <h3>Basic</h3>
+                <div class="pricing-price">$19.99</div>
+                <div class="pricing-period">per month</div>
+                <a href="/auth/install" class="btn-primary" style="width: 100%; text-align: center; display: block; margin-bottom: 30px;">Start Free Trial</a>
+                <ul class="pricing-features">
+                    <li>500 reviews per month</li>
+                    <li>All 10+ platforms</li>
+                    <li>AI quality scoring</li>
+                    <li>Custom widget styling</li>
+                    <li>Photo & video reviews</li>
+                    <li>Priority support</li>
+                    <li>Bulk import (150+ at once)</li>
+                </ul>
+            </div>
+            <div class="pricing-card">
+                <h3>Pro</h3>
+                <div class="pricing-price">$39.99</div>
+                <div class="pricing-period">per month</div>
+                <a href="/auth/install" class="btn-primary" style="width: 100%; text-align: center; display: block; margin-bottom: 30px;">Start Free Trial</a>
+                <ul class="pricing-features">
+                    <li>5,000 reviews per month</li>
+                    <li>AI bulk import</li>
+                    <li>Advanced analytics</li>
+                    <li>White label reviews</li>
+                    <li>API access</li>
+                    <li>Dedicated support</li>
+                    <li>Custom coding (beta)</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2>Ready to Join 250,000+ Merchants?</h2>
+            <p>Start free forever. No credit card required. Import your first 50 reviews in under 2 minutes.</p>
+            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                <a href="/auth/install" class="btn-primary btn-large">Start Free Trial</a>
+                <a href="#how-it-works" class="btn-secondary btn-large">Watch Demo</a>
+            </div>
+            <div class="hero-stats" style="margin-top: 40px;">
+                <div class="hero-stats-item">
+                    <span class="star">⭐</span>
+                    <span>Join 250,000+ merchants</span>
+                </div>
+                <div class="hero-stats-item">
+                    <span>4.9/5 rating</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h4>🌸 Sakura Reviews</h4>
+                    <p style="color: var(--text-muted); margin-top: 15px;">Import high-quality reviews and boost your conversions with AI-powered quality scoring.</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="/help">Updates</a></li>
+                        <li><a href="/help">API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="/help">About</a></li>
+                        <li><a href="/help">Blog</a></li>
+                        <li><a href="/help">Careers</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#comparison">Comparison</a></li>
+                        <li><a href="/help">Help Center</a></li>
+                        <li><a href="/help">Status</a></li>
+                        <li><a href="/help">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="/terms">Terms</a></li>
+                        <li><a href="/privacy">Privacy</a></li>
+                        <li><a href="/help">Security</a></li>
+                        <li><a href="/dpa">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 Sakura Reviews. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

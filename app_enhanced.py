@@ -933,15 +933,10 @@ shopify_helper = ShopifyAPIHelper()
 
 @app.route('/')
 def index():
-    """Beautiful Sakura Reviews welcome page"""
-    # Get the host URL for the bookmarklet
-    host = request.host_url.rstrip('/')
-    bookmarklet_code = f"javascript:(function(){{var s=document.createElement('script');s.src='{host}/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);}})();"
-    bookmarklet_code_escaped = bookmarklet_code.replace("'", "\\'")
-    
-    return f"""
-    <!DOCTYPE html>
-    <html lang="en">
+    """Beautiful Sakura Reviews landing page"""
+    return render_template('landing-page.html')
+
+
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
