@@ -1210,7 +1210,7 @@ def featured_reviews():
                     'id': rev_id,
                     'reviewer_name': name or 'Anonymous',
                     'rating': rating or 5,
-                    'body': (body[:200] + '...') if body and len(body) > 200 else (body or ''),
+                    'body': (body[:185] + '...') if body and len(body) > 185 else (body or ''),
                     'verified_purchase': verified or False,
                     'review_date': review_date.strftime('%Y-%m-%d') if review_date else None,
                     'photos': photos,
