@@ -554,7 +554,7 @@ def bookmarklet():
     
     // Global state
     let allReviews = [];
-    let currentFilter = 'all';
+    let currentFilter = 'ai_recommended';  // Default to AI Recommended (best quality reviews)
     
     // LOOX'S EXACT EXTRACTION LOGIC
     function extractProductInfo() {{

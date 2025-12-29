@@ -1695,7 +1695,7 @@ def bookmarklet():
             this.searchTimeout = null;
             this.allReviews = [];  // Store all reviews
             this.reviews = [];  // Filtered reviews for display
-            this.currentFilter = 'all';  // Current filter
+            this.currentFilter = 'ai_recommended';  // Default to AI Recommended (best quality reviews)
             this.selectedCountry = 'all';  // Country filter
             this.showTranslations = true;  // Translation toggle (default ON)
             this.modalProductId = null;  // Store product ID clicked in modal
