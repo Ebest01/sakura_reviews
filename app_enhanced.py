@@ -103,6 +103,79 @@ class Config:
 app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
 
+# =============================================================================
+# ERROR HANDLERS - User-friendly error pages
+# =============================================================================
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """Handle 404 errors"""
+    return render_template('error.html', error_code=404), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    """Handle 500 errors"""
+    logger.error(f"Internal server error: {str(e)}")
+    return render_template('error.html', error_code=500), 500
+
+@app.errorhandler(403)
+def forbidden(e):
+    """Handle 403 errors"""
+    return render_template('error.html', error_code=403), 403
+
+@app.errorhandler(401)
+def unauthorized(e):
+    """Handle 401 errors"""
+    return render_template('error.html', error_code=401), 401
+
+# =============================================================================
+# APP DASHBOARD - Main app interface in Shopify Admin
+# =============================================================================
+
+@app.route('/app')
+@app.route('/app/dashboard')
+def app_dashboard():
+    """
+    Main app dashboard - shown when merchant opens app in Shopify Admin
+    """
+    shop = request.args.get('shop') or session.get('shop_domain')
+    
+    # Get stats from database if available
+    stats = {
+        'shop_domain': shop,
+        'plan': 'Free',
+        'total_reviews': 0,
+        'avg_rating': '0.0',
+        'products_with_reviews': 0,
+        'review_limit': 50,
+        'used_reviews': 0,
+        'remaining_reviews': 50
+    }
+    
+    if db_integration and shop:
+        try:
+            from backend.models_v2 import Shop, Review, Product
+            shop_record = Shop.query.filter_by(shop_domain=shop).first()
+            if shop_record:
+                # Get review stats
+                review_count = Review.query.filter_by(shop_id=shop_record.id).count()
+                stats['total_reviews'] = review_count
+                stats['used_reviews'] = review_count
+                stats['remaining_reviews'] = max(0, stats['review_limit'] - review_count)
+                
+                # Get average rating
+                from sqlalchemy import func
+                avg = db.session.query(func.avg(Review.rating)).filter_by(shop_id=shop_record.id).scalar()
+                stats['avg_rating'] = f"{float(avg):.1f}" if avg else '0.0'
+                
+                # Get products with reviews count
+                products_count = db.session.query(func.count(func.distinct(Review.product_id))).filter_by(shop_id=shop_record.id).scalar()
+                stats['products_with_reviews'] = products_count or 0
+        except Exception as e:
+            logger.error(f"Error fetching dashboard stats: {e}")
+    
+    return render_template('app-dashboard.html', **stats)
+
 # In-memory storage for demo (use Redis/DB in production)
 import_sessions = {}
 analytics_events = []
