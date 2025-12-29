@@ -1566,31 +1566,47 @@ def api_products_ratings():
     Get review ratings/counts for multiple products at once
     Used for displaying star badges on collection pages
     
-    Request (GET): ?product_ids=123,456,789
-    Request (POST): { "product_ids": ["123", "456", "789"] }
+    Accepts both numeric product IDs and product handles (URL slugs)
+    
+    Request (GET): ?product_ids=123,456,789 OR ?handles=product-1,product-2
+    Request (POST): { "product_ids": ["123", "456"] } OR { "handles": ["product-1", "product-2"] }
     
     Response: {
         "success": true,
         "ratings": {
-            "123": { "count": 15, "average": 4.7, "distribution": {1:0, 2:1, 3:2, 4:5, 5:7} },
-            "456": { "count": 6, "average": 5.0, "distribution": {1:0, 2:0, 3:0, 4:1, 5:5} }
+            "123": { "count": 15, "average": 4.7 },
+            "456": { "count": 6, "average": 5.0 }
         }
     }
     """
     try:
-        from backend.models_v2 import Review
+        from backend.models_v2 import Review, Product
         from sqlalchemy import func
         
-        # Get product IDs from request
+        # Get product IDs or handles from request
         if request.method == 'POST':
             data = request.get_json() or {}
             product_ids = data.get('product_ids', [])
+            handles = data.get('handles', [])
         else:
             product_ids_str = request.args.get('product_ids', '')
+            handles_str = request.args.get('handles', '')
             product_ids = [p.strip() for p in product_ids_str.split(',') if p.strip()]
+            handles = [h.strip() for h in handles_str.split(',') if h.strip()]
+        
+        # If handles provided, map them to product IDs via Product table
+        if handles:
+            products = Product.query.filter(
+                Product.shopify_product_handle.in_(handles)
+            ).all()
+            handle_to_id = {p.shopify_product_handle: p.shopify_product_id for p in products}
+            # Add mapped IDs to product_ids list
+            for handle in handles:
+                if handle in handle_to_id:
+                    product_ids.append(str(handle_to_id[handle]))
         
         if not product_ids:
-            return jsonify({'success': False, 'error': 'No product_ids provided', 'ratings': {}})
+            return jsonify({'success': False, 'error': 'No product_ids or handles provided', 'ratings': {}})
         
         # Limit to prevent abuse
         product_ids = product_ids[:100]
@@ -1605,18 +1621,30 @@ def api_products_ratings():
             Review.status == 'published'
         ).group_by(Review.shopify_product_id).all()
         
-        # Build response
+        # Build response - use original identifier (ID or handle) as key
         ratings = {}
+        id_to_handle = {}
+        
+        # Build reverse mapping if we had handles
+        if handles:
+            for handle, pid in handle_to_id.items():
+                id_to_handle[str(pid)] = handle
+        
         for product_id, count, average in ratings_data:
-            ratings[str(product_id)] = {
+            pid_str = str(product_id)
+            # Use handle as key if we mapped it, otherwise use ID
+            key = id_to_handle.get(pid_str, pid_str)
+            ratings[key] = {
                 'count': count,
                 'average': round(float(average), 1) if average else 0
             }
         
         # Add empty entries for products with no reviews
         for pid in product_ids:
-            if str(pid) not in ratings:
-                ratings[str(pid)] = {'count': 0, 'average': 0}
+            pid_str = str(pid)
+            key = id_to_handle.get(pid_str, pid_str)
+            if key not in ratings:
+                ratings[key] = {'count': 0, 'average': 0}
         
         return jsonify({
             'success': True,
@@ -1625,6 +1653,8 @@ def api_products_ratings():
     
     except Exception as e:
         logger.error(f"Error fetching product ratings: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e), 'ratings': {}})
 
 
@@ -5916,28 +5946,61 @@ def sakura_reviews_js():
     }
     
     function extractProductId(card) {
-        // Try various methods to extract product ID
+        // Try various methods to extract NUMERIC product ID (not handle!)
         
-        // 1. Data attribute
+        // 1. Data attribute (most common - numeric ID)
         const dataId = card.getAttribute('data-product-id') || 
                        card.getAttribute('data-id') ||
                        card.querySelector('[data-product-id]')?.getAttribute('data-product-id');
-        if (dataId) return dataId;
+        if (dataId && /^\\d+$/.test(dataId)) return dataId; // Only return if numeric
         
-        // 2. From product URL in link
+        // 2. From JSON data in script tags (Shopify stores product data here)
+        const scripts = card.querySelectorAll('script[type="application/json"]');
+        for (const script of scripts) {
+            try {
+                const data = JSON.parse(script.textContent);
+                if (data.product && data.product.id) return String(data.product.id);
+                if (data.id) return String(data.id);
+            } catch (e) {}
+        }
+        
+        // 3. From form - look for product ID input (not variant ID)
+        const form = card.querySelector('form[action*="/cart/add"]');
+        if (form) {
+            // Try product_id first
+            const productIdInput = form.querySelector('input[name="product_id"]');
+            if (productIdInput && productIdInput.value) return productIdInput.value;
+            
+            // Fallback: variant ID (we'll need to map this)
+            const variantInput = form.querySelector('input[name="id"]');
+            if (variantInput && variantInput.value) {
+                // Store variant ID for later mapping
+                card._sakuraVariantId = variantInput.value;
+            }
+        }
+        
+        // 4. From product link - extract handle and try to get ID from Shopify object
         const link = card.querySelector('a[href*="/products/"]');
         if (link) {
             const href = link.getAttribute('href');
-            // Extract handle from URL
             const match = href.match(/\\/products\\/([^/?#]+)/);
-            if (match) return match[1]; // Return handle (we'll need to map it)
+            if (match) {
+                const handle = match[1];
+                // Try to find product in Shopify.allProducts or window.products
+                if (window.Shopify && window.Shopify.allProducts) {
+                    const product = window.Shopify.allProducts.find(p => p.handle === handle);
+                    if (product && product.id) return String(product.id);
+                }
+                // Store handle for API lookup
+                card._sakuraHandle = handle;
+            }
         }
         
-        // 3. From form action
-        const form = card.querySelector('form[action*="/cart/add"]');
-        if (form) {
-            const input = form.querySelector('input[name="id"]');
-            if (input) return input.value;
+        // 5. From card's inner data attributes
+        const allDataAttrs = card.querySelectorAll('[data-product-id]');
+        for (const el of allDataAttrs) {
+            const id = el.getAttribute('data-product-id');
+            if (id && /^\\d+$/.test(id)) return id;
         }
         
         return null;
@@ -5982,13 +6045,17 @@ def sakura_reviews_js():
         if (isProductPage()) return;
         
         const cards = findProductCards();
-        if (cards.length === 0) return;
+        if (cards.length === 0) {
+            console.log('🌸 No product cards found');
+            return;
+        }
         
         console.log(`🌸 Found ${cards.length} product cards`);
         
-        // Extract product IDs
+        // Extract product IDs and handles
         const productIds = [];
-        const cardMap = new Map();
+        const handles = [];
+        const cardMap = new Map(); // Maps identifier (ID or handle) to card
         
         for (const card of cards) {
             // Skip if already has badge
@@ -5996,16 +6063,40 @@ def sakura_reviews_js():
             
             const productId = extractProductId(card);
             if (productId) {
-                productIds.push(productId);
-                cardMap.set(productId, card);
+                // Check if it's numeric (ID) or string (handle)
+                if (/^\\d+$/.test(productId)) {
+                    productIds.push(productId);
+                    cardMap.set(productId, card);
+                } else {
+                    // It's a handle
+                    handles.push(productId);
+                    cardMap.set(productId, card);
+                }
+            } else if (card._sakuraHandle) {
+                // Use stored handle
+                handles.push(card._sakuraHandle);
+                cardMap.set(card._sakuraHandle, card);
             }
         }
         
-        if (productIds.length === 0) return;
+        if (productIds.length === 0 && handles.length === 0) {
+            console.log('🌸 No product IDs or handles extracted');
+            return;
+        }
+        
+        console.log(`🌸 Extracted ${productIds.length} IDs and ${handles.length} handles`);
+        
+        // Build API URL
+        const params = new URLSearchParams();
+        if (productIds.length > 0) params.append('product_ids', productIds.join(','));
+        if (handles.length > 0) params.append('handles', handles.join(','));
         
         // Fetch ratings from API
         try {
-            const response = await fetch(`${SAKURA_CONFIG.apiUrl}/api/products/ratings?product_ids=${productIds.join(',')}`);
+            const url = `${SAKURA_CONFIG.apiUrl}/api/products/ratings?${params.toString()}`;
+            console.log(`🌸 Fetching ratings from: ${url}`);
+            
+            const response = await fetch(url);
             const data = await response.json();
             
             if (!data.success) {
@@ -6013,24 +6104,41 @@ def sakura_reviews_js():
                 return;
             }
             
+            console.log(`🌸 Received ratings for ${Object.keys(data.ratings).length} products:`, data.ratings);
+            
             // Inject badges
-            for (const [productId, ratings] of Object.entries(data.ratings)) {
-                const card = cardMap.get(productId);
-                if (!card || ratings.count === 0) continue;
+            let injectedCount = 0;
+            for (const [identifier, ratings] of Object.entries(data.ratings)) {
+                const card = cardMap.get(identifier);
+                if (!card) {
+                    console.log(`🌸 No card found for identifier: ${identifier}`);
+                    continue;
+                }
+                
+                if (ratings.count === 0) {
+                    console.log(`🌸 Product ${identifier} has 0 reviews, skipping`);
+                    continue;
+                }
                 
                 const insertPoint = findPriceElement(card);
-                if (!insertPoint) continue;
+                if (!insertPoint) {
+                    console.log(`🌸 No insertion point found for product ${identifier}`);
+                    continue;
+                }
                 
-                const badge = createStarBadge(productId, ratings.count, ratings.average);
+                const badge = createStarBadge(identifier, ratings.count, ratings.average);
                 if (badge) {
+                    // Insert before the price element
                     insertPoint.parentNode.insertBefore(badge, insertPoint);
+                    injectedCount++;
+                    console.log(`🌸 ✓ Injected badge for ${identifier}: ${ratings.count} reviews, ${ratings.average} stars`);
                 }
             }
             
-            console.log(`🌸 Injected star badges for ${Object.keys(data.ratings).length} products`);
+            console.log(`🌸 Successfully injected ${injectedCount} star badges`);
             
         } catch (error) {
-            console.warn('🌸 Error fetching ratings:', error);
+            console.error('🌸 Error fetching ratings:', error);
         }
     }
     
