@@ -188,28 +188,44 @@
         }
         
         .media-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             margin-top: 12px;
         }
         
         .media-item {
-            aspect-ratio: 1;
-            border-radius: 8px;
+            /* Amazon-style small thumbnails */
+            width: 72px;
+            height: 72px;
+            min-width: 72px;
+            max-width: 72px;
+            border-radius: 6px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
         }
         
         .media-item:hover {
-            transform: scale(1.05);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border-color: #ff69b4;
         }
         
         .media-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        
+        /* Slightly larger for 1-2 photos */
+        .media-grid.few-photos .media-item {
+            width: 100px;
+            height: 100px;
+            min-width: 100px;
+            max-width: 100px;
         }
         
         .review-meta {
