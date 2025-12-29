@@ -946,24 +946,27 @@ def debug_reviews():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # Check total reviews
-        cursor.execute("SELECT COUNT(*) FROM reviews WHERE status = 'published';")
-        total = cursor.fetchone()[0]
+        # Check total reviews (any status)
+        cursor.execute("SELECT COUNT(*) FROM reviews;")
+        total_all = cursor.fetchone()[0]
         
-        # Check reviews with any images data
+        # Check published reviews
+        cursor.execute("SELECT COUNT(*) FROM reviews WHERE status = 'published' AND published = true;")
+        total_published = cursor.fetchone()[0]
+        
+        # Check reviews with any images data (published)
         cursor.execute("""
             SELECT id, reviewer_name, rating, 
                    images::text as images_raw,
-                   LENGTH(images::text) as img_len
+                   LENGTH(images::text) as img_len,
+                   status, published
             FROM reviews 
-            WHERE status = 'published'
+            WHERE status = 'published' AND published = true
             ORDER BY id DESC 
             LIMIT 10;
         """)
         
         rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
         
         samples = []
         for row in rows:
@@ -972,11 +975,28 @@ def debug_reviews():
                 'reviewer_name': row[1],
                 'rating': row[2],
                 'images_raw': row[3][:500] if row[3] else None,  # First 500 chars
-                'images_length': row[4]
+                'images_length': row[4],
+                'status': row[5],
+                'published': row[6]
             })
         
+        # Also check reviews with images specifically
+        cursor.execute("""
+            SELECT COUNT(*) FROM reviews 
+            WHERE images IS NOT NULL 
+            AND images::text != '[]' 
+            AND images::text != 'null'
+            AND LENGTH(images::text) > 5;
+        """)
+        reviews_with_images = cursor.fetchone()[0]
+        
+        cursor.close()
+        conn.close()
+        
         return jsonify({
-            'total_published_reviews': total,
+            'total_all_reviews': total_all,
+            'total_published_reviews': total_published,
+            'reviews_with_images_any_status': reviews_with_images,
             'sample_reviews': samples
         })
         
@@ -1002,6 +1022,7 @@ def featured_reviews():
         
         # Query reviews with photos (images JSON array not empty)
         # Prioritize: 5-star, has photos, AI recommended
+        # NOTE: Need both status='published' AND published=true
         cursor.execute("""
             SELECT 
                 id, reviewer_name, rating, body, 
@@ -1009,15 +1030,15 @@ def featured_reviews():
                 quality_score, ai_recommended
             FROM reviews 
             WHERE status = 'published'
-            AND rating >= 4
+            AND published = true
             AND images IS NOT NULL 
             AND images::text != '[]'
             AND images::text != 'null'
             AND images::text != ''
             AND LENGTH(images::text) > 5
             ORDER BY 
-                ai_recommended DESC,
                 rating DESC,
+                ai_recommended DESC,
                 quality_score DESC NULLS LAST,
                 review_date DESC NULLS LAST
             LIMIT 6;
