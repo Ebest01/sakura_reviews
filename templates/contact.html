@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get in Touch - Sakura Reviews</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #f5fff5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo { font-size: 3rem; margin-bottom: 10px; }
+        h1 { color: #2d3436; font-size: 2.5rem; margin-bottom: 15px; }
+        .subtitle { color: #636e72; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        
+        .info-boxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .info-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .info-box .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .info-box h3 {
+            color: #2d3436;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .info-box a {
+            color: #ff6b9d;
+            text-decoration: none;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3436;
+            font-weight: 600;
+        }
+        .form-group label .required {
+            color: #ff6b9d;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff6b9d;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        .form-group small {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: block;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
+        }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #ff6b9d;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/help" class="back-link">← Back to Help Center</a>
+        
+        <div class="header">
+            <div class="logo">🌸</div>
+            <h1>Get in Touch</h1>
+            <p class="subtitle">Whether you've got a product question, need assistance migrating, or are looking to partner up, we're here to help.</p>
+        </div>
+
+        <div class="info-boxes">
+            <div class="info-box">
+                <div class="icon">❓</div>
+                <h3>Product Question?</h3>
+                <p>Check out our <a href="/help">Help Center</a></p>
+            </div>
+            <div class="info-box">
+                <div class="icon">🤝</div>
+                <h3>Partnership?</h3>
+                <p>Complete our <a href="/partners">partner form</a></p>
+            </div>
+            <div class="info-box">
+                <div class="icon">📧</div>
+                <h3>Email Us</h3>
+                <p><a href="mailto:sakura.revs@gmail.com">sakura.revs@gmail.com</a></p>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div class="success-message" id="successMessage">
+                <strong>✅ Thank you!</strong> Your message has been received. We'll get back to you shortly.
+            </div>
+            <div class="error-message" id="errorMessage">
+                <strong>❌ Error:</strong> <span id="errorText"></span>
+            </div>
+
+            <form id="contactForm">
+                <div class="form-group">
+                    <label>Full name <span class="required">*</span></label>
+                    <input type="text" name="full_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Shopify URL</label>
+                    <input type="url" name="shopify_url" placeholder="https://your-store.myshopify.com">
+                    <small>Optional: Help us understand your store better</small>
+                </div>
+
+                <div class="form-group">
+                    <label>How can we help? <span class="required">*</span></label>
+                    <textarea name="message" required placeholder="Tell us about your question, issue, or how we can help..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Send Message
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            // Hide previous messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            // Get form data
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/contact/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    successMsg.style.display = 'block';
+                    this.reset();
+                    // Scroll to success message
+                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    errorText.textContent = result.error || 'Failed to send message. Please try again.';
+                    errorMsg.style.display = 'block';
+                    errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch (error) {
+                errorText.textContent = 'Network error. Please check your connection and try again.';
+                errorMsg.style.display = 'block';
+                errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+    </script>
+</body>
+</html>
+

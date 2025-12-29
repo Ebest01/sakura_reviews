@@ -3350,6 +3350,106 @@ def cookies_policy():
     """Cookies Policy page"""
     return render_template('cookies-policy.html')
 
+# =============================================================================
+# HELP CENTER & SUPPORT
+# =============================================================================
+
+@app.route('/help')
+@app.route('/help-center')
+def help_center():
+    """Help Center - Support documentation and FAQs"""
+    return render_template('help-center.html')
+
+@app.route('/contact')
+@app.route('/get-in-touch')
+def contact_page():
+    """Contact form page"""
+    return render_template('contact.html')
+
+@app.route('/contact/submit', methods=['POST'])
+def contact_submit():
+    """
+    Submit contact form - Store in DB and send email notification
+    Hybrid approach: Database for admin tracking + Email for immediate notification
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('full_name') or not data.get('email') or not data.get('message'):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Store in database
+        from backend.models_v2 import ContactMessage
+        
+        contact_msg = ContactMessage(
+            full_name=data.get('full_name'),
+            email=data.get('email'),
+            shopify_url=data.get('shopify_url', ''),
+            message=data.get('message'),
+            subject=data.get('subject', 'Contact Form Submission'),
+            status='new',
+            priority='normal'
+        )
+        
+        db.session.add(contact_msg)
+        db.session.commit()
+        
+        logger.info(f"📬 New contact message from {data.get('email')} (ID: {contact_msg.id})")
+        
+        # Send email notification (optional - you can implement email sending here)
+        # For now, we'll just log it
+        try:
+            # TODO: Implement email sending using Flask-Mail or similar
+            # send_contact_notification_email(contact_msg)
+            logger.info(f"📧 Email notification would be sent for message ID: {contact_msg.id}")
+        except Exception as e:
+            logger.warning(f"Could not send email notification: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Your message has been received. We\'ll get back to you shortly!',
+            'message_id': contact_msg.id
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error submitting contact form: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to submit message. Please try again or email us directly.'
+        }), 500
+
+@app.route('/admin/contact-messages')
+def admin_contact_messages():
+    """
+    Admin view of contact messages (should be protected with authentication)
+    TODO: Add authentication middleware
+    """
+    try:
+        from backend.models_v2 import ContactMessage
+        
+        # Get query parameters
+        status = request.args.get('status', 'all')
+        limit = request.args.get('limit', 50, type=int)
+        
+        query = ContactMessage.query.order_by(ContactMessage.created_at.desc())
+        
+        if status != 'all':
+            query = query.filter_by(status=status)
+        
+        messages = query.limit(limit).all()
+        
+        return jsonify({
+            'success': True,
+            'count': len(messages),
+            'messages': [msg.to_dict() for msg in messages]
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching contact messages: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/legal')
 def legal_index():
     """Legal pages index - beautiful HTML page with all legal documents"""

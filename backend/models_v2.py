@@ -409,3 +409,49 @@ class ShopSettings(db.Model):
             'widget_position': self.widget_position,
             'custom_css': self.custom_css
         }
+
+class ContactMessage(db.Model):
+    """
+    Contact Form Messages - Store user inquiries
+    """
+    __tablename__ = 'contact_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Contact Information
+    full_name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    shopify_url = db.Column(db.String(500))
+    
+    # Message
+    subject = db.Column(db.String(255))
+    message = db.Column(db.Text, nullable=False)
+    
+    # Status
+    status = db.Column(db.String(50), default='new')  # new, read, replied, closed
+    priority = db.Column(db.String(50), default='normal')  # low, normal, high, urgent
+    
+    # Response
+    admin_notes = db.Column(db.Text)
+    replied_at = db.Column(db.DateTime)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ContactMessage {self.email} - {self.subject}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'full_name': self.full_name,
+            'email': self.email,
+            'shopify_url': self.shopify_url,
+            'subject': self.subject,
+            'message': self.message,
+            'status': self.status,
+            'priority': self.priority,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
