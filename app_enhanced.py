@@ -3386,6 +3386,22 @@ def contact_submit():
         # Store in database
         from backend.models_v2 import ContactMessage
         
+        # Ensure table exists
+        try:
+            ContactMessage.query.limit(1).all()
+        except Exception as table_error:
+            if 'does not exist' in str(table_error) or 'UndefinedTable' in str(table_error):
+                logger.warning("contact_messages table doesn't exist, creating it...")
+                try:
+                    db.create_all()
+                    logger.info("✅ contact_messages table created!")
+                except Exception as create_error:
+                    logger.error(f"Failed to create table: {create_error}")
+                    return jsonify({
+                        'success': False,
+                        'error': 'Database table not available. Please contact support.'
+                    }), 500
+        
         contact_msg = ContactMessage(
             full_name=data.get('full_name'),
             email=data.get('email'),
@@ -3489,24 +3505,93 @@ def admin_dashboard():
     try:
         from backend.models_v2 import ContactMessage, Shop, Review
         
-        # Get stats
-        total_messages = ContactMessage.query.count()
-        new_messages = ContactMessage.query.filter_by(status='new').count()
-        total_shops = Shop.query.count()
-        total_reviews = Review.query.count()
+        # Check if contact_messages table exists, if not create it
+        try:
+            # Try to query - if table doesn't exist, this will fail
+            ContactMessage.query.limit(1).all()
+            table_exists = True
+        except Exception as table_error:
+            if 'does not exist' in str(table_error) or 'UndefinedTable' in str(table_error):
+                logger.warning("contact_messages table doesn't exist, creating it...")
+                try:
+                    db.create_all()
+                    table_exists = True
+                    logger.info("✅ contact_messages table created successfully!")
+                except Exception as create_error:
+                    logger.error(f"Failed to create table: {create_error}")
+                    table_exists = False
+            else:
+                raise table_error
+        
+        # Get stats (with error handling)
+        try:
+            total_messages = ContactMessage.query.count() if table_exists else 0
+            new_messages = ContactMessage.query.filter_by(status='new').count() if table_exists else 0
+        except:
+            total_messages = 0
+            new_messages = 0
+        
+        try:
+            total_shops = Shop.query.count()
+        except:
+            total_shops = 0
+        
+        try:
+            total_reviews = Review.query.count()
+        except:
+            total_reviews = 0
         
         # Recent messages
-        recent_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(10).all()
+        try:
+            recent_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(10).all() if table_exists else []
+        except:
+            recent_messages = []
         
         return render_template('admin-dashboard.html',
                              total_messages=total_messages,
                              new_messages=new_messages,
                              total_shops=total_shops,
                              total_reviews=total_reviews,
-                             recent_messages=recent_messages)
+                             recent_messages=recent_messages,
+                             table_exists=table_exists)
     except Exception as e:
         logger.error(f"Admin dashboard error: {str(e)}")
         return f"Error loading dashboard: {str(e)}", 500
+
+@app.route('/admin/create-tables')
+@admin_required
+def admin_create_tables():
+    """Admin route to create missing database tables"""
+    try:
+        from backend.models_v2 import ContactMessage
+        
+        with app.app_context():
+            db.create_all()
+            
+            # Verify table was created
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            
+            if 'contact_messages' in tables:
+                logger.info("✅ contact_messages table created successfully!")
+                return jsonify({
+                    'success': True,
+                    'message': 'Tables created successfully!',
+                    'tables': tables
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Table creation may have failed'
+                }), 500
+                
+    except Exception as e:
+        logger.error(f"Error creating tables: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/admin/contact-messages')
 @admin_required
@@ -3516,6 +3601,22 @@ def admin_contact_messages():
     """
     try:
         from backend.models_v2 import ContactMessage
+        
+        # Check if table exists, create if not
+        try:
+            ContactMessage.query.limit(1).all()
+        except Exception as table_error:
+            if 'does not exist' in str(table_error) or 'UndefinedTable' in str(table_error):
+                logger.warning("contact_messages table doesn't exist, creating it...")
+                try:
+                    db.create_all()
+                    logger.info("✅ contact_messages table created!")
+                except Exception as create_error:
+                    logger.error(f"Failed to create table: {create_error}")
+                    return render_template('admin-contact-messages.html',
+                                         messages=[],
+                                         status_filter='all',
+                                         error='Table not found. Please visit /admin/create-tables to create it.')
         
         # Get query parameters
         status = request.args.get('status', 'all')
