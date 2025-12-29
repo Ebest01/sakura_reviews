@@ -2443,33 +2443,39 @@ def bookmarklet():
         
         smartSort(reviews) {{
             // Smart sorting algorithm: Best reviews first
-            // Priority: AI Recommended > Has Photos > High Rating > Good Quality Score > Text Length
+            // Priority: AI Recommended > Has Text Content > Has Photos > High Rating > Quality Score
             return reviews.sort((a, b) => {{
-                // 1. AI Recommended first
+                // 1. AI Recommended first (best quality reviews)
                 if (a.ai_recommended && !b.ai_recommended) return -1;
                 if (!a.ai_recommended && b.ai_recommended) return 1;
                 
-                // 2. Has photos (prioritize reviews with more photos)
+                // 2. HAS TEXT CONTENT - Reviews with actual text before empty ones
+                const aText = (a.text || a.body || '').trim();
+                const bText = (b.text || b.body || '').trim();
+                const aHasText = aText.length >= 10;  // At least 10 chars = meaningful content
+                const bHasText = bText.length >= 10;
+                if (aHasText && !bHasText) return -1;
+                if (!aHasText && bHasText) return 1;
+                
+                // 3. Has photos (prioritize reviews with more photos)
                 const aPhotos = (a.images && a.images.length) || 0;
                 const bPhotos = (b.images && b.images.length) || 0;
                 if (aPhotos > 0 && bPhotos === 0) return -1;
                 if (aPhotos === 0 && bPhotos > 0) return 1;
                 if (aPhotos !== bPhotos) return bPhotos - aPhotos;  // More photos first
                 
-                // 3. Higher rating first
+                // 4. Higher rating first
                 const aRating = a.rating || 0;
                 const bRating = b.rating || 0;
                 if (aRating !== bRating) return bRating - aRating;
                 
-                // 4. Higher quality score first
+                // 5. Longer text (more detailed reviews) first
+                if (aText.length !== bText.length) return bText.length - aText.length;
+                
+                // 6. Higher quality score as tiebreaker
                 const aQuality = a.quality_score || 0;
                 const bQuality = b.quality_score || 0;
-                if (aQuality !== bQuality) return bQuality - aQuality;
-                
-                // 5. Longer text (more detailed reviews) first
-                const aTextLen = (a.text || a.body || '').length;
-                const bTextLen = (b.text || b.body || '').length;
-                return bTextLen - aTextLen;
+                return bQuality - aQuality;
             }});
         }}
         

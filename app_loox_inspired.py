@@ -732,33 +732,39 @@ def bookmarklet():
             filteredReviews = allReviews.filter(r => r.rating >= 50 && r.rating < 70);
         }}
         
-        // Smart sorting: Best reviews first (AI Recommended > Photos > Rating > Quality)
+        // Smart sorting: Best reviews first (AI Recommended > Has Text > Photos > Rating > Quality)
         filteredReviews = filteredReviews.sort((a, b) => {{
             // 1. AI Recommended first
             if (a.ai_recommended && !b.ai_recommended) return -1;
             if (!a.ai_recommended && b.ai_recommended) return 1;
             
-            // 2. Has photos (more photos = better)
+            // 2. HAS TEXT CONTENT - Reviews with actual text before empty ones
+            const aText = (a.text || a.body || '').trim();
+            const bText = (b.text || b.body || '').trim();
+            const aHasText = aText.length >= 10;
+            const bHasText = bText.length >= 10;
+            if (aHasText && !bHasText) return -1;
+            if (!aHasText && bHasText) return 1;
+            
+            // 3. Has photos (more photos = better)
             const aPhotos = (a.images && a.images.length) || 0;
             const bPhotos = (b.images && b.images.length) || 0;
             if (aPhotos > 0 && bPhotos === 0) return -1;
             if (aPhotos === 0 && bPhotos > 0) return 1;
             if (aPhotos !== bPhotos) return bPhotos - aPhotos;
             
-            // 3. Higher rating first
+            // 4. Higher rating first
             const aRating = a.rating || 0;
             const bRating = b.rating || 0;
             if (aRating !== bRating) return bRating - aRating;
             
-            // 4. Higher quality score first
+            // 5. Longer text first
+            if (aText.length !== bText.length) return bText.length - aText.length;
+            
+            // 6. Higher quality score as tiebreaker
             const aQuality = a.quality_score || 0;
             const bQuality = b.quality_score || 0;
-            if (aQuality !== bQuality) return bQuality - aQuality;
-            
-            // 5. Longer text first
-            const aTextLen = (a.text || a.body || '').length;
-            const bTextLen = (b.text || b.body || '').length;
-            return bTextLen - aTextLen;
+            return bQuality - aQuality;
         }});
         
         console.log('[displayReviews] Filtered to', filteredReviews.length, 'reviews with filter:', currentFilter);
