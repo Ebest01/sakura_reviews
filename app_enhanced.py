@@ -936,14 +936,7 @@ def index():
     """Beautiful Sakura Reviews landing page"""
     return render_template('landing-page.html')
 
-
-            * {{
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }}
-            
-            body {{ 
+ 
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
                 background: #fafafa;
                 color: #333;
@@ -1429,7 +1422,6 @@ def index():
                     success.style.display = 'inline';
                     setTimeout(() => {{
                         success.style.display = 'none';
-                    }}, 2000);
 
 @app.route('/admin/reviews/import/url', methods=['GET'])
 @app.route('/-/admin/reviews/import/url', methods=['GET'])
