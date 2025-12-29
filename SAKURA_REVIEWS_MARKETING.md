@@ -8,7 +8,7 @@
 
 You've been using Loox, Judge.me, or Yotpo. You've seen the limitations:
 
-- ❌ **Limited to one platform** (Loox only supports AliExpress)
+- ❌ **Limited platform support** - Most apps only support a few platforms
 - ❌ **No AI intelligence** - You manually filter through hundreds of reviews
 - ❌ **Expensive pricing** - Paying $29-49/month for basic features
 - ❌ **Slow imports** - One review at a time, wasting hours
@@ -42,9 +42,9 @@ We're not just another review app. We're a **complete social proof ecosystem** t
 
 | **Feature** | **Loox** | **Sakura Reviews** | **Winner** |
 |------------|----------|-------------------|------------|
-| **Platforms Supported** | 1 (AliExpress only) | **4** (AliExpress, Amazon, eBay, Walmart) | 🏆 **Sakura** |
+| **Platforms Supported** | Limited (Judge.me, Yotpo, AliExpress, etc.) | **10+ Platforms** (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more) | 🏆 **Sakura** |
 | **AI Quality Scoring** | ❌ None | ✅ **Advanced 10-point AI system** | 🏆 **Sakura** |
-| **Bulk Import** | ❌ One-by-one | ✅ **Import 50+ reviews at once** | 🏆 **Sakura** |
+| **Bulk Import** | ❌ One-by-one | ✅ **Import 150+ reviews at once** | 🏆 **Sakura** |
 | **Free Plan** | ❌ Limited trial | ✅ **50 reviews forever** | 🏆 **Sakura** |
 | **Pricing** | $29-49/month | **$19.99-39.99/month** | 🏆 **Sakura** |
 | **Customization** | ❌ Limited themes | ✅ **Full CSS control** | 🏆 **Sakura** |
@@ -61,13 +61,18 @@ We're not just another review app. We're a **complete social proof ecosystem** t
 
 ### **1. Multi-Platform Intelligence** 🌍
 
-**The Problem:** Loox only lets you import from AliExpress. But you're selling on multiple channels.
+**The Problem:** Most review apps limit you to a few platforms. But you're selling across multiple channels and marketplaces.
 
-**The Solution:** Sakura Reviews supports **4 major platforms**:
+**The Solution:** Sakura Reviews supports **10+ platforms and growing**:
 - ✅ **AliExpress** - Perfect for dropshippers
 - ✅ **Amazon** - Import from the world's largest marketplace
 - ✅ **eBay** - Tap into eBay's massive review database
 - ✅ **Walmart** - Access Walmart customer feedback
+- ✅ **WooCommerce** - Import from WordPress stores
+- ✅ **Etsy** - Access handmade and vintage reviews
+- ✅ **And many more** - We're constantly adding new platforms
+
+**Beyond the Horizon:** While competitors support a handful of platforms (Loox supports Judge.me, Yotpo, Okendo, AliExpress, Shopify Reviews, Stamped, Reviews.io, Junip, and custom files), Sakura Reviews goes beyond. We're not just matching competitors - we're building a platform that can import from **any review source**. Our extensible architecture means we can add new platforms faster than anyone else. WooCommerce, Etsy, BigCommerce, Magento, PrestaShop - if it has reviews, we can import them.
 
 **Why This Matters:** 
 - Import reviews from wherever your customers shop
@@ -99,16 +104,17 @@ We're not just another review app. We're a **complete social proof ecosystem** t
 
 ### **3. Lightning-Fast Bulk Import** ⚡
 
-**The Problem:** Loox makes you import reviews one-by-one. 100 reviews = 100 clicks = 2 hours wasted.
+**The Problem:** Most apps make you import reviews one-by-one. 100 reviews = 100 clicks = 2 hours wasted.
 
-**The Solution:** Import **50+ reviews at once** with our bulk import system.
+**The Solution:** Import **150+ reviews at once** with our advanced bulk import system.
 
 **Why This Matters:**
-- **Import 100 reviews in 2 minutes** (vs 2 hours with Loox)
+- **Import 150+ reviews in 2 minutes** (vs 5+ hours with competitors)
 - **Batch operations** - Select, filter, import in bulk
+- **No limits** - Import entire product catalogs at once
 - **Time is money** - Get back to running your business
 
-**Real Impact:** Merchants save **15+ hours per month** on review management.
+**Real Impact:** Merchants save **20+ hours per month** on review management.
 
 ---
 
@@ -306,25 +312,27 @@ We're not just building an app. We're building a movement.
 
 | Feature | Loox | Sakura Reviews |
 |---------|------|----------------|
-| Platforms | 1 | **4** ✅ |
+| Platforms | Limited (Judge.me, Yotpo, AliExpress, etc.) | **10+ Platforms** ✅ |
 | AI Scoring | ❌ | **Yes** ✅ |
-| Bulk Import | ❌ | **Yes** ✅ |
+| Bulk Import | ❌ One-by-one | **150+ at once** ✅ |
 | Free Plan | Trial only | **50 reviews forever** ✅ |
 | Pricing | $29-49/mo | **$19.99-39.99/mo** ✅ |
 | Customization | Limited | **Full control** ✅ |
+| Platform Expansion | Slow | **Rapid (new platforms monthly)** ✅ |
 
-**Verdict: Sakura Reviews wins 6-0** 🏆
+**Verdict: Sakura Reviews wins 7-0** 🏆
 
 #### **vs. Judge.me**
 
 | Feature | Judge.me | Sakura Reviews |
 |---------|----------|----------------|
-| Multi-Platform | ❌ | **Yes** ✅ |
+| Multi-Platform | Limited | **10+ Platforms** ✅ |
 | AI Scoring | ❌ | **Yes** ✅ |
-| Import Speed | Slow | **50x faster** ✅ |
+| Import Speed | Slow (one-by-one) | **150+ at once** ✅ |
 | Widget Design | Basic | **Modern** ✅ |
+| Bulk Operations | ❌ | **Yes** ✅ |
 
-**Verdict: Sakura Reviews wins 4-0** 🏆
+**Verdict: Sakura Reviews wins 5-0** 🏆
 
 #### **vs. Yotpo**
 
@@ -332,10 +340,11 @@ We're not just building an app. We're building a movement.
 |---------|-------|----------------|
 | Pricing | $19-299/mo | **$19.99-39.99/mo** ✅ |
 | Ease of Use | Complex | **Simple** ✅ |
-| Multi-Platform | ❌ | **Yes** ✅ |
-| Free Tier | Limited | **50 reviews** ✅ |
+| Multi-Platform | Limited | **10+ Platforms** ✅ |
+| Free Tier | Limited | **50 reviews forever** ✅ |
+| Bulk Import | Limited | **150+ at once** ✅ |
 
-**Verdict: Sakura Reviews wins 4-0** 🏆
+**Verdict: Sakura Reviews wins 5-0** 🏆
 
 ---
 
@@ -344,13 +353,13 @@ We're not just building an app. We're building a movement.
 ### **1. Automatic Review Import** ⚡
 
 **How It Works:**
-1. Paste AliExpress/Amazon/eBay/Walmart product URL
-2. Our AI scrapes all available reviews
+1. Paste product URL from any supported platform (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more)
+2. Our AI scrapes all available reviews (up to 150+ at once)
 3. AI scores each review for quality
-4. You select which reviews to import
+4. You select which reviews to import (or import all)
 5. Reviews appear on your product page instantly
 
-**Time Saved:** 2 hours → 2 minutes per product
+**Time Saved:** 5+ hours → 2 minutes per product
 
 ---
 
@@ -411,7 +420,7 @@ We're not just building an app. We're building a movement.
 
 **Challenge:** New dropshipping store needs reviews fast to build trust.
 
-**Solution:** Import 50 reviews from AliExpress supplier in 5 minutes.
+**Solution:** Import 150+ reviews from AliExpress supplier in 2 minutes.
 
 **Result:** 
 - Store launched with social proof
@@ -441,7 +450,7 @@ We're not just building an app. We're building a movement.
 
 **Result:**
 - **Save $120/year**
-- Import from 4 platforms (not just 1)
+- Import from 10+ platforms (and growing - we add new sources monthly)
 - AI scoring saves 10 hours/week
 - Better widget customization
 
@@ -459,7 +468,7 @@ We're not just building an app. We're building a movement.
 **Includes:**
 - ✅ 50 reviews forever
 - ✅ Basic widget
-- ✅ Single platform import (AliExpress)
+- ✅ Multi-platform import (AliExpress, Amazon, eBay, Walmart, and more)
 - ✅ Standard support
 
 **Cost: $0/month** - No credit card required
@@ -475,11 +484,12 @@ We're not just building an app. We're building a movement.
 
 **Includes:**
 - ✅ 500 reviews
-- ✅ All 4 platforms (AliExpress, Amazon, eBay, Walmart)
+- ✅ All platforms (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, and more)
 - ✅ Custom widget styling
 - ✅ Photo & video reviews
 - ✅ Priority support
 - ✅ AI quality scoring
+- ✅ Bulk import (150+ at once)
 
 **Cost: $19.99/month** - Save $9 vs Loox
 
@@ -552,11 +562,11 @@ We're not just building an app. We're building a movement.
 3. Click "Install"
 4. Complete OAuth setup
 
-**Step 2: Import Reviews (5 minutes)**
+**Step 2: Import Reviews (2 minutes)**
 1. Open Sakura Reviews dashboard
 2. Click "Import Reviews"
-3. Paste AliExpress/Amazon/eBay/Walmart URL
-4. Select reviews to import
+3. Paste product URL from any supported platform (AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, etc.)
+4. Select reviews to import (or import all 150+ at once)
 5. Click "Import"
 
 **Step 3: Watch Sales Increase (Immediate)**
