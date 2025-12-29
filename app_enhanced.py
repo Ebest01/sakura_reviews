@@ -6152,15 +6152,24 @@ def sakura_reviews_js():
         }
         
         // Also check links specifically (test store has ID on the link)
-        const links = card.querySelectorAll('a[id*="product-grid"], a[id*="CardLink"]');
+        // Related products format: id="CardLink--10045740450106" or id="title--10045740450106"
+        const links = card.querySelectorAll('a[id*="product-grid"], a[id*="CardLink"], a[id*="title"], [id*="CardLink"], [id*="title"]');
         for (const link of links) {
             if (link.id) allIds.push(link.id);
         }
         
         for (const cardId of allIds) {
-            const match = cardId.match(/product-grid-(\\d+)/);
+            // Try product-grid format first (collection pages)
+            let match = cardId.match(/product-grid-(\\d+)/);
             if (match && match[1]) {
-                console.log(`🌸 Found product ID from ID attribute: ${match[1]}`);
+                console.log(`🌸 Found product ID from product-grid ID: ${match[1]}`);
+                return match[1];
+            }
+            
+            // Try related products format: CardLink--10045740450106 or title--10045740450106
+            match = cardId.match(/--(\\d+)$/) || cardId.match(/-([0-9]{15,})$/) || cardId.match(/CardLink[^0-9]*(\\d+)/);
+            if (match && match[1]) {
+                console.log(`🌸 Found product ID from related products ID: ${match[1]}`);
                 return match[1];
             }
         }
@@ -6276,8 +6285,8 @@ def sakura_reviews_js():
     }
     
     async function injectCollectionBadges() {
-        // Don't run on product pages (widget handles it)
-        if (isProductPage()) return;
+        // Run on ALL pages (collection, product pages with related products, search, etc.)
+        // The product page widget is separate and handles the main product reviews
         
         const cards = findProductCards();
         if (cards.length === 0) {
@@ -6367,10 +6376,11 @@ def sakura_reviews_js():
     
     // ==================== INITIALIZE ====================
     function init() {
-        // Product page: inject full widget
+        // Product page: inject full widget for main product
         injectProductWidget();
         
-        // Collection/other pages: inject star badges
+        // ALL pages: inject star badges on product cards
+        // (collection pages, related products on product pages, search results, etc.)
         injectCollectionBadges();
     }
     
