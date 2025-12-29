@@ -1582,6 +1582,7 @@ def api_products_ratings():
     try:
         from backend.models_v2 import Review, Product
         from sqlalchemy import func
+        from urllib.parse import unquote
         
         # Get product IDs or handles from request
         if request.method == 'POST':
@@ -1589,24 +1590,58 @@ def api_products_ratings():
             product_ids = data.get('product_ids', [])
             handles = data.get('handles', [])
         else:
+            # GET request - decode URL-encoded parameters
             product_ids_str = request.args.get('product_ids', '')
             handles_str = request.args.get('handles', '')
+            
+            # URL decode if needed
+            if product_ids_str:
+                product_ids_str = unquote(product_ids_str)
+            if handles_str:
+                handles_str = unquote(handles_str)
+            
+            # Parse comma-separated values
             product_ids = [p.strip() for p in product_ids_str.split(',') if p.strip()]
             handles = [h.strip() for h in handles_str.split(',') if h.strip()]
         
+        # Debug logging
+        logger.info(f"API /products/ratings called - product_ids param: {len(product_ids)}, handles param: {len(handles)}")
+        if handles:
+            logger.info(f"Handles received (first 5): {handles[:5]}")
+        
+        # Check if we have any input at all
+        if not product_ids and not handles:
+            logger.warning("No product_ids or handles provided in request")
+            return jsonify({'success': False, 'error': 'No product_ids or handles provided', 'ratings': {}})
+        
         # If handles provided, map them to product IDs via Product table
+        handle_to_id = {}
         if handles:
             products = Product.query.filter(
                 Product.shopify_product_handle.in_(handles)
             ).all()
+            
+            logger.info(f"Found {len(products)} products in database matching {len(handles)} handles")
+            
             handle_to_id = {p.shopify_product_handle: p.shopify_product_id for p in products}
+            
+            # Log which handles were found
+            found_handles = set(handle_to_id.keys())
+            missing_handles = set(handles) - found_handles
+            if missing_handles:
+                logger.warning(f"Handles not found in Product table (first 5): {list(missing_handles)[:5]}")
+            
             # Add mapped IDs to product_ids list
             for handle in handles:
                 if handle in handle_to_id:
                     product_ids.append(str(handle_to_id[handle]))
         
-        if not product_ids:
-            return jsonify({'success': False, 'error': 'No product_ids or handles provided', 'ratings': {}})
+        # If we only have handles but couldn't map them, return empty ratings (not an error)
+        if not product_ids and handles:
+            logger.info(f"Could not map any handles to product IDs. Returning empty ratings for {len(handles)} handles")
+            # Return empty ratings for all handles (so frontend knows they exist but have no reviews)
+            ratings = {h: {'count': 0, 'average': 0} for h in handles}
+            return jsonify({'success': True, 'ratings': ratings})
         
         # Limit to prevent abuse
         product_ids = product_ids[:100]
