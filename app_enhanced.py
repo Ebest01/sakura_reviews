@@ -935,9 +935,6 @@ shopify_helper = ShopifyAPIHelper()
 def index():
     """Beautiful Sakura Reviews landing page"""
     return render_template('landing-page.html')
-
-
-    <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sakura Reviews - Visual Reviews That Convert</title>
@@ -1440,10 +1437,6 @@ def index():
                     alert('Failed to copy. Please select and copy manually.');
                 }});
             }}
-        </script>
-    </body>
-    </html>
-    """
 
 @app.route('/admin/reviews/import/url', methods=['GET'])
 @app.route('/-/admin/reviews/import/url', methods=['GET'])
