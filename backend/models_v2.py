@@ -223,6 +223,10 @@ class Review(db.Model):
     ai_recommended = db.Column(db.Boolean, default=False)
     sentiment_score = db.Column(db.Float)
     
+    # Helpful votes
+    helpful_yes = db.Column(db.Integer, default=0)
+    helpful_no = db.Column(db.Integer, default=0)
+    
     # Status
     status = db.Column(db.String(50), default='pending')  # pending, published, hidden, deleted
     
@@ -260,6 +264,8 @@ class Review(db.Model):
             'review_date': self.review_date.isoformat() if self.review_date else None,
             'quality_score': self.quality_score,
             'ai_recommended': self.ai_recommended,
+            'helpful_yes': self.helpful_yes or 0,
+            'helpful_no': self.helpful_no or 0,
             'status': self.status,
             'media_count': self.media.count(),
             'imported_at': self.imported_at.isoformat() if self.imported_at else None

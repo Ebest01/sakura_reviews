@@ -1520,36 +1520,51 @@ def review_helpful_vote(review_id):
     Record a helpful vote for a review
     """
     try:
-        from backend.models_v2 import Review
-        
         data = request.get_json() or {}
         vote = data.get('vote', 'yes')
         
-        review = Review.query.get(review_id)
-        if not review:
+        # Use raw SQL to update the vote count (handles missing columns gracefully)
+        column = 'helpful_yes' if vote == 'yes' else 'helpful_no'
+        
+        # First, ensure the columns exist
+        try:
+            db.session.execute(db.text("""
+                ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_yes INTEGER DEFAULT 0;
+                ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_no INTEGER DEFAULT 0;
+            """))
+            db.session.commit()
+        except Exception as e:
+            # Column might already exist, ignore error
+            db.session.rollback()
+            logger.debug(f"Column may already exist: {e}")
+        
+        # Update the vote count
+        result = db.session.execute(
+            db.text(f"""
+                UPDATE reviews 
+                SET {column} = COALESCE({column}, 0) + 1 
+                WHERE id = :review_id
+                RETURNING helpful_yes, helpful_no
+            """),
+            {'review_id': review_id}
+        )
+        
+        row = result.fetchone()
+        if not row:
             return jsonify({'success': False, 'error': 'Review not found'}), 404
-        
-        # Initialize counters if not exist
-        if not hasattr(review, 'helpful_yes') or review.helpful_yes is None:
-            review.helpful_yes = 0
-        if not hasattr(review, 'helpful_no') or review.helpful_no is None:
-            review.helpful_no = 0
-        
-        # Increment the appropriate counter
-        if vote == 'yes':
-            review.helpful_yes = (review.helpful_yes or 0) + 1
-        else:
-            review.helpful_no = (review.helpful_no or 0) + 1
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'helpful_yes': review.helpful_yes,
-            'helpful_no': review.helpful_no
+            'helpful_yes': row[0] or 0,
+            'helpful_no': row[1] or 0
         })
     except Exception as e:
+        db.session.rollback()
         logger.error(f"Error recording helpful vote: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -4891,7 +4906,10 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
                 'quality_score': review.quality_score or 0.0,  # Some templates use 'quality_score'
                 'ai_recommended': review.ai_recommended,
                 'shopify_product_id': review.shopify_product_id,
-                'aliexpress_product_id': review.aliexpress_product_id
+                'aliexpress_product_id': review.aliexpress_product_id,
+                # Helpful votes
+                'helpful_yes': getattr(review, 'helpful_yes', 0) or 0,
+                'helpful_no': getattr(review, 'helpful_no', 0) or 0
             })
         
         logger.info(f"Found {len(reviews)} reviews for product {product_id} (offset: {offset}, limit: {limit}, total: {total_count}, sort: {sort}, avg_rating: {average_rating})")
