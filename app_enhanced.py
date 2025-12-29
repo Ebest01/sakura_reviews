@@ -3364,6 +3364,56 @@ def help_center():
     """Help Center - Support documentation and FAQs"""
     return render_template('help-center.html')
 
+@app.route('/help/aliexpress-import')
+@app.route('/help/importing-reviews-from-aliexpress')
+def help_aliexpress_import():
+    """Help article: Importing Reviews from AliExpress"""
+    return render_template('help-aliexpress-import.html')
+
+@app.route('/help/import-custom-file')
+@app.route('/help/importing-reviews-using-a-custom-file')
+def help_import_custom_file():
+    """Help article: Importing Reviews Using a Custom File"""
+    return render_template('help-import-custom-file.html')
+
+@app.route('/help/<path:article>')
+def help_article(article):
+    """Generic help article router - handles various help pages"""
+    # Map article names to templates
+    article_map = {
+        'install': 'help-center.html',
+        'first-review': 'help-aliexpress-import.html',
+        'widget-setup': 'help-center.html',
+        'account-setup': 'help-center.html',
+        'widget-customization': 'help-center.html',
+        'product-pages': 'help-center.html',
+        'review-page': 'help-center.html',
+        'mobile-display': 'help-center.html',
+        'import-reviews': 'help-aliexpress-import.html',
+        'edit-reviews': 'help-center.html',
+        'delete-reviews': 'help-center.html',
+        'review-filters': 'help-center.html',
+        'shopify-integration': 'help-center.html',
+        'amazon-import': 'help-center.html',
+        'api-access': 'help-center.html',
+        'pricing-plans': 'help-center.html',
+        'upgrade-downgrade': 'help-center.html',
+        'billing-questions': 'help-center.html',
+        'cancel-subscription': 'help-center.html',
+        'widget-not-showing': 'help-center.html',
+        'import-errors': 'help-center.html',
+        'performance-issues': 'help-center.html',
+        'common-issues': 'help-center.html',
+        'manage-reviews': 'help-center.html',
+        'happy-customers-page': 'help-center.html',
+        'monthly-quota': 'help-center.html',
+        'carousel-widgets': 'help-center.html',
+        'fix-import-errors': 'help-import-custom-file.html',
+    }
+    
+    template = article_map.get(article, 'help-center.html')
+    return render_template(template)
+
 @app.route('/contact')
 @app.route('/get-in-touch')
 def contact_page():

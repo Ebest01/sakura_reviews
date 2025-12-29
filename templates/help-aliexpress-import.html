@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importing Reviews from AliExpress - Sakura Reviews</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #f5fff5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .logo { font-size: 3rem; margin-bottom: 10px; }
+        h1 { color: #2d3436; font-size: 2.5rem; margin-bottom: 15px; }
+        .subtitle { color: #636e72; font-size: 1.1rem; }
+        
+        .content {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #ff6b9d;
+            font-size: 1.8rem;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffe0eb;
+        }
+        h2:first-of-type {
+            margin-top: 0;
+        }
+        h3 {
+            color: #2d3436;
+            font-size: 1.3rem;
+            margin: 25px 0 15px 0;
+        }
+        p {
+            margin-bottom: 15px;
+            color: #4a4a4a;
+            line-height: 1.7;
+        }
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+        li {
+            margin-bottom: 10px;
+            color: #4a4a4a;
+            line-height: 1.6;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #fff5f8, #fff);
+            border-left: 4px solid #ff6b9d;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .highlight-box strong {
+            color: #ff6b9d;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .warning-box {
+            background: #fff8e6;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #ff6b9d;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .step h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        .screenshot-placeholder {
+            background: #f1f2f6;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            color: #999;
+            margin: 20px 0;
+        }
+        .nav-links {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        .nav-links a {
+            color: #ff6b9d;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #ff6b9d;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #ff6b9d;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #fff5f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/help" class="back-link">← Back to Help Center</a>
+        
+        <div class="header">
+            <div class="logo">🌸</div>
+            <h1>Importing Reviews from AliExpress</h1>
+            <p class="subtitle">Easily import reviews from any AliExpress product page into your Shopify store</p>
+        </div>
+
+        <div class="content">
+            <h2>Overview</h2>
+            <p>With Sakura Reviews, you can import authentic customer reviews from AliExpress products and display them on your Shopify store. This is perfect for dropshippers and merchants who source products from AliExpress.</p>
+            
+            <div class="highlight-box">
+                <strong>✨ Why Import from AliExpress?</strong>
+                <ul style="margin-top: 10px;">
+                    <li>Build social proof before you have your own reviews</li>
+                    <li>Show real customer experiences from the source</li>
+                    <li>Import photos and ratings automatically</li>
+                    <li>AI-powered quality scoring ensures only the best reviews</li>
+                </ul>
+            </div>
+
+            <h2>Prerequisites</h2>
+            <p>Before you start, make sure you have:</p>
+            <ul>
+                <li>✅ Sakura Reviews app installed on your Shopify store</li>
+                <li>✅ A Shopify product created for the item you want to import reviews to</li>
+                <li>✅ The AliExpress product URL for the item</li>
+                <li>✅ Your Shopify product ID (found in your product URL or admin panel)</li>
+            </ul>
+
+            <h2>Step-by-Step Guide</h2>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    Find Your AliExpress Product
+                </h3>
+                <p>Go to AliExpress and find the product you want to import reviews from. Copy the product URL from your browser's address bar.</p>
+                <div class="code-block">
+                    Example: https://www.aliexpress.com/item/1005004632823451.html
+                </div>
+                <div class="warning-box">
+                    <strong>⚠️ Important:</strong> Make sure the AliExpress product matches your Shopify product. Reviews should be relevant to what you're actually selling.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    Get Your Shopify Product ID
+                </h3>
+                <p>You'll need your Shopify product ID to link the reviews. Here's how to find it:</p>
+                <ol>
+                    <li>Go to your Shopify admin panel</li>
+                    <li>Navigate to <strong>Products</strong></li>
+                    <li>Click on the product you want to import reviews to</li>
+                    <li>Look at the URL - it will look like: <code>https://admin.shopify.com/store/your-store/products/1234567890</code></li>
+                    <li>The number at the end (e.g., <code>1234567890</code>) is your Product ID</li>
+                </ol>
+                <div class="code-block">
+                    Product ID Example: 10045740417338
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">3</span>
+                    Access the Import Tool
+                </h3>
+                <p>There are two ways to import reviews:</p>
+                
+                <h4>Method A: Via App Dashboard (Recommended)</h4>
+                <ol>
+                    <li>Open Sakura Reviews in your Shopify admin</li>
+                    <li>Click on <strong>"Import Reviews"</strong> in the dashboard</li>
+                    <li>Select <strong>"AliExpress"</strong> as the platform</li>
+                    <li>Paste your AliExpress product URL</li>
+                    <li>Enter your Shopify product ID</li>
+                    <li>Click <strong>"Preview Reviews"</strong></li>
+                </ol>
+
+                <h4>Method B: Via API Endpoint (Advanced)</h4>
+                <p>You can also use the import API directly:</p>
+                <div class="code-block">
+GET /admin/reviews/import/url?productId=ALIEXPRESS_PRODUCT_ID&platform=aliexpress&url=ALIEXPRESS_URL
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">4</span>
+                    Preview and Select Reviews
+                </h3>
+                <p>After entering the URL, you'll see a preview of available reviews. You can:</p>
+                <ul>
+                    <li><strong>Filter by rating:</strong> Show only 4-5 star reviews</li>
+                    <li><strong>Filter by photos:</strong> Show only reviews with images</li>
+                    <li><strong>Filter by country:</strong> Show reviews from specific countries</li>
+                    <li><strong>Select individual reviews:</strong> Choose which reviews to import</li>
+                    <li><strong>Import all:</strong> Import all available reviews at once</li>
+                </ul>
+                
+                <div class="highlight-box">
+                    <strong>💡 Pro Tip:</strong> Our AI quality scoring automatically highlights the best reviews. Look for reviews with high quality scores (8.0+) for maximum impact!
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">5</span>
+                    Import Reviews
+                </h3>
+                <p>Once you've selected the reviews you want:</p>
+                <ol>
+                    <li>Click <strong>"Import Selected Reviews"</strong></li>
+                    <li>Wait for the import to complete (usually takes a few seconds)</li>
+                    <li>You'll see a success message with the number of reviews imported</li>
+                </ol>
+                
+                <div class="success-box">
+                    <strong>✅ What Happens During Import:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Reviews are saved to your database</li>
+                        <li>Photos are downloaded and stored</li>
+                        <li>AI quality scores are calculated</li>
+                        <li>Reviews are linked to your Shopify product</li>
+                        <li>Reviews appear automatically on your product page</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">6</span>
+                    Verify Reviews Are Displaying
+                </h3>
+                <p>After importing, check your product page:</p>
+                <ol>
+                    <li>Go to your Shopify storefront</li>
+                    <li>Navigate to the product page</li>
+                    <li>Scroll down to see the reviews widget</li>
+                    <li>You should see the imported reviews with photos, ratings, and customer names</li>
+                </ol>
+            </div>
+
+            <h2>What Gets Imported</h2>
+            <p>For each review, we import:</p>
+            <table>
+                <tr>
+                    <th>Data</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><strong>Reviewer Name</strong></td>
+                    <td>Customer's name (may be partially anonymized)</td>
+                </tr>
+                <tr>
+                    <td><strong>Rating</strong></td>
+                    <td>Star rating (1-5 stars)</td>
+                </tr>
+                <tr>
+                    <td><strong>Review Text</strong></td>
+                    <td>Full review content</td>
+                </tr>
+                <tr>
+                    <td><strong>Photos</strong></td>
+                    <td>Customer-uploaded product photos</td>
+                </tr>
+                <tr>
+                    <td><strong>Review Date</strong></td>
+                    <td>When the review was posted</td>
+                </tr>
+                <tr>
+                    <td><strong>Country</strong></td>
+                    <td>Reviewer's country (if available)</td>
+                </tr>
+                <tr>
+                    <td><strong>Verified Badge</strong></td>
+                    <td>Indicates if the reviewer actually purchased the product</td>
+                </tr>
+            </table>
+
+            <h2>AI Quality Scoring</h2>
+            <p>Sakura Reviews uses advanced AI to score each review's quality (0-10 scale). Reviews are scored based on:</p>
+            <ul>
+                <li><strong>Content Quality:</strong> Length, detail, helpfulness</li>
+                <li><strong>Photo Quality:</strong> Number and clarity of photos</li>
+                <li><strong>Authenticity:</strong> Language patterns and credibility</li>
+                <li><strong>Engagement:</strong> Helpful votes and interactions</li>
+            </ul>
+            
+            <div class="highlight-box">
+                <strong>⭐ AI Recommended:</strong> Reviews with a quality score of 8.0 or higher are marked as "AI Recommended" and can be featured prominently on your product pages.
+            </div>
+
+            <h2>Best Practices</h2>
+            <ul>
+                <li><strong>Match Products Correctly:</strong> Only import reviews for products that match what you're selling</li>
+                <li><strong>Import Recent Reviews:</strong> Focus on reviews from the last 6-12 months for relevance</li>
+                <li><strong>Mix Ratings:</strong> Don't only import 5-star reviews - a mix looks more authentic</li>
+                <li><strong>Check Photos:</strong> Reviews with photos are more valuable - prioritize those</li>
+                <li><strong>Respect Limits:</strong> Be aware of your plan's review limits (Free: 50, Basic: 500, Pro: 5,000)</li>
+            </ul>
+
+            <h2>Troubleshooting</h2>
+
+            <h3>❌ "No reviews found"</h3>
+            <p><strong>Possible causes:</strong></p>
+            <ul>
+                <li>The AliExpress product has no reviews</li>
+                <li>The product URL is incorrect</li>
+                <li>The product ID couldn't be extracted from the URL</li>
+            </ul>
+            <p><strong>Solution:</strong> Double-check the AliExpress URL and make sure the product has reviews.</p>
+
+            <h3>❌ "Import failed" or "Error connecting"</h3>
+            <p><strong>Possible causes:</strong></p>
+            <ul>
+                <li>Network connectivity issues</li>
+                <li>AliExpress blocking requests (temporary)</li>
+                <li>Invalid product ID format</li>
+            </ul>
+            <p><strong>Solution:</strong> Wait a few minutes and try again. If the problem persists, contact support.</p>
+
+            <h3>❌ "Reviews imported but not showing on product page"</h3>
+            <p><strong>Possible causes:</strong></p>
+            <ul>
+                <li>Shopify product ID doesn't match</li>
+                <li>Widget not installed on product template</li>
+                <li>Reviews are pending approval</li>
+            </ul>
+            <p><strong>Solution:</strong></p>
+            <ol>
+                <li>Verify the Shopify product ID is correct</li>
+                <li>Check that the widget ScriptTag is installed</li>
+                <li>Go to Reviews → Manage and ensure reviews are published</li>
+            </ol>
+
+            <h3>❌ "Reached review limit"</h3>
+            <p><strong>Solution:</strong> Upgrade your plan to import more reviews, or delete old reviews to free up space.</p>
+
+            <h2>Limitations & Considerations</h2>
+            <div class="warning-box">
+                <strong>⚠️ Important Notes:</strong>
+                <ul style="margin-top: 10px;">
+                    <li><strong>Review Authenticity:</strong> Only import reviews for products you actually sell. Importing reviews for unrelated products violates our Review Integrity Policy.</li>
+                    <li><strong>Legal Compliance:</strong> Ensure you have the right to use and display these reviews. See our <a href="/review-integrity">Review Integrity Policy</a>.</li>
+                    <li><strong>Rate Limits:</strong> To prevent abuse, there may be rate limits on how many reviews you can import per day.</li>
+                    <li><strong>Photo Storage:</strong> Photos are stored on our servers. Large imports may take time to process.</li>
+                </ul>
+            </div>
+
+            <h2>Alternative Import Methods</h2>
+            <p>If you need to import reviews from other sources:</p>
+            <ul>
+                <li><strong>Custom File Import:</strong> Use CSV/Excel files - see <a href="/help/import-custom-file">Importing Reviews Using a Custom File</a></li>
+                <li><strong>Amazon Import:</strong> Coming soon - import from Amazon product pages</li>
+                <li><strong>eBay Import:</strong> Coming soon - import from eBay listings</li>
+                <li><strong>Walmart Import:</strong> Coming soon - import from Walmart products</li>
+            </ul>
+
+            <h2>Related Articles</h2>
+            <ul>
+                <li><a href="/help/import-custom-file">Importing Reviews Using a Custom File</a></li>
+                <li><a href="/help/manage-reviews">Managing Reviews</a></li>
+                <li><a href="/help/widget-customization">Customizing Your Widget</a></li>
+                <li><a href="/review-integrity">Review Integrity & Fraud Prevention</a></li>
+            </ul>
+
+            <div class="nav-links">
+                <a href="/help">← Back to Help Center</a>
+                <a href="/contact">Need Help? Contact Us</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
