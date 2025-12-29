@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Messages - Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f6f6f7;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .filters a {
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #2d3436;
+            background: #f8f9fa;
+            transition: all 0.2s;
+        }
+        .filters a.active {
+            background: #ff6b9d;
+            color: white;
+        }
+        .messages-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2d3436;
+            border-bottom: 2px solid #e9ecef;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f1f2f6;
+        }
+        tr:hover {
+            background: #fff5f8;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .badge.read {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .badge.replied {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge.closed {
+            background: #f5f5f5;
+            color: #666;
+        }
+        .badge.priority-low {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .badge.priority-normal {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .badge.priority-high {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .badge.priority-urgent {
+            background: #fce4ec;
+            color: #880e4f;
+        }
+        .message-preview {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-view {
+            background: #ff6b9d;
+            color: white;
+        }
+        .btn-view:hover {
+            background: #ff5588;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📬 Contact Messages</h1>
+        <div>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/logout" style="margin-left: 10px;">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="filters">
+            <strong>Filter:</strong>
+            <a href="/admin/contact-messages?status=all" class="{% if status_filter == 'all' %}active{% endif %}">All</a>
+            <a href="/admin/contact-messages?status=new" class="{% if status_filter == 'new' %}active{% endif %}">New</a>
+            <a href="/admin/contact-messages?status=read" class="{% if status_filter == 'read' %}active{% endif %}">Read</a>
+            <a href="/admin/contact-messages?status=replied" class="{% if status_filter == 'replied' %}active{% endif %}">Replied</a>
+            <a href="/admin/contact-messages?status=closed" class="{% if status_filter == 'closed' %}active{% endif %}">Closed</a>
+        </div>
+
+        <div class="messages-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Shopify URL</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if messages %}
+                        {% for msg in messages %}
+                        <tr>
+                            <td>#{{ msg.id }}</td>
+                            <td><strong>{{ msg.full_name }}</strong></td>
+                            <td>{{ msg.email }}</td>
+                            <td>{{ msg.shopify_url[:30] if msg.shopify_url else '-' }}...</td>
+                            <td class="message-preview">{{ msg.message[:50] }}...</td>
+                            <td><span class="badge {{ msg.status }}">{{ msg.status }}</span></td>
+                            <td><span class="badge priority-{{ msg.priority }}">{{ msg.priority }}</span></td>
+                            <td>{{ msg.created_at.strftime('%Y-%m-%d %H:%M') if msg.created_at else 'N/A' }}</td>
+                            <td>
+                                <a href="/admin/contact-messages/{{ msg.id }}" class="btn-small btn-view">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                                No messages found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -70,6 +70,10 @@ class Config:
     WIDGET_SECRET = os.environ.get('WIDGET_SECRET', 'sakura-widget-secret-key')
     WIDGET_BASE_URL = os.environ.get('WIDGET_BASE_URL', 'https://sakura-reviews-sakrev-v15.utztjw.easypanel.host')
     
+    # Admin Credentials
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'zidimasters')
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '11!!!!.zidiMasters')
+    
     # Shopify API Configuration (priority: env vars > remote config)
     # NOTE: No hardcoded defaults for security - must be set via environment or config.json
     SHOPIFY_API_KEY = os.environ.get('SHOPIFY_API_KEY') or (remote_config.get('shopify.api_key') if remote_config else None)
@@ -3420,11 +3424,95 @@ def contact_submit():
             'error': 'Failed to submit message. Please try again or email us directly.'
         }), 500
 
+# =============================================================================
+# ADMIN AUTHENTICATION
+# =============================================================================
+
+from functools import wraps
+
+def admin_required(f):
+    """Decorator to require admin authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect('/admin/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page and authentication"""
+    if request.method == 'GET':
+        # If already logged in, redirect to dashboard
+        if session.get('admin_logged_in'):
+            return redirect('/admin/dashboard')
+        return render_template('admin-login.html')
+    
+    # POST - Handle login
+    try:
+        data = request.get_json() if request.is_json else request.form
+        username = data.get('username')
+        password = data.get('password')
+        
+        if username == Config.ADMIN_USERNAME and password == Config.ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            session['admin_username'] = username
+            logger.info(f"✅ Admin login successful: {username}")
+            
+            if request.is_json:
+                return jsonify({'success': True, 'redirect': '/admin/dashboard'})
+            return redirect('/admin/dashboard')
+        else:
+            logger.warning(f"❌ Admin login failed: {username}")
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+            return render_template('admin-login.html', error='Invalid username or password')
+            
+    except Exception as e:
+        logger.error(f"Admin login error: {str(e)}")
+        if request.is_json:
+            return jsonify({'success': False, 'error': 'Login error'}), 500
+        return render_template('admin-login.html', error='Login error')
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout"""
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    logger.info("Admin logged out")
+    return redirect('/admin/login')
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    """Admin dashboard - Overview of system"""
+    try:
+        from backend.models_v2 import ContactMessage, Shop, Review
+        
+        # Get stats
+        total_messages = ContactMessage.query.count()
+        new_messages = ContactMessage.query.filter_by(status='new').count()
+        total_shops = Shop.query.count()
+        total_reviews = Review.query.count()
+        
+        # Recent messages
+        recent_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(10).all()
+        
+        return render_template('admin-dashboard.html',
+                             total_messages=total_messages,
+                             new_messages=new_messages,
+                             total_shops=total_shops,
+                             total_reviews=total_reviews,
+                             recent_messages=recent_messages)
+    except Exception as e:
+        logger.error(f"Admin dashboard error: {str(e)}")
+        return f"Error loading dashboard: {str(e)}", 500
+
 @app.route('/admin/contact-messages')
+@admin_required
 def admin_contact_messages():
     """
-    Admin view of contact messages (should be protected with authentication)
-    TODO: Add authentication middleware
+    Admin view of contact messages - Protected with authentication
     """
     try:
         from backend.models_v2 import ContactMessage
@@ -3440,15 +3528,42 @@ def admin_contact_messages():
         
         messages = query.limit(limit).all()
         
-        return jsonify({
-            'success': True,
-            'count': len(messages),
-            'messages': [msg.to_dict() for msg in messages]
-        }), 200
+        # If JSON request, return JSON
+        if request.args.get('format') == 'json':
+            return jsonify({
+                'success': True,
+                'count': len(messages),
+                'messages': [msg.to_dict() for msg in messages]
+            }), 200
+        
+        # Otherwise render HTML page
+        return render_template('admin-contact-messages.html',
+                             messages=messages,
+                             status_filter=status)
         
     except Exception as e:
         logger.error(f"Error fetching contact messages: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/contact-messages/<int:message_id>')
+@admin_required
+def admin_view_message(message_id):
+    """View individual contact message"""
+    try:
+        from backend.models_v2 import ContactMessage
+        
+        message = ContactMessage.query.get_or_404(message_id)
+        
+        # Mark as read if it's new
+        if message.status == 'new':
+            message.status = 'read'
+            db.session.commit()
+        
+        return render_template('admin-view-message.html', message=message)
+        
+    except Exception as e:
+        logger.error(f"Error viewing message: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/legal')
 def legal_index():
