@@ -3335,6 +3335,21 @@ def data_processing_addendum():
     """Data Processing Addendum page"""
     return render_template('dpa.html')
 
+@app.route('/review-integrity')
+def review_integrity():
+    """Review Integrity & Fraud Prevention page"""
+    return render_template('review-integrity.html')
+
+@app.route('/copyright')
+def copyright_policy():
+    """Copyright Policy page"""
+    return render_template('copyright-policy.html')
+
+@app.route('/cookies')
+def cookies_policy():
+    """Cookies Policy page"""
+    return render_template('cookies-policy.html')
+
 @app.route('/legal')
 def legal_index():
     """Legal pages index"""
@@ -3342,10 +3357,13 @@ def legal_index():
         'pages': {
             'privacy_policy': '/privacy',
             'terms_of_service': '/terms',
-            'data_processing_addendum': '/dpa'
+            'data_processing_addendum': '/dpa',
+            'review_integrity': '/review-integrity',
+            'copyright_policy': '/copyright',
+            'cookies_policy': '/cookies'
         },
         'company': 'Sakura Reviews',
-        'contact': 'support@sakurareviews.app'
+        'contact': 'sakura.revs@gmail.com'
     })
 
 # =============================================================================
