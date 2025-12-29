@@ -3352,7 +3352,12 @@ def cookies_policy():
 
 @app.route('/legal')
 def legal_index():
-    """Legal pages index"""
+    """Legal pages index - beautiful HTML page with all legal documents"""
+    return render_template('legal-index.html')
+
+@app.route('/legal.json')
+def legal_index_json():
+    """Legal pages index - JSON format for API consumers"""
     return jsonify({
         'pages': {
             'privacy_policy': '/privacy',
