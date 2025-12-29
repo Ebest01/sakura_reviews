@@ -1042,9 +1042,9 @@ def featured_reviews():
         # Query reviews that have photos in review_media table
         # Join reviews with review_media to find reviews with images
         # NOTE: Only check status='published', NOT the published column (which is NULL)
+        # Uses RANDOM() to show different reviews on each page load for variety
         cursor.execute("""
-            SELECT DISTINCT ON (r.id)
-                r.id, r.reviewer_name, r.rating, r.body, 
+            SELECT DISTINCT r.id, r.reviewer_name, r.rating, r.body, 
                 r.verified_purchase, r.review_date,
                 r.quality_score, r.ai_recommended
             FROM reviews r
@@ -1054,7 +1054,8 @@ def featured_reviews():
             AND rm.media_type = 'image'
             AND rm.media_url IS NOT NULL
             AND rm.media_url != ''
-            ORDER BY r.id, r.rating DESC, r.quality_score DESC NULLS LAST
+            AND r.rating >= 4
+            ORDER BY r.rating DESC, RANDOM()
             LIMIT 10;
         """)
         
