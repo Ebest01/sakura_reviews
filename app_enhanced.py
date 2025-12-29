@@ -937,6 +937,53 @@ def index():
     return render_template('landing-page.html')
 
 
+@app.route('/api/debug-reviews')
+def debug_reviews():
+    """Debug endpoint to check what reviews exist with images"""
+    import psycopg2
+    
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        
+        # Check total reviews
+        cursor.execute("SELECT COUNT(*) FROM reviews WHERE status = 'published';")
+        total = cursor.fetchone()[0]
+        
+        # Check reviews with any images data
+        cursor.execute("""
+            SELECT id, reviewer_name, rating, 
+                   images::text as images_raw,
+                   LENGTH(images::text) as img_len
+            FROM reviews 
+            WHERE status = 'published'
+            ORDER BY id DESC 
+            LIMIT 10;
+        """)
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        samples = []
+        for row in rows:
+            samples.append({
+                'id': row[0],
+                'reviewer_name': row[1],
+                'rating': row[2],
+                'images_raw': row[3][:500] if row[3] else None,  # First 500 chars
+                'images_length': row[4]
+            })
+        
+        return jsonify({
+            'total_published_reviews': total,
+            'sample_reviews': samples
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
 @app.route('/api/featured-reviews')
 def featured_reviews():
     """
