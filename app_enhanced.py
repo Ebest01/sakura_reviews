@@ -5937,8 +5937,19 @@ def sakura_reviews_js():
         return html;
     }
     
-    function createStarBadge(productId, count, average) {
+    function createStarBadge(productId, count, average, card) {
         if (count === 0) return ''; // Don't show badge if no reviews
+        
+        // Get product handle from card link for proper URL
+        let productUrl = `#sakura-reviews`;
+        const link = card?.querySelector('a[href*="/products/"]');
+        if (link) {
+            const href = link.getAttribute('href');
+            const match = href.match(/\\/products\\/([^?#]+)/);
+            if (match) {
+                productUrl = `/products/${match[1]}#sakura-reviews`;
+            }
+        }
         
         const badge = document.createElement('div');
         badge.className = 'sakura-star-badge';
@@ -5946,7 +5957,7 @@ def sakura_reviews_js():
         
         const stars = generateStarHtml(average);
         badge.innerHTML = `
-            <a href="/products/${productId}#sakura-reviews">
+            <a href="${productUrl}">
                 ${stars}
                 <span class="sakura-review-count">(${count})</span>
             </a>
@@ -5981,63 +5992,97 @@ def sakura_reviews_js():
     }
     
     function extractProductId(card) {
-        // Try various methods to extract NUMERIC product ID (not handle!)
+        // Extract NUMERIC product ID (like Loox does with data-id)
+        // Loox uses: <div class="loox-rating" data-id="8341568848179">
         
-        // 1. Data attribute (most common - numeric ID)
+        // 1. Look for Loox-style data-id (most reliable - matches Loox exactly)
+        const looxRating = card.querySelector('.loox-rating');
+        if (looxRating) {
+            const looxId = looxRating.getAttribute('data-id');
+            if (looxId && /^\\d+$/.test(looxId)) {
+                console.log(`🌸 Found Loox-style data-id: ${looxId}`);
+                return looxId;
+            }
+        }
+        
+        // 2. Data attributes (standard Shopify)
         const dataId = card.getAttribute('data-product-id') || 
                        card.getAttribute('data-id') ||
-                       card.querySelector('[data-product-id]')?.getAttribute('data-product-id');
-        if (dataId && /^\\d+$/.test(dataId)) return dataId; // Only return if numeric
+                       card.querySelector('[data-product-id]')?.getAttribute('data-product-id') ||
+                       card.querySelector('[data-id]')?.getAttribute('data-id');
+        if (dataId && /^\\d+$/.test(dataId)) {
+            console.log(`🌸 Found data-product-id: ${dataId}`);
+            return dataId;
+        }
         
-        // 2. From JSON data in script tags (Shopify stores product data here)
+        // 3. Extract from card element IDs (Shopify embeds product ID in template IDs)
+        // Example: id="CardLink-template--25679685058874__product-grid-10045740024122"
+        const cardId = card.id || card.querySelector('[id*="product-grid"]')?.id;
+        if (cardId) {
+            const match = cardId.match(/product-grid-(\\d+)/);
+            if (match && match[1]) {
+                console.log(`🌸 Found product ID from card ID attribute: ${match[1]}`);
+                return match[1];
+            }
+        }
+        
+        // 4. From JSON data in script tags (Shopify stores product data here)
         const scripts = card.querySelectorAll('script[type="application/json"]');
         for (const script of scripts) {
             try {
                 const data = JSON.parse(script.textContent);
-                if (data.product && data.product.id) return String(data.product.id);
-                if (data.id) return String(data.id);
+                if (data.product && data.product.id) {
+                    console.log(`🌸 Found product ID from JSON: ${data.product.id}`);
+                    return String(data.product.id);
+                }
+                if (data.id) {
+                    console.log(`🌸 Found ID from JSON: ${data.id}`);
+                    return String(data.id);
+                }
             } catch (e) {}
         }
         
-        // 3. From form - look for product ID input (not variant ID)
+        // 5. From form - look for product ID input
         const form = card.querySelector('form[action*="/cart/add"]');
         if (form) {
-            // Try product_id first
             const productIdInput = form.querySelector('input[name="product_id"]');
-            if (productIdInput && productIdInput.value) return productIdInput.value;
-            
-            // Fallback: variant ID (we'll need to map this)
-            const variantInput = form.querySelector('input[name="id"]');
-            if (variantInput && variantInput.value) {
-                // Store variant ID for later mapping
-                card._sakuraVariantId = variantInput.value;
+            if (productIdInput && productIdInput.value && /^\\d+$/.test(productIdInput.value)) {
+                console.log(`🌸 Found product_id from form: ${productIdInput.value}`);
+                return productIdInput.value;
             }
         }
         
-        // 4. From product link - extract handle and try to get ID from Shopify object
+        // 6. From product link - try to get ID from Shopify object
         const link = card.querySelector('a[href*="/products/"]');
         if (link) {
             const href = link.getAttribute('href');
             const match = href.match(/\\/products\\/([^/?#]+)/);
             if (match) {
                 const handle = match[1];
-                // Try to find product in Shopify.allProducts or window.products
+                // Try Shopify.allProducts
                 if (window.Shopify && window.Shopify.allProducts) {
                     const product = window.Shopify.allProducts.find(p => p.handle === handle);
-                    if (product && product.id) return String(product.id);
+                    if (product && product.id) {
+                        console.log(`🌸 Found product ID from Shopify.allProducts: ${product.id}`);
+                        return String(product.id);
+                    }
                 }
-                // Store handle for API lookup
+                // Store handle as fallback
                 card._sakuraHandle = handle;
             }
         }
         
-        // 5. From card's inner data attributes
-        const allDataAttrs = card.querySelectorAll('[data-product-id]');
+        // 7. Search all nested elements for data-product-id
+        const allDataAttrs = card.querySelectorAll('[data-product-id], [data-id]');
         for (const el of allDataAttrs) {
-            const id = el.getAttribute('data-product-id');
-            if (id && /^\\d+$/.test(id)) return id;
+            const id = el.getAttribute('data-product-id') || el.getAttribute('data-id');
+            if (id && /^\\d+$/.test(id)) {
+                console.log(`🌸 Found product ID from nested element: ${id}`);
+                return id;
+            }
         }
         
+        console.warn('🌸 Could not extract product ID from card');
         return null;
     }
     
@@ -6087,49 +6132,37 @@ def sakura_reviews_js():
         
         console.log(`🌸 Found ${cards.length} product cards`);
         
-        // Extract product IDs and handles
+        // Extract product IDs (numeric IDs, like Loox uses)
         const productIds = [];
-        const handles = [];
-        const cardMap = new Map(); // Maps identifier (ID or handle) to card
+        const cardMap = new Map(); // Maps product ID to card
         
         for (const card of cards) {
             // Skip if already has badge
             if (card.querySelector('.sakura-star-badge')) continue;
             
             const productId = extractProductId(card);
-            if (productId) {
-                // Check if it's numeric (ID) or string (handle)
-                if (/^\\d+$/.test(productId)) {
-                    productIds.push(productId);
-                    cardMap.set(productId, card);
-                } else {
-                    // It's a handle
-                    handles.push(productId);
-                    cardMap.set(productId, card);
-                }
-            } else if (card._sakuraHandle) {
-                // Use stored handle
-                handles.push(card._sakuraHandle);
-                cardMap.set(card._sakuraHandle, card);
+            if (productId && /^\\d+$/.test(productId)) {
+                // Only use numeric IDs (like Loox)
+                productIds.push(productId);
+                cardMap.set(productId, card);
             }
         }
         
-        if (productIds.length === 0 && handles.length === 0) {
-            console.log('🌸 No product IDs or handles extracted');
+        if (productIds.length === 0) {
+            console.log('🌸 No numeric product IDs extracted from cards');
             return;
         }
         
-        console.log(`🌸 Extracted ${productIds.length} IDs and ${handles.length} handles`);
+        console.log(`🌸 Extracted ${productIds.length} numeric product IDs:`, productIds.slice(0, 5));
         
-        // Build API URL
+        // Build API URL with numeric IDs only
         const params = new URLSearchParams();
-        if (productIds.length > 0) params.append('product_ids', productIds.join(','));
-        if (handles.length > 0) params.append('handles', handles.join(','));
+        params.append('product_ids', productIds.join(','));
         
         // Fetch ratings from API
         try {
             const url = `${SAKURA_CONFIG.apiUrl}/api/products/ratings?${params.toString()}`;
-            console.log(`🌸 Fetching ratings from: ${url}`);
+            console.log(`🌸 Fetching ratings from API...`);
             
             const response = await fetch(url);
             const data = await response.json();
@@ -6139,34 +6172,34 @@ def sakura_reviews_js():
                 return;
             }
             
-            console.log(`🌸 Received ratings for ${Object.keys(data.ratings).length} products:`, data.ratings);
+            console.log(`🌸 Received ratings for ${Object.keys(data.ratings).length} products`);
             
             // Inject badges
             let injectedCount = 0;
-            for (const [identifier, ratings] of Object.entries(data.ratings)) {
-                const card = cardMap.get(identifier);
+            for (const [productId, ratings] of Object.entries(data.ratings)) {
+                const card = cardMap.get(productId);
                 if (!card) {
-                    console.log(`🌸 No card found for identifier: ${identifier}`);
+                    console.log(`🌸 No card found for product ID: ${productId}`);
                     continue;
                 }
                 
                 if (ratings.count === 0) {
-                    console.log(`🌸 Product ${identifier} has 0 reviews, skipping`);
+                    console.log(`🌸 Product ${productId} has 0 reviews, skipping badge`);
                     continue;
                 }
                 
                 const insertPoint = findPriceElement(card);
                 if (!insertPoint) {
-                    console.log(`🌸 No insertion point found for product ${identifier}`);
+                    console.log(`🌸 No insertion point found for product ${productId}`);
                     continue;
                 }
                 
-                const badge = createStarBadge(identifier, ratings.count, ratings.average);
+                const badge = createStarBadge(productId, ratings.count, ratings.average, card);
                 if (badge) {
-                    // Insert before the price element
+                    // Insert before the price element (like Loox does)
                     insertPoint.parentNode.insertBefore(badge, insertPoint);
                     injectedCount++;
-                    console.log(`🌸 ✓ Injected badge for ${identifier}: ${ratings.count} reviews, ${ratings.average} stars`);
+                    console.log(`🌸 ✓ Injected badge for ${productId}: ${ratings.count} reviews, ${ratings.average} stars`);
                 }
             }
             
