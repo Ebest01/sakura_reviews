@@ -3992,15 +3992,15 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
     Returns: (reviews_list, total_count, average_rating, rating_distribution)
     
     Sort options:
-    - 'default': 5-star first, then 4, then 3, etc. (default on page load)
-    - 'ai_recommended': Reviews with media (photos/videos) first, then others (AI recommended, Verified)
+    - 'default': SMART SORT - AI recommended first, then text content, then photos, then rating
+    - 'ai_recommended': Same as default (smart sort)
     - 'newest': By date (newest first)
     - 'highest_ratings': 5-star first, then 4, etc.
     - 'lowest_ratings': 1-star first, then 2, etc.
     """
     try:
         from backend.models_v2 import Review, ReviewMedia
-        from sqlalchemy import func
+        from sqlalchemy import func, case
         
         # Get total count
         total_count = Review.query.filter_by(
@@ -4038,9 +4038,9 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
             reviews_query = reviews_query.order_by(Review.rating.desc(), Review.imported_at.desc())
         elif sort == 'lowest_ratings':
             reviews_query = reviews_query.order_by(Review.rating.asc(), Review.imported_at.desc())
-        elif sort == 'ai_recommended':
-            # Reviews with media first, then by rating (5-star first), then by date
-            # Use a subquery to check if review has media, then order by that
+        else:  # 'default' or 'ai_recommended' - SMART SORT
+            # Smart sorting: AI Recommended > Has Text > Has Photos > High Rating > Quality Score
+            # Use subquery to get media count for each review
             media_subquery = db.session.query(
                 ReviewMedia.review_id,
                 func.count(ReviewMedia.id).label('media_count')
@@ -4051,12 +4051,21 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
             reviews_query = reviews_query.outerjoin(
                 media_subquery, Review.id == media_subquery.c.review_id
             ).order_by(
-                func.coalesce(media_subquery.c.media_count, 0).desc(),  # Reviews with media first
-                Review.rating.desc(),  # Then by rating (5-star first)
-                Review.imported_at.desc()  # Then by date
+                # 1. AI Recommended first (if flag is True)
+                case((Review.ai_recommended == True, 0), else_=1),
+                # 2. Has text content (body length > 10 chars)
+                case((func.length(func.coalesce(Review.body, '')) > 10, 0), else_=1),
+                # 3. Has photos (media count > 0)
+                case((func.coalesce(media_subquery.c.media_count, 0) > 0, 0), else_=1),
+                # 4. Higher rating first
+                Review.rating.desc(),
+                # 5. More photos first
+                func.coalesce(media_subquery.c.media_count, 0).desc(),
+                # 6. Longer text first
+                func.length(func.coalesce(Review.body, '')).desc(),
+                # 7. Quality score as tiebreaker
+                func.coalesce(Review.quality_score, 0).desc()
             )
-        else:  # 'default' - 5-star first, then 4, then 3, etc.
-            reviews_query = reviews_query.order_by(Review.rating.desc(), Review.imported_at.desc())
         
         # Apply pagination
         reviews_query = reviews_query.offset(offset).limit(limit).all()
