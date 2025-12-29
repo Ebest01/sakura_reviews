@@ -1041,7 +1041,7 @@ def featured_reviews():
         
         # Query reviews that have photos in review_media table
         # Join reviews with review_media to find reviews with images
-        # Check for both 'image' and 'photo' media_type values
+        # NOTE: Only check status='published', NOT the published column (which is NULL)
         cursor.execute("""
             SELECT DISTINCT ON (r.id)
                 r.id, r.reviewer_name, r.rating, r.body, 
@@ -1051,7 +1051,7 @@ def featured_reviews():
             INNER JOIN review_media rm ON r.id = rm.review_id
             WHERE r.status = 'published'
             AND rm.status = 'active'
-            AND rm.media_type IN ('image', 'photo')
+            AND rm.media_type = 'image'
             AND rm.media_url IS NOT NULL
             AND rm.media_url != ''
             ORDER BY r.id, r.rating DESC, r.quality_score DESC NULLS LAST
@@ -1068,8 +1068,12 @@ def featured_reviews():
             # Get all photos for this review from review_media table
             cursor.execute("""
                 SELECT media_url FROM review_media 
-                WHERE review_id = %s AND status = 'active' AND media_type = 'image'
-                AND media_url IS NOT NULL AND media_url != ''
+                WHERE review_id = %s 
+                AND status = 'active' 
+                AND media_type = 'image'
+                AND media_url IS NOT NULL 
+                AND media_url != ''
+                ORDER BY id
                 LIMIT 5;
             """, (rev_id,))
             
