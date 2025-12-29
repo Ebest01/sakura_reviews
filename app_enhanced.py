@@ -1560,6 +1560,74 @@ def migrate_helpful_columns():
         }), 500
 
 
+@app.route('/api/products/ratings', methods=['GET', 'POST'])
+def api_products_ratings():
+    """
+    Get review ratings/counts for multiple products at once
+    Used for displaying star badges on collection pages
+    
+    Request (GET): ?product_ids=123,456,789
+    Request (POST): { "product_ids": ["123", "456", "789"] }
+    
+    Response: {
+        "success": true,
+        "ratings": {
+            "123": { "count": 15, "average": 4.7, "distribution": {1:0, 2:1, 3:2, 4:5, 5:7} },
+            "456": { "count": 6, "average": 5.0, "distribution": {1:0, 2:0, 3:0, 4:1, 5:5} }
+        }
+    }
+    """
+    try:
+        from backend.models_v2 import Review
+        from sqlalchemy import func
+        
+        # Get product IDs from request
+        if request.method == 'POST':
+            data = request.get_json() or {}
+            product_ids = data.get('product_ids', [])
+        else:
+            product_ids_str = request.args.get('product_ids', '')
+            product_ids = [p.strip() for p in product_ids_str.split(',') if p.strip()]
+        
+        if not product_ids:
+            return jsonify({'success': False, 'error': 'No product_ids provided', 'ratings': {}})
+        
+        # Limit to prevent abuse
+        product_ids = product_ids[:100]
+        
+        # Query ratings for all products at once
+        ratings_data = db.session.query(
+            Review.shopify_product_id,
+            func.count(Review.id).label('count'),
+            func.avg(Review.rating).label('average')
+        ).filter(
+            Review.shopify_product_id.in_([str(pid) for pid in product_ids]),
+            Review.status == 'published'
+        ).group_by(Review.shopify_product_id).all()
+        
+        # Build response
+        ratings = {}
+        for product_id, count, average in ratings_data:
+            ratings[str(product_id)] = {
+                'count': count,
+                'average': round(float(average), 1) if average else 0
+            }
+        
+        # Add empty entries for products with no reviews
+        for pid in product_ids:
+            if str(pid) not in ratings:
+                ratings[str(pid)] = {'count': 0, 'average': 0}
+        
+        return jsonify({
+            'success': True,
+            'ratings': ratings
+        })
+    
+    except Exception as e:
+        logger.error(f"Error fetching product ratings: {e}")
+        return jsonify({'success': False, 'error': str(e), 'ratings': {}})
+
+
 @app.route('/api/reviews/<int:review_id>/helpful', methods=['POST'])
 def review_helpful_vote(review_id):
     """
@@ -5637,21 +5705,82 @@ def sakura_reviews_js():
     This is the file that Loox-style apps inject automatically
     """
     js_code = """
-// Sakura Reviews Auto-Injection Script
-// This gets injected automatically via Shopify ScriptTag API
+// Sakura Reviews Auto-Injection Script v2.1
+// Includes: Product page widget + Collection page star badges
 (function() {
     'use strict';
+    
+    // Prevent double initialization
+    if (window.sakuraReviewsLoaded) return;
+    window.sakuraReviewsLoaded = true;
     
     // Configuration
     const SAKURA_CONFIG = {
         apiUrl: '__WIDGET_BASE_URL__',
-        shopId: '1', // Use shop_id=1 (can be made dynamic based on shop domain later)
+        shopId: '1',
         productId: window.ShopifyAnalytics?.meta?.product?.id || null,
         theme: 'default',
         limit: 20
     };
     
-    // Check if we're on a product page
+    // ==================== STYLES ====================
+    const styles = `
+        .sakura-reviews-widget {
+            margin: 40px 0;
+            background: white;
+        }
+        .sakura-reviews-separator {
+            border-top: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        .sakura-reviews-container {
+            position: relative;
+            background: white;
+            margin: 0px auto;
+            max-width: 1080px;
+        }
+        
+        /* Star Badge Styles for Collection Pages */
+        .sakura-star-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 4px 0 8px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            line-height: 1;
+        }
+        .sakura-stars {
+            color: #fbbf24;
+            letter-spacing: -1px;
+            font-size: 14px;
+        }
+        .sakura-stars-empty {
+            color: #e2e8f0;
+        }
+        .sakura-review-count {
+            color: #64748b;
+            font-size: 12px;
+        }
+        .sakura-star-badge a {
+            text-decoration: none;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sakura-star-badge a:hover .sakura-review-count {
+            color: #ff69b4;
+            text-decoration: underline;
+        }
+    `;
+    
+    // Inject styles
+    const styleEl = document.createElement('style');
+    styleEl.textContent = styles;
+    document.head.appendChild(styleEl);
+    
+    // ==================== PRODUCT PAGE WIDGET ====================
     function isProductPage() {
         return window.location.pathname.includes('/products/') && 
                typeof window.ShopifyAnalytics !== 'undefined' &&
@@ -5659,35 +5788,27 @@ def sakura_reviews_js():
                window.ShopifyAnalytics.meta.product;
     }
     
-    // Generate widget URL
     function generateWidgetUrl() {
         if (!SAKURA_CONFIG.productId) return null;
-        
         const timestamp = Date.now();
-        const version = '2.0.0';
         const params = new URLSearchParams({
-            v: version,
+            v: '2.0.0',
             t: timestamp,
             s: 'scripttag-' + timestamp,
             theme: SAKURA_CONFIG.theme,
             limit: SAKURA_CONFIG.limit,
             platform: 'shopify'
         });
-        
-        // Use shop_id=1 for widget URL
         return `${SAKURA_CONFIG.apiUrl}/widget/1/reviews/${SAKURA_CONFIG.productId}?${params}`;
     }
     
-    // Create review section HTML
     function createReviewSection() {
         const widgetUrl = generateWidgetUrl();
         if (!widgetUrl) return '';
         
-        const sectionId = `sakura-reviews-${SAKURA_CONFIG.shopId}-${SAKURA_CONFIG.productId}`;
-        const frameId = `sakuraReviewsFrame-${SAKURA_CONFIG.shopId}-${SAKURA_CONFIG.productId}`;
-        
+        const frameId = `sakuraReviewsFrame-${SAKURA_CONFIG.productId}`;
         return `
-            <section id="${sectionId}" class="sakura-reviews-widget sakura-auto-injected">
+            <section class="sakura-reviews-widget sakura-auto-injected">
                 <div class="sakura-reviews-separator"></div>
                 <div class="sakura-reviews-container" data-product-id="${SAKURA_CONFIG.productId}">
                     <iframe 
@@ -5697,51 +5818,18 @@ def sakura_reviews_js():
                         height="2048px"
                         frameborder="0"
                         scrolling="no"
-                        style="overflow: hidden; height: 2048px; width: 100%; box-shadow: unset; outline: unset; color-scheme: none; border: none;"
+                        style="overflow: hidden; height: 2048px; width: 100%; border: none;"
                         title="Sakura Reviews Widget"
                         loading="lazy"
-                    >
-                        <p>Loading reviews...</p>
-                    </iframe>
+                    ></iframe>
                 </div>
             </section>
-            
-            <style>
-            .sakura-reviews-widget {
-                margin: 40px 0;
-                background: white;
-            }
-            
-            .sakura-reviews-separator {
-                border-top: 1px solid #e2e8f0;
-                margin: 20px 0;
-            }
-            
-            .sakura-reviews-container {
-                position: relative;
-                background: white;
-                margin: 0px auto;
-                max-width: 1080px;
-            }
-            
-            #${frameId} {
-                display: block;
-                width: 100%;
-                border: none;
-                background: white;
-            }
-            </style>
         `;
     }
     
-    // Find the best place to inject reviews
     function findInjectionPoint() {
-        // Try to find #MainContent first (most themes)
-        let target = document.querySelector('#MainContent');
-        if (target) return target;
-        
-        // Try common product content selectors
         const selectors = [
+            '#MainContent',
             '.product-single__description',
             '.product-description',
             '.product-content',
@@ -5750,51 +5838,231 @@ def sakura_reviews_js():
             'main',
             '.main-content'
         ];
-        
-        for (const selector of selectors) {
-            target = document.querySelector(selector);
-            if (target) return target;
+        for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (el) return el;
         }
-        
-        // Fallback to body
         return document.body;
     }
     
-    // Inject review section
-    function injectReviews() {
+    function injectProductWidget() {
         if (!isProductPage()) return;
+        if (document.querySelector('.sakura-auto-injected')) return;
         
-        // Check if already injected
-        if (document.querySelector('.sakura-auto-injected')) {
-            console.log('🌸 Sakura Reviews already injected');
-            return;
-        }
+        const point = findInjectionPoint();
+        if (!point) return;
         
-        const injectionPoint = findInjectionPoint();
-        if (!injectionPoint) {
-            console.warn('🌸 Sakura Reviews: Could not find injection point');
-            return;
-        }
-        
-        // Create and inject the review section
-        const reviewSection = document.createElement('div');
-        reviewSection.innerHTML = createReviewSection();
-        
-        // Insert after the main content
-        injectionPoint.appendChild(reviewSection);
-        
-        console.log('🌸 Sakura Reviews injected successfully via ScriptTag');
+        const container = document.createElement('div');
+        container.innerHTML = createReviewSection();
+        point.appendChild(container);
+        console.log('🌸 Sakura Reviews widget injected');
     }
     
-    // Initialize when DOM is ready
+    // ==================== COLLECTION PAGE STAR BADGES ====================
+    function generateStarHtml(rating, maxStars = 5) {
+        const fullStars = Math.floor(rating);
+        const hasHalf = rating % 1 >= 0.5;
+        let html = '<span class="sakura-stars">';
+        for (let i = 0; i < fullStars; i++) html += '★';
+        if (hasHalf) html += '★'; // Could use half star char
+        const emptyStars = maxStars - fullStars - (hasHalf ? 1 : 0);
+        html += '</span><span class="sakura-stars-empty">';
+        for (let i = 0; i < emptyStars; i++) html += '★';
+        html += '</span>';
+        return html;
+    }
+    
+    function createStarBadge(productId, count, average) {
+        if (count === 0) return ''; // Don't show badge if no reviews
+        
+        const badge = document.createElement('div');
+        badge.className = 'sakura-star-badge';
+        badge.setAttribute('data-sakura-product', productId);
+        
+        const stars = generateStarHtml(average);
+        badge.innerHTML = `
+            <a href="/products/${productId}#sakura-reviews">
+                ${stars}
+                <span class="sakura-review-count">(${count})</span>
+            </a>
+        `;
+        return badge;
+    }
+    
+    function findProductCards() {
+        // Common Shopify product card selectors
+        const cardSelectors = [
+            '.product-card',
+            '.card-product',
+            '.grid-product',
+            '.product-grid-item',
+            '.product-item',
+            '.collection-product-card',
+            '.grid__item[data-product-id]',
+            '[data-product-card]',
+            '.product-card-wrapper',
+            '.product'
+        ];
+        
+        let cards = [];
+        for (const sel of cardSelectors) {
+            const found = document.querySelectorAll(sel);
+            if (found.length > 0) {
+                cards = Array.from(found);
+                break;
+            }
+        }
+        return cards;
+    }
+    
+    function extractProductId(card) {
+        // Try various methods to extract product ID
+        
+        // 1. Data attribute
+        const dataId = card.getAttribute('data-product-id') || 
+                       card.getAttribute('data-id') ||
+                       card.querySelector('[data-product-id]')?.getAttribute('data-product-id');
+        if (dataId) return dataId;
+        
+        // 2. From product URL in link
+        const link = card.querySelector('a[href*="/products/"]');
+        if (link) {
+            const href = link.getAttribute('href');
+            // Extract handle from URL
+            const match = href.match(/\\/products\\/([^/?#]+)/);
+            if (match) return match[1]; // Return handle (we'll need to map it)
+        }
+        
+        // 3. From form action
+        const form = card.querySelector('form[action*="/cart/add"]');
+        if (form) {
+            const input = form.querySelector('input[name="id"]');
+            if (input) return input.value;
+        }
+        
+        return null;
+    }
+    
+    function findPriceElement(card) {
+        // Find where to insert the star badge (usually near the price)
+        const priceSelectors = [
+            '.price',
+            '.product-price',
+            '.card-price',
+            '.price-container',
+            '.product-card__price',
+            '[class*="price"]'
+        ];
+        
+        for (const sel of priceSelectors) {
+            const el = card.querySelector(sel);
+            if (el) return el;
+        }
+        
+        // Fallback: find title and insert after
+        const titleSelectors = [
+            '.product-title',
+            '.card-title',
+            '.product-card__title',
+            'h3',
+            'h4',
+            '[class*="title"]'
+        ];
+        
+        for (const sel of titleSelectors) {
+            const el = card.querySelector(sel);
+            if (el) return el;
+        }
+        
+        return null;
+    }
+    
+    async function injectCollectionBadges() {
+        // Don't run on product pages (widget handles it)
+        if (isProductPage()) return;
+        
+        const cards = findProductCards();
+        if (cards.length === 0) return;
+        
+        console.log(`🌸 Found ${cards.length} product cards`);
+        
+        // Extract product IDs
+        const productIds = [];
+        const cardMap = new Map();
+        
+        for (const card of cards) {
+            // Skip if already has badge
+            if (card.querySelector('.sakura-star-badge')) continue;
+            
+            const productId = extractProductId(card);
+            if (productId) {
+                productIds.push(productId);
+                cardMap.set(productId, card);
+            }
+        }
+        
+        if (productIds.length === 0) return;
+        
+        // Fetch ratings from API
+        try {
+            const response = await fetch(`${SAKURA_CONFIG.apiUrl}/api/products/ratings?product_ids=${productIds.join(',')}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.warn('🌸 Failed to fetch ratings:', data.error);
+                return;
+            }
+            
+            // Inject badges
+            for (const [productId, ratings] of Object.entries(data.ratings)) {
+                const card = cardMap.get(productId);
+                if (!card || ratings.count === 0) continue;
+                
+                const insertPoint = findPriceElement(card);
+                if (!insertPoint) continue;
+                
+                const badge = createStarBadge(productId, ratings.count, ratings.average);
+                if (badge) {
+                    insertPoint.parentNode.insertBefore(badge, insertPoint);
+                }
+            }
+            
+            console.log(`🌸 Injected star badges for ${Object.keys(data.ratings).length} products`);
+            
+        } catch (error) {
+            console.warn('🌸 Error fetching ratings:', error);
+        }
+    }
+    
+    // ==================== INITIALIZE ====================
+    function init() {
+        // Product page: inject full widget
+        injectProductWidget();
+        
+        // Collection/other pages: inject star badges
+        injectCollectionBadges();
+    }
+    
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectReviews);
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        injectReviews();
+        init();
     }
     
-    // Re-inject on navigation (for SPA themes)
-    window.addEventListener('popstate', injectReviews);
+    // Handle SPA navigation
+    window.addEventListener('popstate', init);
+    
+    // Observe for dynamic content (infinite scroll, AJAX)
+    const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.addedNodes.length) {
+                // Debounce
+                clearTimeout(window.sakuraDebounce);
+                window.sakuraDebounce = setTimeout(injectCollectionBadges, 500);
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
     
 })();
 """
