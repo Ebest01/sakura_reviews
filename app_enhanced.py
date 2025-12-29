@@ -5783,10 +5783,90 @@ def sakura_reviews_js():
     const SAKURA_CONFIG = {
         apiUrl: '__WIDGET_BASE_URL__',
         shopId: '1',
-        productId: window.ShopifyAnalytics?.meta?.product?.id || null,
+        productId: null, // Will be extracted
         theme: 'default',
         limit: 20
     };
+    
+    // Extract product ID from various sources
+    function getProductId() {
+        // 1. ShopifyAnalytics (most common)
+        if (window.ShopifyAnalytics?.meta?.product?.id) {
+            return String(window.ShopifyAnalytics.meta.product.id);
+        }
+        
+        // 2. Shopify.product (some themes)
+        if (window.Shopify && window.Shopify.product && window.Shopify.product.id) {
+            return String(window.Shopify.product.id);
+        }
+        
+        // 3. From URL path (extract handle, then try to find ID)
+        const pathMatch = window.location.pathname.match(/\\/products\\/([^/?#]+)/);
+        if (pathMatch) {
+            const handle = pathMatch[1];
+            // Try Shopify.allProducts
+            if (window.Shopify && window.Shopify.allProducts) {
+                const product = window.Shopify.allProducts.find(p => p.handle === handle);
+                if (product && product.id) {
+                    return String(product.id);
+                }
+            }
+        }
+        
+        // 4. From meta tags
+        const productIdMeta = document.querySelector('meta[property="product:id"]') || 
+                              document.querySelector('meta[name="product-id"]');
+        if (productIdMeta) {
+            const id = productIdMeta.getAttribute('content') || productIdMeta.getAttribute('value');
+            if (id && /^\\d+$/.test(id)) return id;
+        }
+        
+        // 5. From JSON-LD structured data
+        const jsonLd = document.querySelector('script[type="application/ld+json"]');
+        if (jsonLd) {
+            try {
+                const data = JSON.parse(jsonLd.textContent);
+                if (data['@type'] === 'Product' && data.productID) {
+                    return String(data.productID);
+                }
+                if (data.offers && data.offers.url) {
+                    const urlMatch = data.offers.url.match(/\\/products\\/([^/?#]+)/);
+                    if (urlMatch) {
+                        const handle = urlMatch[1];
+                        if (window.Shopify && window.Shopify.allProducts) {
+                            const product = window.Shopify.allProducts.find(p => p.handle === handle);
+                            if (product && product.id) return String(product.id);
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+        
+        // 6. From page element IDs (like collection page)
+        const pageIds = document.querySelectorAll('[id*="product-grid"], [id*="product-"]');
+        for (const el of pageIds) {
+            if (el.id) {
+                const match = el.id.match(/product-grid-(\\d+)/) || el.id.match(/product-(\\d+)/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    // Set product ID
+    SAKURA_CONFIG.productId = getProductId();
+    
+    // Log product ID detection
+    if (isProductPage()) {
+        if (SAKURA_CONFIG.productId) {
+            console.log(`🌸 Product page detected. Product ID: ${SAKURA_CONFIG.productId}`);
+        } else {
+            console.warn('🌸 Product page detected but product ID not found');
+        }
+    }
     
     // ==================== STYLES ====================
     const styles = `
@@ -5847,14 +5927,14 @@ def sakura_reviews_js():
     
     // ==================== PRODUCT PAGE WIDGET ====================
     function isProductPage() {
-        return window.location.pathname.includes('/products/') && 
-               typeof window.ShopifyAnalytics !== 'undefined' &&
-               window.ShopifyAnalytics.meta && 
-               window.ShopifyAnalytics.meta.product;
+        return window.location.pathname.includes('/products/');
     }
     
     function generateWidgetUrl() {
-        if (!SAKURA_CONFIG.productId) return null;
+        if (!SAKURA_CONFIG.productId) {
+            console.warn('🌸 No product ID found, cannot generate widget URL');
+            return null;
+        }
         const timestamp = Date.now();
         const params = new URLSearchParams({
             v: '2.0.0',
@@ -5864,7 +5944,9 @@ def sakura_reviews_js():
             limit: SAKURA_CONFIG.limit,
             platform: 'shopify'
         });
-        return `${SAKURA_CONFIG.apiUrl}/widget/1/reviews/${SAKURA_CONFIG.productId}?${params}`;
+        const url = `${SAKURA_CONFIG.apiUrl}/widget/1/reviews/${SAKURA_CONFIG.productId}?${params}`;
+        console.log(`🌸 Generated widget URL for product ${SAKURA_CONFIG.productId}:`, url);
+        return url;
     }
     
     function createReviewSection() {
@@ -5911,16 +5993,55 @@ def sakura_reviews_js():
     }
     
     function injectProductWidget() {
-        if (!isProductPage()) return;
-        if (document.querySelector('.sakura-auto-injected')) return;
+        if (!isProductPage()) {
+            console.log('🌸 Not a product page, skipping widget injection');
+            return;
+        }
+        
+        if (document.querySelector('.sakura-auto-injected')) {
+            console.log('🌸 Widget already injected, skipping');
+            return;
+        }
+        
+        if (!SAKURA_CONFIG.productId) {
+            console.warn('🌸 Product page detected but no product ID found. Tried:', {
+                ShopifyAnalytics: !!window.ShopifyAnalytics?.meta?.product?.id,
+                ShopifyProduct: !!window.Shopify?.product?.id,
+                ShopifyAllProducts: !!window.Shopify?.allProducts,
+                pathname: window.location.pathname
+            });
+            return;
+        }
+        
+        console.log(`🌸 Injecting widget for product ID: ${SAKURA_CONFIG.productId}`);
         
         const point = findInjectionPoint();
-        if (!point) return;
+        if (!point) {
+            console.warn('🌸 Could not find injection point for widget');
+            return;
+        }
+        
+        const widgetHtml = createReviewSection();
+        if (!widgetHtml) {
+            console.warn('🌸 Could not generate widget HTML');
+            return;
+        }
         
         const container = document.createElement('div');
-        container.innerHTML = createReviewSection();
+        container.innerHTML = widgetHtml;
         point.appendChild(container);
-        console.log('🌸 Sakura Reviews widget injected');
+        console.log(`🌸 Sakura Reviews widget injected for product ${SAKURA_CONFIG.productId}`);
+        
+        // Add iframe load error handler
+        const iframe = container.querySelector('iframe');
+        if (iframe) {
+            iframe.addEventListener('load', function() {
+                console.log('🌸 Widget iframe loaded');
+            });
+            iframe.addEventListener('error', function() {
+                console.error('🌸 Widget iframe failed to load');
+            });
+        }
     }
     
     // ==================== COLLECTION PAGE STAR BADGES ====================
