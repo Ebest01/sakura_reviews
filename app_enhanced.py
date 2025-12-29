@@ -5590,6 +5590,313 @@ def update_scripttag():
             'error': f'Error updating ScriptTag: {str(e)}'
         }), 500
 
+@app.route('/admin/scripttags')
+@admin_required
+def admin_scripttags():
+    """
+    Admin ScriptTag Manager - View, cleanup, and manage ScriptTags
+    Prevents the "old script showing" issue
+    """
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🌸 ScriptTag Manager - Sakura Reviews</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+            .container { max-width: 1000px; margin: 0 auto; }
+            h1 { color: #ff69b4; margin-bottom: 10px; }
+            .subtitle { color: #666; margin-bottom: 30px; }
+            .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .scripttag-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; }
+            .scripttag-item.old { background: #fff3f3; border-color: #ffcdd2; }
+            .scripttag-item.current { background: #f1f8e9; border-color: #c5e1a5; }
+            .scripttag-url { font-family: monospace; font-size: 12px; word-break: break-all; flex: 1; margin-right: 15px; }
+            .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+            .badge.old { background: #ffcdd2; color: #c62828; }
+            .badge.current { background: #c5e1a5; color: #33691e; }
+            .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+            .btn-danger { background: #f44336; color: white; }
+            .btn-danger:hover { background: #d32f2f; }
+            .btn-primary { background: #ff69b4; color: white; }
+            .btn-primary:hover { background: #ff4da6; }
+            .btn-success { background: #4caf50; color: white; }
+            .btn-success:hover { background: #43a047; }
+            .actions { margin-top: 20px; display: flex; gap: 10px; }
+            .status { padding: 15px; border-radius: 8px; margin-top: 20px; }
+            .status.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+            .status.error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+            .loading { opacity: 0.6; pointer-events: none; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+            th { background: #f8f8f8; font-weight: 600; }
+            .config-info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+            .config-info code { background: #bbdefb; padding: 2px 6px; border-radius: 4px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🌸 ScriptTag Manager</h1>
+            <p class="subtitle">Manage Shopify ScriptTags to prevent old scripts from loading</p>
+            
+            <div class="card config-info">
+                <strong>Current Configuration:</strong><br>
+                <code>WIDGET_BASE_URL: {{ widget_base_url }}</code><br>
+                <small>All ScriptTags should point to this URL</small>
+            </div>
+            
+            <div class="card">
+                <h2>Shop Configuration</h2>
+                <form id="shopForm">
+                    <table>
+                        <tr>
+                            <td><strong>Shop Domain:</strong></td>
+                            <td><input type="text" id="shopDomain" value="sakura-rev-test-store.myshopify.com" style="width: 100%; padding: 8px;"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access Token:</strong></td>
+                            <td><input type="text" id="accessToken" placeholder="Enter access token (shpat_...)" style="width: 100%; padding: 8px;"></td>
+                        </tr>
+                    </table>
+                    <div class="actions">
+                        <button type="button" class="btn btn-primary" onclick="loadScriptTags()">🔍 Load ScriptTags</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card" id="scripttagsCard" style="display: none;">
+                <h2>Installed ScriptTags</h2>
+                <div id="scripttagsList"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="cleanupOldScriptTags()">🗑️ Delete OLD ScriptTags</button>
+                    <button type="button" class="btn btn-success" onclick="createNewScriptTag()">➕ Create New ScriptTag</button>
+                </div>
+                <div id="statusMessage"></div>
+            </div>
+        </div>
+        
+        <script>
+            const CURRENT_URL = '{{ widget_base_url }}';
+            let scriptTags = [];
+            
+            async function loadScriptTags() {
+                const shopDomain = document.getElementById('shopDomain').value;
+                const accessToken = document.getElementById('accessToken').value;
+                
+                document.getElementById('scripttagsCard').style.display = 'block';
+                document.getElementById('scripttagsList').innerHTML = '<p>Loading...</p>';
+                
+                try {
+                    const response = await fetch(`/api/admin/scripttags/list?shop=${shopDomain}&token=${accessToken}`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        document.getElementById('scripttagsList').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                        return;
+                    }
+                    
+                    scriptTags = data.script_tags || [];
+                    renderScriptTags();
+                } catch (e) {
+                    document.getElementById('scripttagsList').innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
+                }
+            }
+            
+            function renderScriptTags() {
+                if (scriptTags.length === 0) {
+                    document.getElementById('scripttagsList').innerHTML = '<p>No ScriptTags found.</p>';
+                    return;
+                }
+                
+                let html = '';
+                scriptTags.forEach(tag => {
+                    const isOld = !tag.src.includes('sakrev-v15');
+                    const isCurrent = tag.src.includes('sakrev-v15');
+                    html += `
+                        <div class="scripttag-item ${isOld ? 'old' : ''} ${isCurrent ? 'current' : ''}">
+                            <div class="scripttag-url">
+                                <strong>ID:</strong> ${tag.id}<br>
+                                <strong>URL:</strong> ${tag.src}<br>
+                                <strong>Created:</strong> ${tag.created_at}
+                            </div>
+                            <span class="badge ${isOld ? 'old' : 'current'}">${isOld ? '⚠️ OLD' : '✅ CURRENT'}</span>
+                            <button class="btn btn-danger" onclick="deleteScriptTag(${tag.id})" style="margin-left: 10px;">Delete</button>
+                        </div>
+                    `;
+                });
+                document.getElementById('scripttagsList').innerHTML = html;
+            }
+            
+            async function deleteScriptTag(id) {
+                const shopDomain = document.getElementById('shopDomain').value;
+                const accessToken = document.getElementById('accessToken').value;
+                
+                try {
+                    const response = await fetch(`/api/admin/scripttags/delete?shop=${shopDomain}&token=${accessToken}&id=${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    showStatus(data.success ? 'success' : 'error', data.message || data.error);
+                    loadScriptTags();
+                } catch (e) {
+                    showStatus('error', e.message);
+                }
+            }
+            
+            async function cleanupOldScriptTags() {
+                const shopDomain = document.getElementById('shopDomain').value;
+                const accessToken = document.getElementById('accessToken').value;
+                
+                try {
+                    const response = await fetch(`/api/admin/scripttags/cleanup?shop=${shopDomain}&token=${accessToken}`, { method: 'POST' });
+                    const data = await response.json();
+                    showStatus(data.success ? 'success' : 'error', data.message || data.error);
+                    loadScriptTags();
+                } catch (e) {
+                    showStatus('error', e.message);
+                }
+            }
+            
+            async function createNewScriptTag() {
+                const shopDomain = document.getElementById('shopDomain').value;
+                const accessToken = document.getElementById('accessToken').value;
+                
+                try {
+                    const response = await fetch(`/api/admin/scripttags/create?shop=${shopDomain}&token=${accessToken}`, { method: 'POST' });
+                    const data = await response.json();
+                    showStatus(data.success ? 'success' : 'error', data.message || data.error);
+                    loadScriptTags();
+                } catch (e) {
+                    showStatus('error', e.message);
+                }
+            }
+            
+            function showStatus(type, message) {
+                document.getElementById('statusMessage').innerHTML = `<div class="status ${type}">${message}</div>`;
+            }
+        </script>
+    </body>
+    </html>
+    """, widget_base_url=Config.WIDGET_BASE_URL)
+
+@app.route('/api/admin/scripttags/list')
+@admin_required
+def api_admin_scripttags_list():
+    """API: List ScriptTags for a shop"""
+    shop = request.args.get('shop')
+    token = request.args.get('token')
+    
+    if not shop or not token:
+        return jsonify({'error': 'Missing shop or token'}), 400
+    
+    try:
+        import requests as req
+        headers = {'X-Shopify-Access-Token': token}
+        response = req.get(f"https://{shop}/admin/api/2025-10/script_tags.json", headers=headers)
+        
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'Shopify API error: {response.status_code}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/scripttags/delete', methods=['DELETE'])
+@admin_required
+def api_admin_scripttags_delete():
+    """API: Delete a specific ScriptTag"""
+    shop = request.args.get('shop')
+    token = request.args.get('token')
+    script_id = request.args.get('id')
+    
+    if not shop or not token or not script_id:
+        return jsonify({'error': 'Missing shop, token, or id'}), 400
+    
+    try:
+        import requests as req
+        headers = {'X-Shopify-Access-Token': token}
+        response = req.delete(f"https://{shop}/admin/api/2025-10/script_tags/{script_id}.json", headers=headers)
+        
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': f'ScriptTag {script_id} deleted'})
+        else:
+            return jsonify({'success': False, 'error': f'Failed to delete: {response.status_code}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/scripttags/cleanup', methods=['POST'])
+@admin_required
+def api_admin_scripttags_cleanup():
+    """API: Delete all OLD ScriptTags (not pointing to current WIDGET_BASE_URL)"""
+    shop = request.args.get('shop')
+    token = request.args.get('token')
+    
+    if not shop or not token:
+        return jsonify({'error': 'Missing shop or token'}), 400
+    
+    try:
+        import requests as req
+        headers = {'X-Shopify-Access-Token': token}
+        
+        # Get all ScriptTags
+        response = req.get(f"https://{shop}/admin/api/2025-10/script_tags.json", headers=headers)
+        if response.status_code != 200:
+            return jsonify({'success': False, 'error': 'Failed to get ScriptTags'}), 400
+        
+        script_tags = response.json().get('script_tags', [])
+        deleted_count = 0
+        
+        for tag in script_tags:
+            src = tag.get('src', '')
+            # Delete if it doesn't point to current WIDGET_BASE_URL
+            if Config.WIDGET_BASE_URL not in src and 'sakura' in src.lower():
+                delete_response = req.delete(f"https://{shop}/admin/api/2025-10/script_tags/{tag['id']}.json", headers=headers)
+                if delete_response.status_code == 200:
+                    deleted_count += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Cleaned up {deleted_count} old ScriptTags',
+            'deleted_count': deleted_count
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/scripttags/create', methods=['POST'])
+@admin_required
+def api_admin_scripttags_create():
+    """API: Create a new ScriptTag pointing to current WIDGET_BASE_URL"""
+    shop = request.args.get('shop')
+    token = request.args.get('token')
+    
+    if not shop or not token:
+        return jsonify({'error': 'Missing shop or token'}), 400
+    
+    try:
+        import requests as req
+        import time
+        
+        headers = {'X-Shopify-Access-Token': token, 'Content-Type': 'application/json'}
+        version = int(time.time())
+        
+        data = {
+            "script_tag": {
+                "event": "onload",
+                "src": f"{Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}"
+            }
+        }
+        
+        response = req.post(f"https://{shop}/admin/api/2025-10/script_tags.json", headers=headers, json=data)
+        
+        if response.status_code == 201:
+            return jsonify({
+                'success': True,
+                'message': f'ScriptTag created: {Config.WIDGET_BASE_URL}/js/sakura-reviews.js?v={version}',
+                'scripttag': response.json()
+            })
+        else:
+            return jsonify({'success': False, 'error': f'Failed to create: {response.text}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/debug/routes')
 def list_routes():
     """List all registered routes for debugging"""
