@@ -7067,6 +7067,205 @@ def sakura_reviews_js():
     // Inject modal on page load
     injectReviewModal();
     
+    // ==================== PHOTO LIGHTBOX MODAL (Like Loox) ====================
+    function injectPhotoLightbox() {
+        if (document.getElementById('sakura-photo-lightbox-overlay')) {
+            return; // Already injected
+        }
+        
+        const lightboxHTML = `
+            <div class="sakura-photo-lightbox-overlay" id="sakura-photo-lightbox-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 999998; align-items: center; justify-content: center;">
+                <button class="sakura-lightbox-close" id="sakuraLightboxClose" style="position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,255,255,0.95); border: none; border-radius: 50%; font-size: 24px; color: #1a202c; cursor: pointer; z-index: 999999; display: flex; align-items: center; justify-content: center;">×</button>
+                <div class="sakura-photo-lightbox" style="width: 100%; max-width: 1200px; height: 90vh; display: flex; position: relative;">
+                    <div class="sakura-lightbox-left" id="sakuraLightboxLeft" style="flex: 1; padding: 32px; overflow-y: auto; background: white; display: flex; flex-direction: column;">
+                        <!-- Review details will be populated here -->
+                    </div>
+                    <div class="sakura-lightbox-right" style="width: 500px; min-width: 500px; position: relative; background: #f7fafc; display: flex; align-items: center; justify-content: center;">
+                        <div class="sakura-lightbox-slider-container" style="position: relative; width: 100%; height: 100%; min-height: 500px; overflow: hidden;">
+                            <div class="sakura-lightbox-slider-wrapper" id="sakuraLightboxSliderWrapper" style="display: flex; transition: transform 0.4s ease; height: 100%;">
+                                <!-- Slides will be populated here -->
+                            </div>
+                            <button class="sakura-lightbox-nav prev" id="sakuraLightboxPrev" style="position: absolute; top: 50%; left: 16px; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(255,255,255,0.95); border: none; border-radius: 50%; font-size: 24px; color: #1a202c; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">‹</button>
+                            <button class="sakura-lightbox-nav next" id="sakuraLightboxNext" style="position: absolute; top: 50%; right: 16px; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(255,255,255,0.95); border: none; border-radius: 50%; font-size: 24px; color: #1a202c; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">›</button>
+                            <div class="sakura-lightbox-dots" id="sakuraLightboxDots" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const lightboxContainer = document.createElement('div');
+        lightboxContainer.innerHTML = lightboxHTML;
+        document.body.appendChild(lightboxContainer.firstElementChild);
+        
+        initPhotoLightbox();
+    }
+    
+    function initPhotoLightbox() {
+        const overlay = document.getElementById('sakura-photo-lightbox-overlay');
+        const closeBtn = document.getElementById('sakuraLightboxClose');
+        const leftPanel = document.getElementById('sakuraLightboxLeft');
+        const sliderWrapper = document.getElementById('sakuraLightboxSliderWrapper');
+        const prevBtn = document.getElementById('sakuraLightboxPrev');
+        const nextBtn = document.getElementById('sakuraLightboxNext');
+        const dots = document.getElementById('sakuraLightboxDots');
+        
+        let currentPhotos = [];
+        let currentPhotoIndex = 0;
+        let currentReviewData = null;
+        
+        function closeLightbox() {
+            if (overlay) overlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        function updateLightbox() {
+            if (currentPhotos.length === 0) return;
+            
+            // Update left panel with review details
+            if (currentReviewData && leftPanel) {
+                let stars = '';
+                for (let i = 0; i < (currentReviewData.rating || 5); i++) {
+                    stars += '<span style="color: #ffd700; font-size: 18px;">★</span>';
+                }
+                
+                let verifiedBadge = '';
+                if (currentReviewData.verified) {
+                    verifiedBadge = '<span style="background: #48bb78; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">✓ Verified</span>';
+                }
+                
+                const reviewerName = currentReviewData.author || 'Anonymous';
+                const reviewerInitial = reviewerName[0] || 'C';
+                const reviewDate = currentReviewData.date || '';
+                const reviewText = currentReviewData.text || '';
+                
+                leftPanel.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #ff69b4, #8b4a8b); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">${reviewerInitial}</div>
+                        <div>
+                            <div style="font-weight: 600; color: #2d3748; font-size: 16px; margin-bottom: 4px;">${reviewerName}</div>
+                            <div style="font-size: 14px; color: #718096;">${reviewDate}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 2px; margin: 16px 0;">${stars}</div>
+                    <div style="color: #4a5568; line-height: 1.7; margin: 16px 0; font-size: 15px; flex: 1;">${reviewText}</div>
+                    <div style="margin-top: auto; padding-top: 16px;">${verifiedBadge}</div>
+                `;
+            }
+            
+            // Update slider
+            if (sliderWrapper) {
+                sliderWrapper.innerHTML = currentPhotos.map((photo, index) => `
+                    <div style="min-width: 100%; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <img src="${photo.url}" alt="Review photo" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                `).join('');
+            }
+            
+            // Update dots
+            if (dots) {
+                dots.innerHTML = currentPhotos.map((_, index) => `
+                    <span class="sakura-lightbox-dot ${index === currentPhotoIndex ? 'active' : ''}" data-index="${index}" style="width: ${index === currentPhotoIndex ? '24px' : '8px'}; height: 8px; border-radius: ${index === currentPhotoIndex ? '4px' : '50%'}; background: ${index === currentPhotoIndex ? 'white' : 'rgba(255,255,255,0.5)'}; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s;"></span>
+                `).join('');
+            }
+            
+            updateSliderPosition();
+        }
+        
+        function updateSliderPosition() {
+            if (!sliderWrapper) return;
+            const translateX = -currentPhotoIndex * 100;
+            sliderWrapper.style.transform = `translateX(${translateX}%)`;
+            
+            // Update dots
+            const dotElements = dots.querySelectorAll('.sakura-lightbox-dot');
+            dotElements.forEach((dot, index) => {
+                if (index === currentPhotoIndex) {
+                    dot.classList.add('active');
+                    dot.style.width = '24px';
+                    dot.style.borderRadius = '4px';
+                    dot.style.background = 'white';
+                } else {
+                    dot.classList.remove('active');
+                    dot.style.width = '8px';
+                    dot.style.borderRadius = '50%';
+                    dot.style.background = 'rgba(255,255,255,0.5)';
+                }
+            });
+            
+            // Update nav buttons
+            if (prevBtn) prevBtn.disabled = currentPhotoIndex === 0;
+            if (nextBtn) nextBtn.disabled = currentPhotoIndex === currentPhotos.length - 1;
+        }
+        
+        function showPrevPhoto() {
+            if (currentPhotoIndex > 0) {
+                currentPhotoIndex--;
+                updateSliderPosition();
+            }
+        }
+        
+        function showNextPhoto() {
+            if (currentPhotoIndex < currentPhotos.length - 1) {
+                currentPhotoIndex++;
+                updateSliderPosition();
+            }
+        }
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeLightbox);
+        }
+        
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeLightbox();
+            });
+        }
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', showPrevPhoto);
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', showNextPhoto);
+        }
+        
+        if (dots) {
+            dots.addEventListener('click', function(e) {
+                if (e.target.classList.contains('sakura-lightbox-dot')) {
+                    currentPhotoIndex = parseInt(e.target.getAttribute('data-index'));
+                    updateSliderPosition();
+                }
+            });
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (!overlay || overlay.style.display === 'none') return;
+            if (e.key === 'Escape') closeLightbox();
+            else if (e.key === 'ArrowLeft') showPrevPhoto();
+            else if (e.key === 'ArrowRight') showNextPhoto();
+        });
+        
+        // Listen for messages from iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'openPhotoLightbox') {
+                currentPhotos = event.data.photos || [];
+                currentPhotoIndex = event.data.startIndex || 0;
+                currentReviewData = event.data.reviewData || null;
+                
+                if (overlay && currentPhotos.length > 0) {
+                    overlay.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    updateLightbox();
+                }
+            }
+        });
+    }
+    
+    // Inject photo lightbox on page load
+    injectPhotoLightbox();
+    
 })();
 """
     
