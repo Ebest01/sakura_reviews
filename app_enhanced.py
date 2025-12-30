@@ -6628,6 +6628,142 @@ def sakura_reviews_js():
     });
     observer.observe(document.body, { childList: true, subtree: true });
     
+    // ==================== FULL-PAGE MODAL (Like Loox) ====================
+    // Inject modal HTML into parent page (not iframe)
+    function injectReviewModal() {
+        if (document.getElementById('sakura-review-modal-overlay')) {
+            return; // Already injected
+        }
+        
+        const modalHTML = `
+            <div class="sakura-review-modal-overlay" id="sakura-review-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999999; align-items: center; justify-content: center;">
+                <div class="sakura-review-modal" style="background: white; border-radius: 16px; max-width: 500px; width: 95%; max-height: 95vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <button class="sakura-modal-close" id="sakuraModalClose" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 32px; cursor: pointer; color: #666; z-index: 10; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;">×</button>
+                    <div class="sakura-modal-content" id="sakuraModalContent" style="padding: 40px 30px;">
+                        <div class="sakura-modal-step active" id="sakuraStep1">
+                            <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; text-align: center;">How would you rate this item?</h2>
+                            <div class="sakura-rating-stars" id="sakuraRatingStars" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; font-size: 48px; cursor: pointer;">
+                                <span class="sakura-star" data-rating="1" style="color: #e2e8f0; transition: color 0.2s;">★</span>
+                                <span class="sakura-star" data-rating="2" style="color: #e2e8f0; transition: color 0.2s;">★</span>
+                                <span class="sakura-star" data-rating="3" style="color: #e2e8f0; transition: color 0.2s;">★</span>
+                                <span class="sakura-star" data-rating="4" style="color: #e2e8f0; transition: color 0.2s;">★</span>
+                                <span class="sakura-star" data-rating="5" style="color: #e2e8f0; transition: color 0.2s;">★</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 32px; font-size: 14px; color: #666;">
+                                <span>Dislike it</span>
+                                <span>Love it!</span>
+                            </div>
+                            <button class="sakura-modal-btn" id="sakuraStep1Next" disabled style="width: 100%; padding: 14px; background: #e2e8f0; color: #999; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: not-allowed;">Next →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalHTML;
+        document.body.appendChild(modalContainer.firstElementChild);
+        
+        // Initialize modal functionality
+        initModal();
+    }
+    
+    // Initialize modal
+    function initModal() {
+        const overlay = document.getElementById('sakura-review-modal-overlay');
+        const closeBtn = document.getElementById('sakuraModalClose');
+        const stars = document.querySelectorAll('.sakura-star');
+        const nextBtn = document.getElementById('sakuraStep1Next');
+        let selectedRating = 0;
+        let currentProductId = null;
+        
+        // Close modal
+        function closeModal() {
+            if (overlay) overlay.style.display = 'none';
+            selectedRating = 0;
+            currentProductId = null;
+            // Reset stars
+            stars.forEach(star => {
+                star.style.color = '#e2e8f0';
+            });
+            if (nextBtn) nextBtn.disabled = true;
+        }
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeModal();
+            });
+        }
+        
+        // Star rating
+        stars.forEach((star, index) => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(star.getAttribute('data-rating'));
+                // Update star colors
+                stars.forEach((s, i) => {
+                    if (i < selectedRating) {
+                        s.style.color = '#fbbf24';
+                    } else {
+                        s.style.color = '#e2e8f0';
+                    }
+                });
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.style.background = '#ff69b4';
+                    nextBtn.style.color = 'white';
+                    nextBtn.style.cursor = 'pointer';
+                }
+            });
+        });
+        
+        // Next button
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                if (selectedRating > 0 && currentProductId) {
+                    // Redirect to full review form in iframe
+                    const iframe = document.querySelector('iframe[id*="sakuraReviewsFrame"]');
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({
+                            type: 'openReviewForm',
+                            rating: selectedRating,
+                            productId: currentProductId
+                        }, '*');
+                    }
+                    closeModal();
+                }
+            });
+        }
+        
+        // Listen for messages from iframe to open modal
+        window.addEventListener('message', function(event) {
+            // Accept messages from our widget domain
+            if (event.data && event.data.type === 'openReviewModal') {
+                currentProductId = event.data.productId || SAKURA_CONFIG.productId;
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    // Reset state
+                    selectedRating = 0;
+                    stars.forEach(star => {
+                        star.style.color = '#e2e8f0';
+                    });
+                    if (nextBtn) {
+                        nextBtn.disabled = true;
+                        nextBtn.style.background = '#e2e8f0';
+                        nextBtn.style.color = '#999';
+                        nextBtn.style.cursor = 'not-allowed';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Inject modal on page load
+    injectReviewModal();
+    
 })();
 """
     

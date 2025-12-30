@@ -1755,12 +1755,39 @@
         const reviewModalOverlay = document.getElementById('reviewModalOverlay');
         const modalClose = document.getElementById('modalClose');
         
+        // Function to open review modal (try parent page first, fallback to iframe)
+        function openReviewModal() {
+            const productId = '{{ product_id }}';
+            // Try to open modal in parent page (full-page overlay like Loox)
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'openReviewModal',
+                    productId: productId
+                }, '*');
+                // Wait a bit, if parent doesn't respond, use iframe modal as fallback
+                setTimeout(() => {
+                    // Fallback to iframe modal if parent didn't open it
+                    if (reviewModalOverlay) {
+                        reviewModalOverlay.classList.add('show');
+                        currentStep = 1;
+                        reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                        showStep(1);
+                    }
+                }, 100);
+            } else {
+                // No parent, use iframe modal
+                if (reviewModalOverlay) {
+                    reviewModalOverlay.classList.add('show');
+                    currentStep = 1;
+                    reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                    showStep(1);
+                }
+            }
+        }
+        
         if (writeReviewBtn) {
             writeReviewBtn.addEventListener('click', function() {
-                reviewModalOverlay.classList.add('show');
-                currentStep = 1;
-                reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
-                showStep(1);
+                openReviewModal();
             });
         }
         
@@ -1769,15 +1796,35 @@
         if (emptyStateWriteReview) {
             emptyStateWriteReview.addEventListener('click', function(e) {
                 e.preventDefault();
-                // Directly open the review modal (same action as writeReviewBtn)
+                openReviewModal();
+            });
+        }
+        
+        // Listen for messages from parent to open review form with pre-selected rating
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'openReviewForm') {
+                const rating = event.data.rating;
+                const productId = event.data.productId;
                 if (reviewModalOverlay) {
                     reviewModalOverlay.classList.add('show');
                     currentStep = 1;
-                    reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                    reviewData = { rating: rating, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                    // Pre-select the rating
+                    const stars = document.querySelectorAll('.rating-wizard-star');
+                    stars.forEach((star, index) => {
+                        if (index < rating) {
+                            star.classList.add('selected');
+                        } else {
+                            star.classList.remove('selected');
+                        }
+                    });
+                    // Enable next button
+                    const step1Next = document.getElementById('step1Next');
+                    if (step1Next) step1Next.disabled = false;
                     showStep(1);
                 }
-            });
-        }
+            }
+        });
         
         if (modalClose) {
             modalClose.addEventListener('click', function() {
