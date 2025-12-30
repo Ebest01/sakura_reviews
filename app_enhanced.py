@@ -6640,6 +6640,7 @@ def sakura_reviews_js():
                 <div class="sakura-review-modal" style="background: white; border-radius: 16px; max-width: 500px; width: 95%; max-height: 95vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
                     <button class="sakura-modal-close" id="sakuraModalClose" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 32px; cursor: pointer; color: #666; z-index: 10; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;">×</button>
                     <div class="sakura-modal-content" id="sakuraModalContent" style="padding: 40px 30px;">
+                        <!-- Step 1: Rating -->
                         <div class="sakura-modal-step active" id="sakuraStep1">
                             <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; text-align: center;">How would you rate this item?</h2>
                             <div class="sakura-rating-stars" id="sakuraRatingStars" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; font-size: 48px; cursor: pointer;">
@@ -6654,6 +6655,79 @@ def sakura_reviews_js():
                                 <span>Love it!</span>
                             </div>
                             <button class="sakura-modal-btn" id="sakuraStep1Next" disabled style="width: 100%; padding: 14px; background: #e2e8f0; color: #999; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: not-allowed;">Next →</button>
+                        </div>
+                        
+                        <!-- Step 2: Photos -->
+                        <div class="sakura-modal-step" id="sakuraStep2" style="display: none;">
+                            <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; text-align: center;">Show it off</h2>
+                            <p style="font-size: 16px; color: #718096; margin-bottom: 24px; text-align: center;">We'd love to see it in action!</p>
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
+                                <div style="font-size: 18px; font-weight: 600; color: #1a202c; margin-bottom: 16px;">Get 15% off your next purchase!</div>
+                                <div id="sakuraPhotoUploadArea" style="border: 2px dashed #e2e8f0; border-radius: 12px; padding: 40px; text-align: center; margin: 24px 0; cursor: pointer; transition: all 0.2s;">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">📷</div>
+                                    <div style="font-size: 16px; color: #1a202c; margin-bottom: 8px;">Add photos</div>
+                                    <div style="font-size: 14px; color: #718096;">Click to upload or drag and drop</div>
+                                    <input type="file" id="sakuraPhotoInput" multiple accept="image/*" style="display: none;">
+                                </div>
+                                <div id="sakuraPhotoPreviewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 16px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                                <button class="sakura-modal-btn" id="sakuraStep2Back" style="background: transparent; border: none; color: #1a202c; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">← Back</button>
+                                <div>
+                                    <button class="sakura-modal-btn" id="sakuraStep2Skip" style="background: transparent; border: none; color: #1a202c; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px; margin-right: 8px;">Skip</button>
+                                    <button class="sakura-modal-btn primary" id="sakuraStep2Next" style="background: #ff69b4; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">Next →</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Review Text -->
+                        <div class="sakura-modal-step" id="sakuraStep3" style="display: none;">
+                            <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; text-align: center;">Tell us more!</h2>
+                            <textarea id="sakuraReviewText" placeholder="Share your experience" style="width: 100%; min-height: 150px; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; font-family: inherit; resize: vertical; margin: 24px 0;"></textarea>
+                            <div style="display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                                <button class="sakura-modal-btn" id="sakuraStep3Back" style="background: transparent; border: none; color: #1a202c; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">← Back</button>
+                                <button class="sakura-modal-btn primary" id="sakuraStep3Next" style="background: #ff69b4; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">Next →</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 4: User Info -->
+                        <div class="sakura-modal-step" id="sakuraStep4" style="display: none;">
+                            <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; text-align: center;">About you</h2>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #1a202c; margin-bottom: 8px;">First name <span style="color: #e53e3e;">*</span></label>
+                                <input type="text" id="sakuraFirstName" required style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; font-family: inherit;">
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #1a202c; margin-bottom: 8px;">Last name</label>
+                                <input type="text" id="sakuraLastName" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; font-family: inherit;">
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #1a202c; margin-bottom: 8px;">Email <span style="color: #e53e3e;">*</span></label>
+                                <input type="email" id="sakuraUserEmail" required style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; font-family: inherit;">
+                            </div>
+                            <div style="font-size: 12px; color: #718096; margin-top: 16px; line-height: 1.6;">
+                                By submitting, I acknowledge the <a href="#" target="_blank" style="color: #ff69b4; text-decoration: underline;">Terms of Service</a> and <a href="#" target="_blank" style="color: #ff69b4; text-decoration: underline;">Privacy Policy</a>. and that my review will be publicly posted and shared online.
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                                <button class="sakura-modal-btn" id="sakuraStep4Back" style="background: transparent; border: none; color: #1a202c; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">← Back</button>
+                                <button class="sakura-modal-btn primary" id="sakuraStep4Done" style="background: #ff69b4; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px;">Done</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 5: Confirmation -->
+                        <div class="sakura-modal-step" id="sakuraStep5" style="display: none; text-align: center;">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: #48bb78; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 24px;">✓</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #1a202c; margin-bottom: 8px;">Review submitted</div>
+                            <div style="font-size: 14px; color: #718096; margin-bottom: 32px;">Discount code emailed</div>
+                            <button class="sakura-modal-btn primary" id="sakuraStep5Close" style="width: 100%; padding: 14px; background: #ff69b4; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Close</button>
+                        </div>
+                        
+                        <!-- Progress Indicator -->
+                        <div style="display: flex; gap: 8px; justify-content: center; margin-top: 16px;">
+                            <div class="sakura-progress-bar active" id="sakuraProgress1" style="width: 40px; height: 4px; border-radius: 2px; background: #ff69b4;"></div>
+                            <div class="sakura-progress-bar" id="sakuraProgress2" style="width: 40px; height: 4px; border-radius: 2px; background: #e2e8f0;"></div>
+                            <div class="sakura-progress-bar" id="sakuraProgress3" style="width: 40px; height: 4px; border-radius: 2px; background: #e2e8f0;"></div>
+                            <div class="sakura-progress-bar" id="sakuraProgress4" style="width: 40px; height: 4px; border-radius: 2px; background: #e2e8f0;"></div>
                         </div>
                     </div>
                 </div>
@@ -6673,20 +6747,61 @@ def sakura_reviews_js():
         const overlay = document.getElementById('sakura-review-modal-overlay');
         const closeBtn = document.getElementById('sakuraModalClose');
         const stars = document.querySelectorAll('.sakura-star');
-        const nextBtn = document.getElementById('sakuraStep1Next');
-        let selectedRating = 0;
+        let currentStep = 1;
+        let reviewData = {
+            rating: 0,
+            photos: [],
+            text: '',
+            firstName: '',
+            lastName: '',
+            email: ''
+        };
         let currentProductId = null;
+        let currentShopId = '1'; // Default shop ID
+        
+        // Show step function
+        function showStep(step) {
+            // Hide all steps
+            for (let i = 1; i <= 5; i++) {
+                const stepEl = document.getElementById('sakuraStep' + i);
+                if (stepEl) stepEl.style.display = 'none';
+            }
+            // Show current step
+            const currentStepEl = document.getElementById('sakuraStep' + step);
+            if (currentStepEl) currentStepEl.style.display = 'block';
+            
+            // Update progress bars
+            for (let i = 1; i <= 4; i++) {
+                const progressBar = document.getElementById('sakuraProgress' + i);
+                if (progressBar) {
+                    if (i <= step) {
+                        progressBar.style.background = '#ff69b4';
+                    } else {
+                        progressBar.style.background = '#e2e8f0';
+                    }
+                }
+            }
+            
+            currentStep = step;
+        }
         
         // Close modal
         function closeModal() {
             if (overlay) overlay.style.display = 'none';
-            selectedRating = 0;
-            currentProductId = null;
-            // Reset stars
+            // Reset state
+            reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+            currentStep = 1;
+            showStep(1);
             stars.forEach(star => {
                 star.style.color = '#e2e8f0';
             });
-            if (nextBtn) nextBtn.disabled = true;
+            const step1Next = document.getElementById('sakuraStep1Next');
+            if (step1Next) {
+                step1Next.disabled = true;
+                step1Next.style.background = '#e2e8f0';
+                step1Next.style.color = '#999';
+                step1Next.style.cursor = 'not-allowed';
+            }
         }
         
         if (closeBtn) {
@@ -6699,63 +6814,234 @@ def sakura_reviews_js():
             });
         }
         
-        // Star rating
-        stars.forEach((star, index) => {
+        // Step 1: Rating
+        stars.forEach((star) => {
             star.addEventListener('click', function() {
-                selectedRating = parseInt(star.getAttribute('data-rating'));
-                // Update star colors
+                reviewData.rating = parseInt(star.getAttribute('data-rating'));
                 stars.forEach((s, i) => {
-                    if (i < selectedRating) {
+                    if (i < reviewData.rating) {
                         s.style.color = '#fbbf24';
                     } else {
                         s.style.color = '#e2e8f0';
                     }
                 });
-                if (nextBtn) {
-                    nextBtn.disabled = false;
-                    nextBtn.style.background = '#ff69b4';
-                    nextBtn.style.color = 'white';
-                    nextBtn.style.cursor = 'pointer';
+                const step1Next = document.getElementById('sakuraStep1Next');
+                if (step1Next) {
+                    step1Next.disabled = false;
+                    step1Next.style.background = '#ff69b4';
+                    step1Next.style.color = 'white';
+                    step1Next.style.cursor = 'pointer';
                 }
             });
         });
         
-        // Next button
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function() {
-                if (selectedRating > 0 && currentProductId) {
-                    // Redirect to full review form in iframe
-                    const iframe = document.querySelector('iframe[id*="sakuraReviewsFrame"]');
-                    if (iframe && iframe.contentWindow) {
-                        iframe.contentWindow.postMessage({
-                            type: 'openReviewForm',
-                            rating: selectedRating,
-                            productId: currentProductId
-                        }, '*');
+        const step1Next = document.getElementById('sakuraStep1Next');
+        if (step1Next) {
+            step1Next.addEventListener('click', function() {
+                if (reviewData.rating > 0) {
+                    showStep(2);
+                }
+            });
+        }
+        
+        // Step 2: Photos
+        const photoUploadArea = document.getElementById('sakuraPhotoUploadArea');
+        const photoInput = document.getElementById('sakuraPhotoInput');
+        const photoPreviewGrid = document.getElementById('sakuraPhotoPreviewGrid');
+        
+        if (photoUploadArea && photoInput) {
+            photoUploadArea.addEventListener('click', function() {
+                photoInput.click();
+            });
+            
+            photoInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            reviewData.photos.push({
+                                file: file,
+                                preview: event.target.result
+                            });
+                            updatePhotoPreview();
+                        };
+                        reader.readAsDataURL(file);
                     }
-                    closeModal();
+                });
+            });
+        }
+        
+        function updatePhotoPreview() {
+            if (photoPreviewGrid) {
+                photoPreviewGrid.innerHTML = '';
+                reviewData.photos.forEach((photo, index) => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;';
+                    item.innerHTML = `
+                        <img src="${photo.preview}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                        <button onclick="removeSakuraPhoto(${index})" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: none; cursor: pointer; font-size: 14px;">×</button>
+                    `;
+                    photoPreviewGrid.appendChild(item);
+                });
+            }
+        }
+        
+        window.removeSakuraPhoto = function(index) {
+            reviewData.photos.splice(index, 1);
+            updatePhotoPreview();
+        };
+        
+        const step2Back = document.getElementById('sakuraStep2Back');
+        const step2Skip = document.getElementById('sakuraStep2Skip');
+        const step2Next = document.getElementById('sakuraStep2Next');
+        
+        if (step2Back) {
+            step2Back.addEventListener('click', () => showStep(1));
+        }
+        if (step2Skip) {
+            step2Skip.addEventListener('click', () => showStep(3));
+        }
+        if (step2Next) {
+            step2Next.addEventListener('click', () => showStep(3));
+        }
+        
+        // Step 3: Review Text
+        const reviewText = document.getElementById('sakuraReviewText');
+        if (reviewText) {
+            reviewText.addEventListener('input', function() {
+                reviewData.text = this.value;
+            });
+        }
+        
+        const step3Back = document.getElementById('sakuraStep3Back');
+        const step3Next = document.getElementById('sakuraStep3Next');
+        
+        if (step3Back) {
+            step3Back.addEventListener('click', () => showStep(2));
+        }
+        if (step3Next) {
+            step3Next.addEventListener('click', () => showStep(4));
+        }
+        
+        // Step 4: User Info
+        const firstName = document.getElementById('sakuraFirstName');
+        const lastName = document.getElementById('sakuraLastName');
+        const userEmail = document.getElementById('sakuraUserEmail');
+        
+        if (firstName) {
+            firstName.addEventListener('input', function() {
+                reviewData.firstName = this.value;
+            });
+        }
+        if (lastName) {
+            lastName.addEventListener('input', function() {
+                reviewData.lastName = this.value;
+            });
+        }
+        if (userEmail) {
+            userEmail.addEventListener('input', function() {
+                reviewData.email = this.value;
+            });
+        }
+        
+        const step4Back = document.getElementById('sakuraStep4Back');
+        const step4Done = document.getElementById('sakuraStep4Done');
+        
+        if (step4Back) {
+            step4Back.addEventListener('click', () => showStep(3));
+        }
+        if (step4Done) {
+            step4Done.addEventListener('click', async function() {
+                if (!reviewData.firstName || !reviewData.email) {
+                    alert('Please fill in all required fields (First name and Email)');
+                    return;
+                }
+                
+                this.disabled = true;
+                this.textContent = 'Submitting...';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('shopify_product_id', currentProductId);
+                    formData.append('rating', reviewData.rating);
+                    formData.append('text', reviewData.text);
+                    formData.append('reviewer_name', `${reviewData.firstName} ${reviewData.lastName}`.trim());
+                    formData.append('reviewer_email', reviewData.email);
+                    
+                    reviewData.photos.forEach((photo, index) => {
+                        formData.append(`photo_${index}`, photo.file);
+                    });
+                    
+                    const response = await fetch(`${SAKURA_CONFIG.apiUrl}/widget/${currentShopId}/reviews/${currentProductId}/submit`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showStep(5);
+                    } else {
+                        alert('Failed to submit review: ' + (result.error || 'Unknown error'));
+                        this.disabled = false;
+                        this.textContent = 'Done';
+                    }
+                } catch (error) {
+                    console.error('Error submitting review:', error);
+                    alert('Error submitting review. Please try again.');
+                    this.disabled = false;
+                    this.textContent = 'Done';
+                }
+            });
+        }
+        
+        // Step 5: Confirmation
+        const step5Close = document.getElementById('sakuraStep5Close');
+        if (step5Close) {
+            step5Close.addEventListener('click', function() {
+                closeModal();
+                // Reload iframe to show new review
+                const iframe = document.querySelector('iframe[id*="sakuraReviewsFrame"]');
+                if (iframe) {
+                    iframe.src = iframe.src.split('?')[0] + '?v=' + Date.now();
                 }
             });
         }
         
         // Listen for messages from iframe to open modal
         window.addEventListener('message', function(event) {
-            // Accept messages from our widget domain
             if (event.data && event.data.type === 'openReviewModal') {
                 currentProductId = event.data.productId || SAKURA_CONFIG.productId;
+                // Try to extract shop ID from iframe URL
+                const iframe = document.querySelector('iframe[id*="sakuraReviewsFrame"]');
+                if (iframe && iframe.src) {
+                    const urlParts = iframe.src.split('/widget/');
+                    if (urlParts.length > 1) {
+                        const afterWidget = urlParts[1].split('/reviews/')[0];
+                        if (afterWidget) currentShopId = afterWidget;
+                    }
+                }
                 if (overlay) {
                     overlay.style.display = 'flex';
+                    showStep(1);
                     // Reset state
-                    selectedRating = 0;
+                    reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
                     stars.forEach(star => {
                         star.style.color = '#e2e8f0';
                     });
-                    if (nextBtn) {
-                        nextBtn.disabled = true;
-                        nextBtn.style.background = '#e2e8f0';
-                        nextBtn.style.color = '#999';
-                        nextBtn.style.cursor = 'not-allowed';
+                    if (step1Next) {
+                        step1Next.disabled = true;
+                        step1Next.style.background = '#e2e8f0';
+                        step1Next.style.color = '#999';
+                        step1Next.style.cursor = 'not-allowed';
                     }
+                    // Reset form fields
+                    if (reviewText) reviewText.value = '';
+                    if (firstName) firstName.value = '';
+                    if (lastName) lastName.value = '';
+                    if (userEmail) userEmail.value = '';
+                    if (photoPreviewGrid) photoPreviewGrid.innerHTML = '';
                 }
             }
         });
