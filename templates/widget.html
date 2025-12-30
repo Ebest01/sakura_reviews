@@ -969,9 +969,9 @@
             cursor: not-allowed;
         }
         
-        /* Review Wizard Modal */
+        /* Review Wizard Modal - Hidden by default, only shown when opened from parent page */
         .review-modal-overlay {
-            display: none;
+            display: none !important;
             position: fixed;
             top: 0;
             left: 0;
@@ -984,8 +984,9 @@
             backdrop-filter: blur(4px);
         }
         
-        .review-modal-overlay.show {
-            display: flex;
+        /* Only show iframe modal when explicitly opened from parent (for steps 2-5) */
+        .review-modal-overlay.show-from-parent {
+            display: flex !important;
         }
         
         .review-modal {
@@ -1755,34 +1756,17 @@
         const reviewModalOverlay = document.getElementById('reviewModalOverlay');
         const modalClose = document.getElementById('modalClose');
         
-        // Function to open review modal (try parent page first, fallback to iframe)
+        // Function to open review modal - ONLY opens parent page modal (not iframe modal)
         function openReviewModal() {
             const productId = '{{ product_id }}';
-            // Try to open modal in parent page (full-page overlay like Loox)
+            // Always try to open modal in parent page (full-page overlay like Loox)
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     type: 'openReviewModal',
                     productId: productId
                 }, '*');
-                // Wait a bit, if parent doesn't respond, use iframe modal as fallback
-                setTimeout(() => {
-                    // Fallback to iframe modal if parent didn't open it
-                    if (reviewModalOverlay) {
-                        reviewModalOverlay.classList.add('show');
-                        currentStep = 1;
-                        reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
-                        showStep(1);
-                    }
-                }, 100);
-            } else {
-                // No parent, use iframe modal
-                if (reviewModalOverlay) {
-                    reviewModalOverlay.classList.add('show');
-                    currentStep = 1;
-                    reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
-                    showStep(1);
-                }
             }
+            // Iframe modal is NOT opened here - only parent page modal opens
         }
         
         if (writeReviewBtn) {
@@ -1801,27 +1785,18 @@
         }
         
         // Listen for messages from parent to open review form with pre-selected rating
+        // This opens the iframe modal starting from step 2 (skip step 1 since parent handled it)
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'openReviewForm') {
                 const rating = event.data.rating;
                 const productId = event.data.productId;
                 if (reviewModalOverlay) {
-                    reviewModalOverlay.classList.add('show');
-                    currentStep = 1;
+                    // Open iframe modal starting from step 2 (photos)
+                    reviewModalOverlay.classList.remove('show');
+                    reviewModalOverlay.classList.add('show-from-parent');
+                    currentStep = 2; // Skip step 1, go directly to step 2 (photos)
                     reviewData = { rating: rating, photos: [], text: '', firstName: '', lastName: '', email: '' };
-                    // Pre-select the rating
-                    const stars = document.querySelectorAll('.rating-wizard-star');
-                    stars.forEach((star, index) => {
-                        if (index < rating) {
-                            star.classList.add('selected');
-                        } else {
-                            star.classList.remove('selected');
-                        }
-                    });
-                    // Enable next button
-                    const step1Next = document.getElementById('step1Next');
-                    if (step1Next) step1Next.disabled = false;
-                    showStep(1);
+                    showStep(2);
                 }
             }
         });
