@@ -1769,8 +1769,12 @@
         if (emptyStateWriteReview) {
             emptyStateWriteReview.addEventListener('click', function(e) {
                 e.preventDefault();
-                if (writeReviewBtn) {
-                    writeReviewBtn.click();
+                // Directly open the review modal (same action as writeReviewBtn)
+                if (reviewModalOverlay) {
+                    reviewModalOverlay.classList.add('show');
+                    currentStep = 1;
+                    reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
+                    showStep(1);
                 }
             });
         }
