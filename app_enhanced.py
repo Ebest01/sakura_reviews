@@ -8,7 +8,7 @@ Matching Loox architecture with competitive advantages:
 - Superior UX
 """
 
-from flask import Flask, request, jsonify, session, render_template, redirect
+from flask import Flask, request, jsonify, session, render_template, redirect, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -4683,14 +4683,19 @@ def submit_review(shop_id, product_id):
             if key.startswith('photo_'):
                 file = request.files[key]
                 if file and file.filename:
-                    # Save file (in production, use cloud storage like S3)
-                    filename = secure_filename(file.filename)
+                    # Generate a clean filename using UUID to avoid weird characters
+                    file_ext = os.path.splitext(file.filename)[1].lower() or '.jpg'
+                    # Only allow image extensions
+                    if file_ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        file_ext = '.jpg'
+                    filename = f"{uuid.uuid4().hex}{file_ext}"
+                    
                     upload_dir = os.path.join('uploads', 'reviews', str(review.id))
                     os.makedirs(upload_dir, exist_ok=True)
                     filepath = os.path.join(upload_dir, filename)
                     file.save(filepath)
                     
-                    # Create media record
+                    # Create media record with absolute URL
                     media = ReviewMedia(
                         review_id=review.id,
                         media_url=f'/uploads/reviews/{review.id}/{filename}',
@@ -4719,6 +4724,18 @@ def submit_review(shop_id, product_id):
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/uploads/reviews/<int:review_id>/<filename>')
+def serve_review_photo(review_id, filename):
+    """
+    Serve uploaded review photos
+    """
+    try:
+        upload_dir = os.path.join('uploads', 'reviews', str(review_id))
+        return send_from_directory(upload_dir, filename)
+    except Exception as e:
+        logger.error(f"Error serving review photo: {str(e)}")
+        return jsonify({'error': 'Photo not found'}), 404
 
 
 # ==================== HOMEPAGE CAROUSEL WIDGET ====================
