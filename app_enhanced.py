@@ -6302,8 +6302,9 @@ def sakura_reviews_js():
     function findProductCards() {
         // Shopify product card selectors (prioritize common ones)
         // Test store uses: <li class="grid__item">
+        // Homepage, collection pages, search results, etc.
         const cardSelectors = [
-            'li.grid__item',  // Test store structure
+            'li.grid__item',  // Test store structure (collection & homepage)
             '.grid__item',    // Alternative
             '.product-card',
             '.card-product',
@@ -6313,17 +6314,29 @@ def sakura_reviews_js():
             '.collection-product-card',
             '[data-product-card]',
             '.product-card-wrapper',
-            '.product'
+            '.product',
+            '.grid-product__item',  // Some themes
+            '.product-grid__item',   // Some themes
+            '.featured-product',     // Homepage featured products
+            '.home-product',         // Homepage products
+            'section[class*="product"]',  // Generic product sections
+            '[class*="product-card"]',   // Any element with product-card in class
+            '[class*="product-item"]'    // Any element with product-item in class
         ];
         
-        let cards = [];
+        // Try all selectors and combine results (homepage might have multiple types)
+        let allCards = new Set(); // Use Set to avoid duplicates
         for (const sel of cardSelectors) {
             const found = document.querySelectorAll(sel);
             if (found.length > 0) {
-                cards = Array.from(found);
-                console.log(`🌸 Found ${cards.length} cards using selector: ${sel}`);
-                break;
+                found.forEach(card => allCards.add(card));
+                console.log(`🌸 Found ${found.length} cards using selector: ${sel}`);
             }
+        }
+        
+        const cards = Array.from(allCards);
+        if (cards.length > 0) {
+            console.log(`🌸 Total unique product cards found: ${cards.length}`);
         }
         return cards;
     }
@@ -6641,7 +6654,7 @@ def sakura_reviews_js():
     // Handle SPA navigation
     window.addEventListener('popstate', init);
     
-    // Observe for dynamic content (infinite scroll, AJAX)
+    // Observe for dynamic content (infinite scroll, AJAX, homepage lazy loading)
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             if (mutation.addedNodes.length) {
@@ -6652,6 +6665,11 @@ def sakura_reviews_js():
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Also run on window load (for homepage products that load after DOMContentLoaded)
+    window.addEventListener('load', function() {
+        setTimeout(injectCollectionBadges, 1000); // Wait a bit for lazy-loaded content
+    });
     
     // ==================== FULL-PAGE MODAL (Like Loox) ====================
     // Inject modal HTML into parent page (not iframe)
