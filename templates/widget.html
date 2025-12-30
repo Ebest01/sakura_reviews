@@ -913,6 +913,29 @@
             color: #718096;
         }
         
+        .no-reviews-empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .no-reviews-empty-state p {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .write-review-link {
+            color: #ff69b4;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .write-review-link:hover {
+            color: #ff1493;
+            text-decoration: none;
+        }
+        
         .error {
             text-align: center;
             padding: 40px;
@@ -1525,8 +1548,8 @@
                 </div>
                 {% endif %}
             {% else %}
-                <div class="loading">
-                    <p>No reviews yet.</p>
+                <div class="no-reviews-empty-state">
+                    <p>Be the first to <a href="#" class="write-review-link" id="emptyStateWriteReview">write a review</a></p>
                 </div>
             {% endif %}
         </div>
@@ -1738,6 +1761,17 @@
                 currentStep = 1;
                 reviewData = { rating: 0, photos: [], text: '', firstName: '', lastName: '', email: '' };
                 showStep(1);
+            });
+        }
+        
+        // Empty state "write a review" link
+        const emptyStateWriteReview = document.getElementById('emptyStateWriteReview');
+        if (emptyStateWriteReview) {
+            emptyStateWriteReview.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (writeReviewBtn) {
+                    writeReviewBtn.click();
+                }
             });
         }
         
