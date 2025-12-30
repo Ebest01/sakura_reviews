@@ -4695,10 +4695,11 @@ def submit_review(shop_id, product_id):
                     filepath = os.path.join(upload_dir, filename)
                     file.save(filepath)
                     
-                    # Create media record with absolute URL
+                    # Create media record with absolute URL pointing to widget server
+                    media_url = f'{Config.WIDGET_BASE_URL}/uploads/reviews/{review.id}/{filename}'
                     media = ReviewMedia(
                         review_id=review.id,
-                        media_url=f'/uploads/reviews/{review.id}/{filename}',
+                        media_url=media_url,
                         media_type='image',
                         status='active'
                     )
@@ -5079,7 +5080,14 @@ def get_product_reviews(product_id, limit=20, offset=0, sort='default'):
             # Get media for this review
             media = ReviewMedia.query.filter_by(review_id=review.id, status='active').all()
             # Format media for widget template (expects 'media' with 'media_url' property)
-            media_list = [{'media_url': m.media_url} for m in media]
+            # Convert relative URLs to absolute URLs
+            media_list = []
+            for m in media:
+                media_url = m.media_url
+                # If URL is relative (starts with /), make it absolute
+                if media_url and media_url.startswith('/'):
+                    media_url = f'{Config.WIDGET_BASE_URL}{media_url}'
+                media_list.append({'media_url': media_url})
             
             reviews.append({
                 'id': review.id,
