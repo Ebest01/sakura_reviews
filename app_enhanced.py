@@ -1655,8 +1655,18 @@ shopify_helper = ShopifyAPIHelper()
 
 @app.route('/')
 def index():
-    """Beautiful Sakura Reviews landing page"""
-    return render_template('landing-page.html')
+    """
+    Root route - redirects authenticated users to dashboard, shows landing page for public
+    """
+    # Check if user is accessing from Shopify Admin (has shop parameter or session)
+    shop = request.args.get('shop') or session.get('shop_domain')
+    
+    if shop:
+        # User is authenticated/accessing from Shopify Admin - redirect to dashboard
+        return redirect(f'/app?shop={shop}')
+    else:
+        # Public visitor - show landing page
+        return render_template('landing-page.html')
 
 
 @app.route('/api/fix-aliexpress-names', methods=['POST'])
