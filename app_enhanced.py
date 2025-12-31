@@ -353,6 +353,8 @@ def app_dashboard():
         except Exception as e:
             logger.error(f"Error fetching dashboard stats: {e}")
     
+    # Add shop_domain to stats for navigation
+    stats['shop_domain'] = shop
     return render_template('app-dashboard.html', **stats)
 
 
