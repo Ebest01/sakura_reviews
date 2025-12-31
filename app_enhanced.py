@@ -358,6 +358,87 @@ def app_email_test():
     
     return redirect(f'/app/email-settings?shop={shop_domain}&message=Test email sent to {test_email}')
 
+@app.route('/app/test-review-acknowledgment-email', methods=['GET', 'POST'])
+def test_review_acknowledgment_email():
+    """
+    Test endpoint to send a review acknowledgment email
+    Usage: /app/test-review-acknowledgment-email?email=deshabunda2@gmail.com
+    """
+    from backend.models_v2 import Review, Shop, Product
+    
+    test_email = request.args.get('email') or request.form.get('email', 'deshabunda2@gmail.com')
+    
+    if not test_email:
+        return jsonify({'error': 'Email parameter required'}), 400
+    
+    try:
+        # Get or create a test shop
+        shop = Shop.query.filter_by(shop_domain='sakura-rev-test-store.myshopify.com').first()
+        if not shop:
+            # Create a dummy shop for testing
+            shop = Shop(
+                shop_domain='sakura-rev-test-store.myshopify.com',
+                shop_name='Test Store',
+                access_token='test'
+            )
+            db.session.add(shop)
+            db.session.flush()
+        
+        # Get or create a test product
+        product = Product.query.filter_by(shop_id=shop.id).first()
+        if not product:
+            product = Product(
+                shop_id=shop.id,
+                shopify_product_id='10045740417338',
+                shopify_product_title='Test Product',
+                source_platform='sakura_reviews',
+                status='active'
+            )
+            db.session.add(product)
+            db.session.flush()
+        
+        # Create a dummy review for testing
+        test_review = Review(
+            shop_id=shop.id,
+            product_id=product.id,
+            shopify_product_id=product.shopify_product_id,
+            source_platform='sakura_reviews',
+            rating=5,
+            body='This is a test review to verify the acknowledgment email system is working correctly. Thank you for testing!',
+            reviewer_name='Test Customer',
+            reviewer_email=test_email,
+            review_date=datetime.utcnow(),
+            imported_at=datetime.utcnow(),
+            status='published'
+        )
+        
+        # Send the acknowledgment email
+        try:
+            send_review_acknowledgment_email(test_review, shop, product)
+            return jsonify({
+                'success': True,
+                'message': f'Test acknowledgment email sent to {test_email}',
+                'email': test_email
+            })
+        except Exception as e:
+            logger.error(f"Error sending test email: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return jsonify({
+                'success': False,
+                'error': f'Failed to send email: {str(e)}',
+                'email': test_email
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in test endpoint: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 @app.route('/email/unsubscribe/<token>')
 def email_unsubscribe(token):
