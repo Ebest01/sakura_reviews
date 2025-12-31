@@ -494,11 +494,107 @@ def email_unsubscribe(token):
         return "Invalid unsubscribe link", 400
 
 
+# Shopify Webhook: Order Created (Checkout) - Schedule review request email
+@app.route('/webhooks/orders/create', methods=['POST'])
+def webhook_order_create():
+    """
+    Handle order created webhook - schedule review request email at checkout
+    This triggers when customer completes checkout
+    """
+    from backend.models_v2 import Shop, EmailSettings, ReviewRequest, EmailUnsubscribe
+    from datetime import timedelta
+    
+    try:
+        # Verify webhook
+        shop_domain = request.headers.get('X-Shopify-Shop-Domain')
+        if not shop_domain:
+            return jsonify({'error': 'Missing shop domain'}), 400
+        
+        shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+        if not shop:
+            return jsonify({'error': 'Shop not found'}), 404
+        
+        # Get email settings
+        settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+        if not settings or not settings.enabled:
+            return jsonify({'status': 'emails_disabled'})
+        
+        data = request.get_json()
+        
+        # Check if customer is unsubscribed
+        customer_email = data.get('email') or data.get('customer', {}).get('email')
+        if not customer_email:
+            return jsonify({'status': 'no_email'})
+        
+        is_unsubscribed = EmailUnsubscribe.query.filter(
+            (EmailUnsubscribe.email == customer_email) &
+            ((EmailUnsubscribe.shop_id == shop.id) | (EmailUnsubscribe.shop_id.is_(None)))
+        ).first()
+        
+        if is_unsubscribed:
+            return jsonify({'status': 'unsubscribed'})
+        
+        # Create review request for each line item
+        customer_name = data.get('customer', {}).get('first_name', 'Customer')
+        order_id = str(data.get('id'))
+        order_number = data.get('order_number')
+        order_date = datetime.utcnow()
+        order_total = float(data.get('total_price', 0))
+        
+        # Check minimum order value
+        if settings.min_order_value and order_total < settings.min_order_value:
+            return jsonify({'status': 'below_min_value'})
+        
+        # For checkout emails, use shorter delay (3-5 days) since product may arrive quickly
+        # Or use the same delay_days setting
+        delay_days = max(settings.delay_days, 3)  # At least 3 days after checkout
+        scheduled_at = datetime.utcnow() + timedelta(days=delay_days)
+        
+        for line_item in data.get('line_items', []):
+            product_id = str(line_item.get('product_id'))
+            product_name = line_item.get('name', 'Product')
+            product_image = line_item.get('image', {}).get('src') if line_item.get('image') else None
+            
+            # Check if request already exists
+            existing = ReviewRequest.query.filter_by(
+                shop_id=shop.id,
+                order_id=order_id,
+                product_id=product_id
+            ).first()
+            
+            if not existing:
+                review_request = ReviewRequest(
+                    shop_id=shop.id,
+                    order_id=order_id,
+                    order_number=order_number,
+                    order_date=order_date,
+                    order_total=order_total,
+                    customer_email=customer_email,
+                    customer_name=customer_name,
+                    product_id=product_id,
+                    product_name=product_name,
+                    product_image=product_image,
+                    scheduled_at=scheduled_at,
+                    status='pending'
+                )
+                db.session.add(review_request)
+        
+        db.session.commit()
+        return jsonify({'status': 'scheduled', 'scheduled_at': scheduled_at.isoformat()})
+    
+    except Exception as e:
+        logger.error(f"Error processing order create webhook: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 # Shopify Webhook: Order Fulfilled - Schedule review request email
 @app.route('/webhooks/orders/fulfilled', methods=['POST'])
 def webhook_order_fulfilled():
     """
     Handle order fulfilled webhook - schedule review request email
+    This triggers when order is shipped/fulfilled (recommended - customer has received product)
     """
     from backend.models_v2 import Shop, EmailSettings, ReviewRequest, EmailUnsubscribe
     from datetime import timedelta
