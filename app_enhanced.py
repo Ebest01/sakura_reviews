@@ -366,7 +366,8 @@ def app_email_settings():
     from backend.models_v2 import EmailSettings, ReviewRequest, Shop
     
     shop_domain = request.args.get('shop') or session.get('shop_domain')
-    message = None
+    message = request.args.get('message')
+    error = request.args.get('error')
     
     # Get shop
     shop = None
@@ -420,7 +421,8 @@ def app_email_settings():
                          stats=stats,
                          shop_name=shop.shop_name or shop_domain,
                          shop_domain=shop_domain,
-                         message=message)
+                         message=message,
+                         error=error)
 
 
 @app.route('/app/email-preview')
@@ -456,6 +458,7 @@ def app_email_test():
     from backend.models_v2 import Shop, EmailSettings, Product
     from flask import render_template
     import smtplib
+    import traceback
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     from datetime import datetime
@@ -537,25 +540,40 @@ def app_email_test():
         
         # Send email
         try:
+            logger.info(f"Attempting to send test email to {test_email} via {smtp_server}:{smtp_port}")
+            logger.info(f"SMTP User: {smtp_user}, From: {email_from}")
+            
             server = smtplib.SMTP(smtp_server, smtp_port)
             server.starttls()
             server.login(smtp_user, smtp_password)
             server.send_message(msg)
             server.quit()
             
-            logger.info(f"✅ Test review request email sent to {test_email}")
+            logger.info(f"✅ Test review request email sent successfully to {test_email}")
             return redirect(f'/app/email-settings?shop={shop_domain}&message=Test email sent successfully to {test_email}')
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = f"SMTP Authentication failed. Check your email and password. Error: {str(e)}"
+            logger.error(f"SMTP Auth Error: {error_msg}")
+            logger.error(traceback.format_exc())
+            return redirect(f'/app/email-settings?shop={shop_domain}&error={error_msg}')
+        except smtplib.SMTPException as e:
+            error_msg = f"SMTP Error: {str(e)}"
+            logger.error(f"SMTP Error: {error_msg}")
+            logger.error(traceback.format_exc())
+            return redirect(f'/app/email-settings?shop={shop_domain}&error={error_msg}')
         except Exception as e:
-            logger.error(f"Failed to send test email via SMTP: {str(e)}")
+            error_msg = f"Failed to send email: {str(e)}"
+            logger.error(f"Email send error: {error_msg}")
             import traceback
             logger.error(traceback.format_exc())
-            return redirect(f'/app/email-settings?shop={shop_domain}&error=Failed to send email: {str(e)}')
+            return redirect(f'/app/email-settings?shop={shop_domain}&error={error_msg}')
             
     except Exception as e:
-        logger.error(f"Error in test email endpoint: {str(e)}")
+        error_msg = f"Error: {str(e)}"
+        logger.error(f"Error in test email endpoint: {error_msg}")
         import traceback
         logger.error(traceback.format_exc())
-        return redirect(f'/app/email-settings?shop={shop_domain}&error=Error: {str(e)}')
+        return redirect(f'/app/email-settings?shop={shop_domain}&error={error_msg}')
 
 @app.route('/app/test-review-acknowledgment-email', methods=['GET', 'POST'])
 def test_review_acknowledgment_email():

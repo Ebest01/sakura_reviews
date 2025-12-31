@@ -330,6 +330,12 @@
         </div>
         {% endif %}
         
+        {% if error %}
+        <div class="alert alert-error" style="background: #fee; border: 1px solid #fcc; color: #c33; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+            ✗ {{ error }}
+        </div>
+        {% endif %}
+        
         <form method="POST" action="/app/email-settings">
             <!-- Main Toggle -->
             <div class="settings-card">
