@@ -3703,6 +3703,9 @@ def copyright_policy():
 def cookies_policy():
     """Cookies Policy page"""
     return render_template('cookies-policy.html')
+def cookies_policy():
+    """Cookies Policy page"""
+    return render_template('cookies-policy.html')
 
 # =============================================================================
 # HELP CENTER & SUPPORT

@@ -5,24 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cookies Policy - Sakura Reviews</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             line-height: 1.7;
             color: #333;
             background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #f5fff5 100%);
             min-height: 100vh;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
         .header {
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 30px;
             border-bottom: 3px solid #ff6b9d;
         }
-        .logo { font-size: 2.5rem; margin-bottom: 10px; }
-        h1 { color: #2d3436; font-size: 2rem; margin-bottom: 10px; }
-        .last-updated { color: #636e72; font-size: 0.9rem; }
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #2d3436;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .last-updated {
+            color: #636e72;
+            font-size: 0.9rem;
+        }
         h2 {
             color: #ff6b9d;
             font-size: 1.4rem;
@@ -30,10 +48,37 @@
             padding-bottom: 8px;
             border-bottom: 2px solid #ffe0eb;
         }
-        h3 { color: #2d3436; font-size: 1.1rem; margin: 20px 0 10px 0; }
-        p { margin-bottom: 15px; color: #4a4a4a; }
-        ul { margin: 15px 0 15px 30px; }
-        li { margin-bottom: 8px; color: #4a4a4a; }
+        h3 {
+            color: #2d3436;
+            font-size: 1.1rem;
+            margin: 20px 0 10px 0;
+        }
+        p {
+            margin-bottom: 15px;
+            color: #4a4a4a;
+        }
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+        li {
+            margin-bottom: 8px;
+            color: #4a4a4a;
+        }
+        .highlight-box {
+            background: #fff;
+            border-left: 4px solid #ff6b9d;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #4a90e2;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -53,16 +98,16 @@
             color: white;
             font-weight: 600;
         }
-        .highlight-box {
-            background: #fff;
-            border-left: 4px solid #ff6b9d;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        tr:hover {
+            background: #fff5f8;
         }
-        a { color: #ff6b9d; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        a {
+            color: #ff6b9d;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
         .contact-box {
             background: linear-gradient(135deg, #ff6b9d, #ff8fab);
             color: white;
@@ -71,15 +116,25 @@
             margin-top: 40px;
             text-align: center;
         }
-        .contact-box h2 { color: white; border: none; margin-top: 0; }
-        .contact-box a { color: white; font-weight: bold; }
+        .contact-box h2 {
+            color: white;
+            border: none;
+            margin-top: 0;
+        }
+        .contact-box a {
+            color: white;
+            font-weight: bold;
+        }
         .nav-links {
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #eee;
             text-align: center;
         }
-        .nav-links a { margin: 0 15px; color: #636e72; }
+        .nav-links a {
+            margin: 0 15px;
+            color: #636e72;
+        }
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -87,6 +142,17 @@
             border-top: 1px solid #eee;
             color: #636e72;
             font-size: 0.9rem;
+        }
+        .cookie-category {
+            margin: 25px 0;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .cookie-category h3 {
+            color: #ff6b9d;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -98,125 +164,152 @@
             <p class="last-updated">Last Updated: December 2025</p>
         </div>
 
-        <h2>What Are Cookies?</h2>
-        <p>Cookies are small text files that are stored on your device when you visit a website. They help the website remember your preferences and improve your browsing experience.</p>
+        <h2>1. What Are Cookies?</h2>
+        <p>Cookies are small text files that are placed on your computer or mobile device by websites that you visit. They are widely used to make websites work more efficiently and to provide information to the website owners.</p>
+        
+        <p>Cookies help websites remember your preferences, improve your browsing experience, and perform certain functions. The website cannot be used properly without some cookies (strictly necessary cookies).</p>
 
-        <h2>How We Use Cookies</h2>
-        <p>Sakura Reviews uses cookies and similar technologies to:</p>
+        <div class="info-box">
+            <p><strong>💡 Cookie Consent:</strong> Cookies that are required for the website to operate properly are allowed to be set without your permission. All other cookies need to be approved before they can be set in your browser.</p>
+        </div>
+
+        <h2>2. How We Use Cookies</h2>
+        <p>Sakura Reviews uses cookies to:</p>
         <ul>
-            <li>Keep you signed in to your account</li>
+            <li>Enable core website functionality such as user login and account management</li>
             <li>Remember your preferences and settings</li>
-            <li>Understand how you use our service</li>
-            <li>Improve our service and user experience</li>
+            <li>Analyze how our service is used to improve user experience</li>
+            <li>Provide personalized content and features</li>
             <li>Ensure security and prevent fraud</li>
         </ul>
 
-        <h2>Types of Cookies We Use</h2>
+        <h2>3. Types of Cookies We Use</h2>
 
+        <div class="cookie-category">
+            <h3>3.1 Strictly Necessary Cookies</h3>
+            <p>These cookies are essential for the website to function properly. They enable core functionality such as:</p>
+            <ul>
+                <li>User authentication and login sessions</li>
+                <li>Security and fraud prevention</li>
+                <li>Maintaining your preferences during your visit</li>
+                <li>Load balancing and website performance</li>
+            </ul>
+            <p><strong>These cookies cannot be disabled</strong> as they are necessary for the service to work. They do not collect personal information that can be used to identify you.</p>
+        </div>
+
+        <div class="cookie-category">
+            <h3>3.2 Functional Cookies</h3>
+            <p>These cookies allow the website to remember choices you make (such as your language preference or region) and provide enhanced, personalized features.</p>
+            <ul>
+                <li>Remembering your widget display preferences</li>
+                <li>Storing your review filter settings</li>
+                <li>Maintaining your dashboard preferences</li>
+            </ul>
+            <p>These cookies may be set by us or by third-party providers whose services we have added to our pages.</p>
+        </div>
+
+        <div class="cookie-category">
+            <h3>3.3 Analytics Cookies</h3>
+            <p>These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously.</p>
+            <ul>
+                <li>Page views and navigation patterns</li>
+                <li>Time spent on pages</li>
+                <li>Error messages and performance issues</li>
+            </ul>
+            <p>This information helps us improve our service and fix technical issues.</p>
+        </div>
+
+        <div class="cookie-category">
+            <h3>3.4 Marketing Cookies</h3>
+            <p>These cookies are used to track visitors across websites to display relevant advertisements or measure the effectiveness of marketing campaigns.</p>
+            <p><strong>Note:</strong> We currently do not use marketing cookies, but this may change in the future. You will be notified and can opt-out if we implement them.</p>
+        </div>
+
+        <h2>4. Third-Party Cookies</h2>
+        <p>In addition to our own cookies, we may also use various third-party cookies to report usage statistics of the service and deliver advertisements on and through the service.</p>
+        
+        <div class="highlight-box">
+            <p><strong>Third-Party Services We May Use:</strong></p>
+            <ul>
+                <li><strong>Shopify:</strong> For app integration and authentication (strictly necessary)</li>
+                <li><strong>Analytics Services:</strong> To understand how our service is used (with your consent)</li>
+                <li><strong>Hosting Providers:</strong> For service infrastructure and performance (strictly necessary)</li>
+            </ul>
+        </div>
+
+        <h2>5. Cookie Duration</h2>
         <table>
             <tr>
                 <th>Cookie Type</th>
-                <th>Purpose</th>
                 <th>Duration</th>
-            </tr>
-            <tr>
-                <td><strong>Essential</strong></td>
-                <td>Required for the service to function (authentication, security)</td>
-                <td>Session / 30 days</td>
-            </tr>
-            <tr>
-                <td><strong>Functional</strong></td>
-                <td>Remember your preferences (language, theme)</td>
-                <td>1 year</td>
-            </tr>
-            <tr>
-                <td><strong>Analytics</strong></td>
-                <td>Understand usage patterns and improve service</td>
-                <td>2 years</td>
-            </tr>
-        </table>
-
-        <h2>Specific Cookies</h2>
-
-        <h3>Essential Cookies</h3>
-        <table>
-            <tr>
-                <th>Name</th>
                 <th>Purpose</th>
             </tr>
             <tr>
-                <td>session</td>
-                <td>Maintains your login session</td>
+                <td>Session Cookies</td>
+                <td>Until browser closes</td>
+                <td>Maintain login state and preferences during your visit</td>
             </tr>
             <tr>
-                <td>csrf_token</td>
-                <td>Security token to prevent cross-site attacks</td>
+                <td>Persistent Cookies</td>
+                <td>Up to 365 days</td>
+                <td>Remember your preferences and settings across visits</td>
+            </tr>
+            <tr>
+                <td>Analytics Cookies</td>
+                <td>Up to 2 years</td>
+                <td>Track usage patterns and improve service</td>
             </tr>
         </table>
 
-        <h3>Functional Cookies</h3>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Purpose</th>
-            </tr>
-            <tr>
-                <td>preferences</td>
-                <td>Stores your widget and display preferences</td>
-            </tr>
-            <tr>
-                <td>locale</td>
-                <td>Remembers your language preference</td>
-            </tr>
-        </table>
-
-        <h2>Third-Party Cookies</h2>
-        <p>We minimize the use of third-party cookies. When we do use them, it's typically for:</p>
-        <ul>
-            <li><strong>Shopify:</strong> Integration with Shopify's platform</li>
-            <li><strong>Analytics:</strong> Understanding usage (anonymized)</li>
-        </ul>
-
+        <h2>6. Managing Your Cookie Preferences</h2>
+        <p>You have the right to accept or reject cookies. Most web browsers automatically accept cookies, but you can usually modify your browser settings to decline cookies if you prefer.</p>
+        
         <div class="highlight-box">
-            <strong>🔒 Privacy Note:</strong> We serve all fonts from our own servers to avoid sending customer data to third parties like Google Fonts.
+            <p><strong>How to Manage Cookies:</strong></p>
+            <ul>
+                <li><strong>Browser Settings:</strong> Most browsers allow you to control cookies through their settings. You can set your browser to refuse cookies or alert you when cookies are being sent.</li>
+                <li><strong>Opt-Out Tools:</strong> You can use browser extensions or opt-out tools provided by third-party analytics services.</li>
+                <li><strong>Our Cookie Settings:</strong> You can manage your cookie preferences through our cookie consent banner when you first visit our website.</li>
+            </ul>
         </div>
 
-        <h2>Widget Cookies</h2>
-        <p>Our review widgets embedded on merchant stores may use minimal cookies to:</p>
+        <div class="info-box">
+            <p><strong>⚠️ Important:</strong> If you choose to disable cookies, some features of our service may not function properly. Strictly necessary cookies cannot be disabled as they are essential for the service to work.</p>
+        </div>
+
+        <h2>7. Cookies Used in Our Widget</h2>
+        <p>When our review widget is embedded on merchant stores, we may use cookies to:</p>
         <ul>
-            <li>Track if you've already submitted a review</li>
-            <li>Remember your filter/sort preferences</li>
-            <li>Prevent review spam</li>
+            <li>Remember helpful vote preferences (to prevent duplicate votes)</li>
+            <li>Store widget display preferences</li>
+            <li>Track widget performance and errors</li>
         </ul>
-        <p>These cookies do not track you across different websites.</p>
+        <p>These cookies are set by our widget JavaScript and are subject to the merchant's cookie policy as well.</p>
 
-        <h2>Managing Cookies</h2>
-        <p>You can control cookies through your browser settings:</p>
+        <h2>8. Updates to This Policy</h2>
+        <p>We may update this Cookies Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new Cookies Policy on this page and updating the "Last Updated" date.</p>
+
+        <h2>9. Your Rights</h2>
+        <p>Under GDPR and other privacy laws, you have the right to:</p>
         <ul>
-            <li><strong>Chrome:</strong> Settings → Privacy and Security → Cookies</li>
-            <li><strong>Firefox:</strong> Settings → Privacy & Security → Cookies</li>
-            <li><strong>Safari:</strong> Preferences → Privacy → Cookies</li>
-            <li><strong>Edge:</strong> Settings → Privacy → Cookies</li>
+            <li>Be informed about the use of cookies</li>
+            <li>Give or withdraw consent for non-essential cookies</li>
+            <li>Access information about cookies used</li>
+            <li>Request deletion of cookie data</li>
         </ul>
-
-        <p>Note: Disabling essential cookies may prevent you from using certain features of our service.</p>
-
-        <h2>Do Not Track</h2>
-        <p>We respect Do Not Track (DNT) browser signals. When DNT is enabled, we limit our data collection to what's strictly necessary for the service to function.</p>
-
-        <h2>Updates to This Policy</h2>
-        <p>We may update this Cookies Policy from time to time. We will notify you of any material changes by posting the new policy on this page.</p>
 
         <div class="contact-box">
-            <h2>Questions?</h2>
-            <p>For questions about our use of cookies:</p>
+            <h2>Contact Us</h2>
+            <p>If you have any questions about our use of cookies or this Cookies Policy:</p>
             <p><strong>Email:</strong> <a href="mailto:sakura.revs@gmail.com">sakura.revs@gmail.com</a></p>
+            <p style="margin-top: 15px;">For privacy-related questions, please also see our <a href="/privacy" style="text-decoration: underline;">Privacy Policy</a>.</p>
         </div>
 
         <div class="nav-links">
-            <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Service</a>
+            <a href="/privacy">Privacy Policy</a>
             <a href="/cookies">Cookies Policy</a>
+            <a href="/dpa">Data Processing Addendum</a>
         </div>
 
         <div class="footer">
@@ -225,4 +318,3 @@
     </div>
 </body>
 </html>
-
