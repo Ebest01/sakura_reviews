@@ -106,32 +106,82 @@ def ensure_migrations():
             try:
                 with db.engine.connect() as conn:
                     # Create email_settings table
-                    conn.execute(db.text("""
-                        CREATE TABLE IF NOT EXISTS email_settings (
-                            id SERIAL PRIMARY KEY,
-                            shop_id INTEGER NOT NULL UNIQUE REFERENCES shops(id),
-                            enabled BOOLEAN DEFAULT TRUE,
-                            delay_days INTEGER DEFAULT 7,
-                            send_time VARCHAR(10) DEFAULT '10:00',
-                            reminder_enabled BOOLEAN DEFAULT TRUE,
-                            reminder_delay_days INTEGER DEFAULT 14,
-                            max_reminders INTEGER DEFAULT 2,
-                            discount_enabled BOOLEAN DEFAULT FALSE,
-                            discount_percent INTEGER DEFAULT 10,
-                            photo_discount_enabled BOOLEAN DEFAULT FALSE,
-                            photo_discount_percent INTEGER DEFAULT 15,
-                            email_subject VARCHAR(255) DEFAULT 'We''d love your feedback!',
-                            email_from_name VARCHAR(255),
-                            min_order_value FLOAT DEFAULT 0,
-                            exclude_products TEXT,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """))
-                    conn.commit()
-                    logger.info("✅ email_settings table created via SQL")
+                    if 'email_settings' not in existing_tables:
+                        conn.execute(db.text("""
+                            CREATE TABLE IF NOT EXISTS email_settings (
+                                id SERIAL PRIMARY KEY,
+                                shop_id INTEGER NOT NULL UNIQUE REFERENCES shops(id),
+                                enabled BOOLEAN DEFAULT TRUE,
+                                delay_days INTEGER DEFAULT 7,
+                                send_time VARCHAR(10) DEFAULT '10:00',
+                                reminder_enabled BOOLEAN DEFAULT TRUE,
+                                reminder_delay_days INTEGER DEFAULT 14,
+                                max_reminders INTEGER DEFAULT 2,
+                                discount_enabled BOOLEAN DEFAULT FALSE,
+                                discount_percent INTEGER DEFAULT 10,
+                                photo_discount_enabled BOOLEAN DEFAULT FALSE,
+                                photo_discount_percent INTEGER DEFAULT 15,
+                                email_subject VARCHAR(255) DEFAULT 'We''d love your feedback!',
+                                email_from_name VARCHAR(255),
+                                min_order_value FLOAT DEFAULT 0,
+                                exclude_products TEXT,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """))
+                        conn.commit()
+                        logger.info("✅ email_settings table created via SQL")
+                    
+                    # Create review_requests table
+                    if 'review_requests' not in existing_tables:
+                        conn.execute(db.text("""
+                            CREATE TABLE IF NOT EXISTS review_requests (
+                                id SERIAL PRIMARY KEY,
+                                shop_id INTEGER NOT NULL REFERENCES shops(id),
+                                order_id VARCHAR(255) NOT NULL,
+                                order_number VARCHAR(255),
+                                order_date TIMESTAMP,
+                                order_total FLOAT,
+                                customer_email VARCHAR(255) NOT NULL,
+                                customer_name VARCHAR(255),
+                                product_id VARCHAR(255) NOT NULL,
+                                product_name VARCHAR(255),
+                                product_image TEXT,
+                                status VARCHAR(50) DEFAULT 'pending',
+                                emails_sent INTEGER DEFAULT 0,
+                                scheduled_at TIMESTAMP,
+                                first_sent_at TIMESTAMP,
+                                last_sent_at TIMESTAMP,
+                                reviewed_at TIMESTAMP,
+                                discount_code VARCHAR(255),
+                                discount_used BOOLEAN DEFAULT FALSE,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """))
+                        conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_review_request_shop_order ON review_requests(shop_id, order_id)"))
+                        conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_review_request_scheduled ON review_requests(status, scheduled_at)"))
+                        conn.commit()
+                        logger.info("✅ review_requests table created via SQL")
+                    
+                    # Create email_unsubscribes table
+                    if 'email_unsubscribes' not in existing_tables:
+                        conn.execute(db.text("""
+                            CREATE TABLE IF NOT EXISTS email_unsubscribes (
+                                id SERIAL PRIMARY KEY,
+                                email VARCHAR(255) NOT NULL,
+                                shop_id INTEGER REFERENCES shops(id),
+                                reason VARCHAR(255),
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """))
+                        conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_email_unsubscribe_shop ON email_unsubscribes(email, shop_id)"))
+                        conn.commit()
+                        logger.info("✅ email_unsubscribes table created via SQL")
             except Exception as sql_error:
-                logger.error(f"Failed to create email_settings table via SQL: {sql_error}")
+                logger.error(f"Failed to create email tables via SQL: {sql_error}")
+                import traceback
+                logger.error(traceback.format_exc())
 
 # Import database integration
 try:
