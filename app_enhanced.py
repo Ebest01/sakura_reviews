@@ -419,6 +419,7 @@ def app_email_settings():
                          settings=settings.to_dict(),
                          stats=stats,
                          shop_name=shop.shop_name or shop_domain,
+                         shop_domain=shop_domain,
                          message=message)
 
 
@@ -452,17 +453,109 @@ def app_email_test():
     """
     Send a test review request email
     """
+    from backend.models_v2 import Shop, EmailSettings, Product
+    from flask import render_template
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from datetime import datetime
+    
     test_email = request.form.get('test_email')
-    shop_domain = request.args.get('shop') or session.get('shop_domain')
+    shop_domain = request.form.get('shop') or request.args.get('shop') or session.get('shop_domain')
     
     if not test_email:
         return redirect(f'/app/email-settings?shop={shop_domain}&error=email_required')
     
-    # In production, send via SendGrid/Mailgun/SES
-    # For now, just log and redirect with success message
-    logger.info(f"Test email would be sent to: {test_email}")
+    if not shop_domain:
+        return redirect('/auth/install?error=shop_not_found')
     
-    return redirect(f'/app/email-settings?shop={shop_domain}&message=Test email sent to {test_email}')
+    try:
+        # Get shop
+        shop = Shop.query.filter_by(shop_domain=shop_domain).first()
+        if not shop:
+            return redirect(f'/auth/install?error=shop_not_found')
+        
+        # Get email settings
+        settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+        if not settings:
+            settings = EmailSettings(shop_id=shop.id)
+            db.session.add(settings)
+            db.session.commit()
+        
+        # Get a sample product for the test email
+        product = Product.query.filter_by(shop_id=shop.id).first()
+        if not product:
+            # Create a dummy product for testing
+            product = Product(
+                shop_id=shop.id,
+                shopify_product_id='test-product',
+                shopify_product_title='Sample Product',
+                source_platform='sakura_reviews',
+                status='active'
+            )
+        
+        # Get email configuration from environment
+        smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+        smtp_user = os.environ.get('SMTP_USER', '')
+        smtp_password = os.environ.get('SMTP_PASSWORD', '')
+        email_from = os.environ.get('EMAIL_FROM', 'noreply@sakurareviews.com')
+        email_from_name = settings.email_from_name or shop.shop_name or 'Sakura Reviews'
+        
+        # Check if SMTP is configured
+        if not smtp_user or not smtp_password:
+            return redirect(f'/app/email-settings?shop={shop_domain}&error=SMTP not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.')
+        
+        # Build review URL
+        review_url = f"https://{shop_domain}/products/{product.shopify_product_id}#sakura-reviews"
+        unsubscribe_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/email/unsubscribe/test-token"
+        
+        # Render email template
+        email_html = render_template('email-review-request.html',
+            customer_name='Test Customer',
+            shop_name=shop.shop_name or shop_domain,
+            shop_url=f"https://{shop_domain}",
+            product_name=product.shopify_product_title or 'Sample Product',
+            product_image=product.shopify_product_image or 'https://via.placeholder.com/100',
+            order_date=datetime.utcnow().strftime('%B %d, %Y'),
+            review_url=review_url,
+            discount_enabled=settings.discount_enabled,
+            discount_percent=settings.discount_percent,
+            discount_code='REVIEW10',
+            unsubscribe_url=unsubscribe_url
+        )
+        
+        # Create email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = settings.email_subject or "We'd love your feedback!"
+        msg['From'] = f"{email_from_name} <{email_from}>"
+        msg['To'] = test_email
+        
+        # Add HTML part
+        html_part = MIMEText(email_html, 'html')
+        msg.attach(html_part)
+        
+        # Send email
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"✅ Test review request email sent to {test_email}")
+            return redirect(f'/app/email-settings?shop={shop_domain}&message=Test email sent successfully to {test_email}')
+        except Exception as e:
+            logger.error(f"Failed to send test email via SMTP: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return redirect(f'/app/email-settings?shop={shop_domain}&error=Failed to send email: {str(e)}')
+            
+    except Exception as e:
+        logger.error(f"Error in test email endpoint: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return redirect(f'/app/email-settings?shop={shop_domain}&error=Error: {str(e)}')
 
 @app.route('/app/test-review-acknowledgment-email', methods=['GET', 'POST'])
 def test_review_acknowledgment_email():

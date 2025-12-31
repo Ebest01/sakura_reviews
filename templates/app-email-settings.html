@@ -455,7 +455,8 @@
             <h2 class="card-title">🧪 Test Email</h2>
             <p style="color: #64748b; margin-bottom: 16px;">Send a test email to yourself to see how it looks.</p>
             <form action="/app/email-test" method="POST" style="display: flex; gap: 12px;">
-                <input type="email" name="test_email" placeholder="your@email.com" style="flex: 1;">
+                <input type="hidden" name="shop" value="{{ shop_domain }}">
+                <input type="email" name="test_email" placeholder="your@email.com" style="flex: 1;" required>
                 <button type="submit" class="btn btn-secondary">Send Test</button>
             </form>
         </div>
