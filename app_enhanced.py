@@ -80,10 +80,58 @@ def ensure_migrations():
         # Create email-related tables if they don't exist
         try:
             from backend.models_v2 import EmailSettings, ReviewRequest, EmailUnsubscribe
-            db.create_all()  # This will create missing tables (email_settings, review_requests, email_unsubscribes)
-            logger.info("✅ Email-related tables checked/created")
+            from sqlalchemy import inspect
+            
+            # Check if tables exist first
+            inspector = inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            
+            tables_to_create = []
+            if 'email_settings' not in existing_tables:
+                tables_to_create.append('email_settings')
+            if 'review_requests' not in existing_tables:
+                tables_to_create.append('review_requests')
+            if 'email_unsubscribes' not in existing_tables:
+                tables_to_create.append('email_unsubscribes')
+            
+            if tables_to_create:
+                logger.info(f"Creating missing email tables: {tables_to_create}")
+                db.create_all()  # This will create missing tables
+                logger.info("✅ Email-related tables created")
+            else:
+                logger.info("✅ Email-related tables already exist")
         except Exception as e:
             logger.warning(f"⚠️ Email tables migration note: {e}")
+            # Try to create tables using raw SQL as fallback
+            try:
+                with db.engine.connect() as conn:
+                    # Create email_settings table
+                    conn.execute(db.text("""
+                        CREATE TABLE IF NOT EXISTS email_settings (
+                            id SERIAL PRIMARY KEY,
+                            shop_id INTEGER NOT NULL UNIQUE REFERENCES shops(id),
+                            enabled BOOLEAN DEFAULT TRUE,
+                            delay_days INTEGER DEFAULT 7,
+                            send_time VARCHAR(10) DEFAULT '10:00',
+                            reminder_enabled BOOLEAN DEFAULT TRUE,
+                            reminder_delay_days INTEGER DEFAULT 14,
+                            max_reminders INTEGER DEFAULT 2,
+                            discount_enabled BOOLEAN DEFAULT FALSE,
+                            discount_percent INTEGER DEFAULT 10,
+                            photo_discount_enabled BOOLEAN DEFAULT FALSE,
+                            photo_discount_percent INTEGER DEFAULT 15,
+                            email_subject VARCHAR(255) DEFAULT 'We''d love your feedback!',
+                            email_from_name VARCHAR(255),
+                            min_order_value FLOAT DEFAULT 0,
+                            exclude_products TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """))
+                    conn.commit()
+                    logger.info("✅ email_settings table created via SQL")
+            except Exception as sql_error:
+                logger.error(f"Failed to create email_settings table via SQL: {sql_error}")
 
 # Import database integration
 try:
