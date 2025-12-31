@@ -7564,7 +7564,7 @@ class ShopifyBilling:
                 'name': f"Sakura Reviews - {plan['name']}",
                 'price': plan['price'],
                 'return_url': return_url,
-                'test': True,  # Set to False for production!
+                'test': False,  # Production mode - required for App Store submission
                 'trial_days': 7  # 7-day free trial
             }
         }
