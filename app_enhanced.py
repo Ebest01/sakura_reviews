@@ -76,6 +76,14 @@ def ensure_migrations():
         except Exception as e:
             db.session.rollback()
             logger.warning(f"⚠️ Migration note: {e}")
+        
+        # Create email-related tables if they don't exist
+        try:
+            from backend.models_v2 import EmailSettings, ReviewRequest, EmailUnsubscribe
+            db.create_all()  # This will create missing tables (email_settings, review_requests, email_unsubscribes)
+            logger.info("✅ Email-related tables checked/created")
+        except Exception as e:
+            logger.warning(f"⚠️ Email tables migration note: {e}")
 
 # Import database integration
 try:
