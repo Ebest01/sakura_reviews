@@ -4404,31 +4404,42 @@ def admin_dashboard():
 def admin_create_tables():
     """Admin route to create missing database tables"""
     try:
-        from backend.models_v2 import ContactMessage
+        from backend.models_v2 import ContactMessage, EmailSettings, ReviewRequest, EmailUnsubscribe
         
         with app.app_context():
             db.create_all()
             
-            # Verify table was created
+            # Verify tables were created
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             
-            if 'contact_messages' in tables:
-                logger.info("✅ contact_messages table created successfully!")
+            required_tables = ['contact_messages', 'email_settings', 'review_requests', 'email_unsubscribes']
+            created = [t for t in required_tables if t in tables]
+            missing = [t for t in required_tables if t not in tables]
+            
+            if missing:
+                logger.warning(f"⚠️ Some tables may not have been created: {missing}")
                 return jsonify({
                     'success': True,
-                    'message': 'Tables created successfully!',
-                    'tables': tables
+                    'message': f'Tables created! Created: {created}, Missing: {missing}',
+                    'tables': tables,
+                    'created': created,
+                    'missing': missing
                 })
             else:
+                logger.info("✅ All required tables created successfully!")
                 return jsonify({
-                    'success': False,
-                    'error': 'Table creation may have failed'
-                }), 500
+                    'success': True,
+                    'message': 'All tables created successfully!',
+                    'tables': tables,
+                    'created': created
+                })
                 
     except Exception as e:
         logger.error(f"Error creating tables: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'error': str(e)
