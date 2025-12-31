@@ -487,15 +487,18 @@ def app_email_test():
         
         # Get a sample product for the test email
         product = Product.query.filter_by(shop_id=shop.id).first()
-        if not product:
-            # Create a dummy product for testing
-            product = Product(
-                shop_id=shop.id,
-                shopify_product_id='test-product',
-                shopify_product_title='Sample Product',
-                source_platform='sakura_reviews',
-                status='active'
-            )
+        product_image = 'https://via.placeholder.com/100'
+        product_name = 'Sample Product'
+        product_id = 'test-product'
+        
+        if product:
+            # Use real product data if available
+            product_image = product.image_url or product.shopify_product_url or 'https://via.placeholder.com/100'
+            product_name = product.shopify_product_title or 'Sample Product'
+            product_id = product.shopify_product_id
+        else:
+            # Use placeholder data for test email
+            logger.info("No products found, using placeholder data for test email")
         
         # Get email configuration from environment
         smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
@@ -510,7 +513,7 @@ def app_email_test():
             return redirect(f'/app/email-settings?shop={shop_domain}&error=SMTP not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.')
         
         # Build review URL
-        review_url = f"https://{shop_domain}/products/{product.shopify_product_id}#sakura-reviews"
+        review_url = f"https://{shop_domain}/products/{product_id}#sakura-reviews"
         unsubscribe_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/email/unsubscribe/test-token"
         
         # Render email template
@@ -518,8 +521,8 @@ def app_email_test():
             customer_name='Test Customer',
             shop_name=shop.shop_name or shop_domain,
             shop_url=f"https://{shop_domain}",
-            product_name=product.shopify_product_title or 'Sample Product',
-            product_image=product.shopify_product_image or 'https://via.placeholder.com/100',
+            product_name=product_name,
+            product_image=product_image,
             order_date=datetime.utcnow().strftime('%B %d, %Y'),
             review_url=review_url,
             discount_enabled=settings.discount_enabled,
