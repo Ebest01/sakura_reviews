@@ -450,7 +450,8 @@ def app_email_preview():
                          discount_enabled=settings.discount_enabled if settings else False,
                          discount_percent=settings.discount_percent if settings else 10,
                          discount_code='REVIEW10',
-                         unsubscribe_url='#')
+                         unsubscribe_url='#',
+                         shop_domain=shop_domain)  # Pass shop_domain for back button
 
 
 @app.route('/app/email-test', methods=['POST'])
