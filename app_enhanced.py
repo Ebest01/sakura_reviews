@@ -421,6 +421,7 @@ def app_email_settings():
                          stats=stats,
                          shop_name=shop.shop_name or shop_domain,
                          shop_domain=shop_domain,
+                         plan='Free',  # Can be dynamic later
                          message=message,
                          error=error)
 

@@ -1,0 +1,373 @@
+<!-- Sakura Reviews App Navigation Sidebar -->
+<div id="app-sidebar" class="app-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <span class="logo-icon">🌸</span>
+            <span class="logo-text">Sakura Reviews</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+            <span class="toggle-icon">←</span>
+        </button>
+    </div>
+    
+    <nav class="sidebar-nav">
+        <a href="/app?shop={{ shop_domain }}" class="nav-item {% if current_page == 'dashboard' %}active{% endif %}">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="/import?shop={{ shop_domain }}" class="nav-item {% if current_page == 'import' %}active{% endif %}">
+            <span class="nav-icon">📥</span>
+            <span class="nav-text">Import Reviews</span>
+        </a>
+        <a href="/widget/customize?shop={{ shop_domain }}" class="nav-item {% if current_page == 'customize' %}active{% endif %}">
+            <span class="nav-icon">🎨</span>
+            <span class="nav-text">Customize Widget</span>
+        </a>
+        <a href="/reviews/manage?shop={{ shop_domain }}" class="nav-item {% if current_page == 'manage' %}active{% endif %}">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">Manage Reviews</span>
+        </a>
+        <a href="/analytics?shop={{ shop_domain }}" class="nav-item {% if current_page == 'analytics' %}active{% endif %}">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Analytics</span>
+        </a>
+        <a href="/app/email-settings?shop={{ shop_domain }}" class="nav-item {% if current_page == 'email-settings' %}active{% endif %}">
+            <span class="nav-icon">📧</span>
+            <span class="nav-text">Email Settings</span>
+        </a>
+    </nav>
+    
+    <div class="sidebar-footer">
+        <div class="shop-info">
+            <div class="shop-name">{{ shop_name or shop_domain }}</div>
+            <div class="shop-plan">Plan: {{ plan or 'Free' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar Overlay (for mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Hamburger Menu Button (mobile) -->
+<button class="hamburger-menu" id="hamburgerMenu" onclick="toggleSidebar()">
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
+
+<style>
+/* Sidebar Styles */
+.app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 260px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.app-sidebar.collapsed {
+    transform: translateX(-220px);
+    width: 40px;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.logo-icon {
+    font-size: 24px;
+}
+
+.logo-text {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.app-sidebar.collapsed .logo-text {
+    display: none;
+}
+
+.sidebar-toggle {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.app-sidebar.collapsed .sidebar-toggle .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border-left-color: #ff69b4;
+}
+
+.nav-item.active {
+    background: rgba(255,105,180,0.15);
+    color: #ff69b4;
+    border-left-color: #ff69b4;
+    font-weight: 600;
+}
+
+.nav-icon {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.nav-text {
+    white-space: nowrap;
+}
+
+.app-sidebar.collapsed .nav-text {
+    display: none;
+}
+
+.app-sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 14px 0;
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.shop-info {
+    font-size: 13px;
+}
+
+.shop-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.shop-plan {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+}
+
+.app-sidebar.collapsed .shop-info {
+    display: none;
+}
+
+/* Hamburger Menu (Mobile) */
+.hamburger-menu {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #ff69b4;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.hamburger-menu span {
+    width: 20px;
+    height: 2px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s;
+}
+
+.hamburger-menu.active span:nth-child(1) {
+    transform: rotate(45deg) translate(6px, 6px);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Sidebar Overlay (Mobile) */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Main Content Adjustment */
+.app-content {
+    margin-left: 260px;
+    transition: margin-left 0.3s ease;
+    min-height: 100vh;
+}
+
+.app-content.sidebar-collapsed {
+    margin-left: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-sidebar {
+        transform: translateX(-100%);
+        width: 260px;
+    }
+    
+    .app-sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .app-content {
+        margin-left: 0;
+    }
+    
+    .hamburger-menu {
+        display: flex;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
+
+/* Scrollbar Styling */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+</style>
+
+<script>
+// Sidebar Toggle Function
+function toggleSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    const content = document.querySelector('.app-content');
+    const overlay = document.getElementById('sidebarOverlay');
+    const hamburger = document.getElementById('hamburgerMenu');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: toggle visibility
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+        hamburger.classList.toggle('active');
+    } else {
+        // Desktop: toggle collapsed state
+        sidebar.classList.toggle('collapsed');
+        if (content) {
+            content.classList.toggle('sidebar-collapsed');
+        }
+    }
+    
+    // Save state to localStorage
+    const isCollapsed = sidebar.classList.contains('collapsed') || !sidebar.classList.contains('active');
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
+}
+
+// Restore sidebar state on load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState === 'true' && window.innerWidth > 768) {
+        const sidebar = document.getElementById('app-sidebar');
+        const content = document.querySelector('.app-content');
+        sidebar.classList.add('collapsed');
+        if (content) {
+            content.classList.add('sidebar-collapsed');
+        }
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('app-sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const hamburger = document.getElementById('hamburgerMenu');
+    
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        hamburger.classList.remove('active');
+    }
+});
+</script>
+

@@ -280,6 +280,13 @@
     </style>
 </head>
 <body>
+    {% set shop_domain = shop_domain or request.args.get('shop') %}
+    {% set shop_name = shop_domain or 'Your Store' %}
+    {% set plan = plan or 'Free' %}
+    {% set current_page = 'dashboard' %}
+    {% include 'app-nav-sidebar.html' %}
+    
+    <div class="app-content">
     <div class="header">
         <div class="header-content">
             <div class="logo">
@@ -416,6 +423,7 @@
             document.getElementById('shopDomain').textContent = shop;
         }
     </script>
+    </div>
 </body>
 </html>
 

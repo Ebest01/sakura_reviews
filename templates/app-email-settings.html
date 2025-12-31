@@ -298,6 +298,13 @@
     </style>
 </head>
 <body>
+    {% set shop_domain = shop_domain or request.args.get('shop') %}
+    {% set shop_name = shop_name or 'Your Store' %}
+    {% set plan = 'Free' %}
+    {% set current_page = 'email-settings' %}
+    {% include 'app-nav-sidebar.html' %}
+    
+    <div class="app-content">
     <div class="container">
         <div class="page-header">
             <h1 class="page-title">📧 Review Request Emails</h1>
@@ -478,6 +485,8 @@
             });
         });
     </script>
+    </div>
+    </div>
 </body>
 </html>
 
