@@ -4736,6 +4736,81 @@ def submit_review(shop_id, product_id):
             'error': str(e)
         }), 500
 
+# ==================== EMAIL SENDING FUNCTIONS ====================
+
+def send_review_acknowledgment_email(review, shop, product):
+    """
+    Send acknowledgment email when a customer submits a review
+    Similar to Amazon's review confirmation emails
+    """
+    try:
+        from flask import render_template
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        # Check if email is enabled (can add setting later)
+        # For now, always send if email is provided
+        
+        if not review.reviewer_email:
+            logger.info("No email provided, skipping acknowledgment email")
+            return
+        
+        # Get email configuration from environment or use defaults
+        smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+        smtp_user = os.environ.get('SMTP_USER', '')
+        smtp_password = os.environ.get('SMTP_PASSWORD', '')
+        email_from = os.environ.get('EMAIL_FROM', 'noreply@sakurareviews.com')
+        email_from_name = os.environ.get('EMAIL_FROM_NAME', 'Sakura Reviews')
+        
+        # If SMTP not configured, log and skip (don't fail)
+        if not smtp_user or not smtp_password:
+            logger.info("SMTP not configured - skipping email. Set SMTP_USER and SMTP_PASSWORD to enable emails.")
+            logger.info(f"Would send acknowledgment email to: {review.reviewer_email}")
+            return
+        
+        # Build product URL
+        product_url = f"https://{shop.shop_domain}/products/{product.shopify_product_id}#sakura-reviews"
+        support_email = os.environ.get('SUPPORT_EMAIL', 'sakura.revs@gmail.com')
+        
+        # Render email template
+        email_html = render_template('email-review-acknowledgment.html',
+            reviewer_name=review.reviewer_name or 'Customer',
+            rating=review.rating,
+            review_text=review.body[:200] + '...' if review.body and len(review.body) > 200 else (review.body or ''),
+            product_url=product_url,
+            support_email=support_email
+        )
+        
+        # Create email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Thank You for Your Review! 🌸'
+        msg['From'] = f"{email_from_name} <{email_from}>"
+        msg['To'] = review.reviewer_email
+        
+        # Add HTML part
+        html_part = MIMEText(email_html, 'html')
+        msg.attach(html_part)
+        
+        # Send email
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"✅ Acknowledgment email sent to {review.reviewer_email} for review {review.id}")
+        except Exception as e:
+            logger.error(f"Failed to send email via SMTP: {str(e)}")
+            # Don't raise - email failure shouldn't break review submission
+            
+    except Exception as e:
+        logger.error(f"Error in send_review_acknowledgment_email: {str(e)}")
+        # Don't raise - email is optional
+
+
 @app.route('/uploads/reviews/<int:review_id>/<filename>')
 def serve_review_photo(review_id, filename):
     """
