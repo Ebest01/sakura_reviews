@@ -8,7 +8,7 @@
 
 ## 🚀 **How Do They Access This Page?**
 
-### **Method 1: Through Shopify Admin (Embedded App)**
+### **Method 1: Through Shopify Admin (Embedded App) - CORRECT FLOW**
 
 1. **Store owner logs into Shopify Admin:**
    - Goes to: `https://their-store.myshopify.com/admin`
@@ -17,11 +17,22 @@
    - Navigates to: **Apps** → **Sakura Reviews**
    - OR clicks on the app from the Shopify admin sidebar
 
-3. **Shopify redirects to your app:**
-   - URL: `https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/app/email-settings?shop=their-store.myshopify.com`
+3. **Shopify redirects to MAIN DASHBOARD:**
+   - URL: `https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/app?shop=their-store.myshopify.com`
+   - OR: `https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/app/dashboard?shop=their-store.myshopify.com`
    - The `?shop=` parameter is automatically added by Shopify
+   - **This shows the main dashboard with stats and navigation**
 
-4. **Your app verifies the shop:**
+4. **From the dashboard, store owner navigates to Email Settings:**
+   - The dashboard has navigation links/sections for different features:
+     - 📥 Import Reviews
+     - 🎨 Customize Widget (change colors, stars, layout)
+     - 📝 Manage Reviews
+     - 📊 Analytics
+     - **📧 Email Settings** ← Click here to go to email settings
+   - Clicking "Email Settings" takes them to: `/app/email-settings?shop=their-store.myshopify.com`
+
+5. **Your app loads the email settings page:**
    - Checks if the shop exists in your database
    - Loads email settings for that shop
    - Displays the email settings page
@@ -43,14 +54,35 @@
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. Shopify Redirects                                        │
-│    URL: /app/email-settings?shop=store.myshopify.com       │
+│ 2. Shopify Redirects to MAIN DASHBOARD                      │
+│    URL: /app?shop=store.myshopify.com                       │
+│    OR: /app/dashboard?shop=store.myshopify.com              │
 │    (Shopify automatically adds ?shop= parameter)              │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. Your App (app_enhanced.py)                               │
+│ 3. Main Dashboard Loads                                      │
+│    Template: templates/app-dashboard.html                     │
+│    Shows:                                                     │
+│    - Review stats (total, average rating, products)           │
+│    - Quick Actions menu:                                      │
+│      • 📥 Import Reviews                                     │
+│      • 🎨 Customize Widget (change colors, stars, layout)    │
+│      • 📝 Manage Reviews                                     │
+│      • 📊 Analytics                                          │
+│      • 📧 Email Settings ← Click here!                      │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Store Owner Clicks "Email Settings"                        │
+│    - Navigates to: /app/email-settings?shop=...              │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Your App (app_enhanced.py)                                │
 │    - Receives request with shop parameter                   │
 │    - Queries database: Shop.query.filter_by(shop_domain=...)│
 │    - Gets or creates EmailSettings for that shop            │
@@ -59,7 +91,7 @@
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. Renders Email Settings Page                               │
+│ 6. Renders Email Settings Page                               │
 │    Template: templates/app-email-settings.html                │
 │    Shows:                                                     │
 │    - Email stats (sent, pending, reviews received)           │
@@ -73,7 +105,7 @@
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. Store Owner Configures Settings                           │
+│ 7. Store Owner Configures Settings                           │
 │    - Toggles email on/off                                    │
 │    - Sets delay days (e.g., 7 days after order)              │
 │    - Sets send time (e.g., 10:00 AM)                         │
@@ -84,26 +116,26 @@
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 6. Settings Saved to Database                                │
+│ 8. Settings Saved to Database                                │
 │    Table: email_settings                                     │
 │    Columns: enabled, delay_days, send_time, etc.             │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 7. Store Owner Tests Email                                   │
+│ 9. Store Owner Tests Email                                   │
 │    - Enters their email address                              │
 │    - Clicks "Send Test"                                      │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 8. Test Email Endpoint (/app/email-test)                     │
-│    - Gets shop from form parameter                           │
-│    - Gets a sample product from database                     │
-│    - Uses product.image_url (NOT shopify_product_image)      │
-│    - Renders email template                                  │
-│    - Sends via SMTP                                          │
+│ 10. Test Email Endpoint (/app/email-test)                    │
+│     - Gets shop from form parameter                          │
+│     - Gets a sample product from database                    │
+│     - Uses product.image_url (NOT shopify_product_image)     │
+│     - Renders email template                                 │
+│     - Sends via SMTP                                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
