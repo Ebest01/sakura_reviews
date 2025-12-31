@@ -4713,6 +4713,13 @@ def submit_review(shop_id, product_id):
         
         logger.info(f"Review submitted: ID {review.id}, Product {product_id}, Rating {rating}, Platform: sakura_reviews")
         
+        # Send acknowledgment email to reviewer
+        try:
+            send_review_acknowledgment_email(review, shop, product)
+        except Exception as e:
+            logger.warning(f"Failed to send acknowledgment email: {str(e)}")
+            # Don't fail the review submission if email fails
+        
         return jsonify({
             'success': True,
             'review_id': review.id,
