@@ -3501,7 +3501,7 @@ def bookmarklet():
         selectProduct(productId, productTitle, productImage) {{
             console.log('Product selected:', productId, productTitle, productImage);
             
-            this.selectedProduct = {{ id: productId, title: productTitle, image: productImage }};
+            this.selectedProduct = {{ id: productId, title: productTitle, image: productImage || null }};
             
             // Hide dropdown and clear input
             const dropdown = document.getElementById('product-dropdown');
@@ -3516,11 +3516,11 @@ def bookmarklet():
                 return;
             }}
             
-            // Show selected product WITH THUMBNAIL
+            // Show selected product with thumbnail (matching v12 style)
             selectedDiv.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                        ${{productImage ? `<img src="${{productImage}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3);">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>'}}
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${{productImage ? `<img src="${{productImage}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
                         <div>
                             <div style="font-weight: 500;">✓ Target Product Selected</div>
                             <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
@@ -4159,10 +4159,10 @@ def bookmarklet():
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                ${{this.selectedProduct.image ? `<img src="${{this.selectedProduct.image}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3);">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>'}}
-                                <div>
+                                ${{this.selectedProduct.image ? `<img src="${{this.selectedProduct.image}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                                <div style="flex: 1;">
                                     <div style="font-weight: 500;">✓ Target Product Selected</div>
-                                    <div style="opacity: 0.8; font-size: 12px;">${{this.selectedProduct.title}}</div>
+                                    <div style="opacity: 0.9; font-size: 12px;">${{this.selectedProduct.title}}</div>
                                 </div>
                             </div>
                             <button onclick="window.reviewKingClient.clearProduct()" 
