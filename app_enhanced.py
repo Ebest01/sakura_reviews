@@ -3460,8 +3460,10 @@ def bookmarklet():
             }}
         }}
         
-        selectProduct(productId, productTitle) {{
-            this.selectedProduct = {{ id: productId, title: productTitle }};
+        selectProduct(productId, productTitle, productImage) {{
+            console.log('Product selected:', productId, productTitle, productImage);
+            
+            this.selectedProduct = {{ id: productId, title: productTitle, image: productImage }};
             
             // Hide dropdown and clear input
             const dropdown = document.getElementById('product-dropdown');
@@ -3476,12 +3478,15 @@ def bookmarklet():
                 return;
             }}
             
-            // Show selected product
+            // Show selected product WITH THUMBNAIL
             selectedDiv.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <div style="font-weight: 500;">✓ Target Product Selected</div>
-                        <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                        ${{productImage ? `<img src="${{productImage}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3);">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>'}}
+                        <div>
+                            <div style="font-weight: 500;">✓ Target Product Selected</div>
+                            <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
+                        </div>
                     </div>
                     <button onclick="window.reviewKingClient.clearProduct()" 
                             style="background: rgba(255,255,255,0.2); border: none; color: white; 
