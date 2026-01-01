@@ -501,6 +501,14 @@ def review_submit_page():
     # Get shop ID for API calls (use numeric ID, not sakura_shop_id)
     api_shop_id = shop.id
     
+    # Parse customer name (could be "First Last" or just "First")
+    customer_first_name = ''
+    customer_last_name = ''
+    if customer_name:
+        name_parts = customer_name.strip().split(' ', 1)
+        customer_first_name = name_parts[0] if name_parts else ''
+        customer_last_name = name_parts[1] if len(name_parts) > 1 else ''
+    
     return render_template('review-submit.html',
                          shop_id=api_shop_id,
                          shop_name=shop.shop_name or shop.shop_domain,
@@ -510,6 +518,8 @@ def review_submit_page():
                          order_id=order_id,
                          order_date=order_date,
                          customer_email=customer_email,
+                         customer_first_name=customer_first_name,
+                         customer_last_name=customer_last_name,
                          discount_code=discount_code)
 
 
@@ -606,7 +616,8 @@ def app_email_test():
             return redirect(f'/app/email-settings?shop={shop_domain}&error=SMTP not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.')
         
         # Build review URL - link to standalone review submission page
-        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop.sakura_shop_id or shop.id}&product_id={product_id}&order_id=test-order&email={test_email}"
+        from urllib.parse import quote
+        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop.sakura_shop_id or shop.id}&product_id={product_id}&order_id=test-order&email={quote(test_email)}&name={quote('Test Customer')}"
         unsubscribe_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/email/unsubscribe/test-token"
         
         # Render email template
@@ -5297,8 +5308,13 @@ def send_review_request_email(review_request):
             return False
         
         # Build review URL - link to standalone review submission page
+        # Include customer name and email to pre-fill the form
+        from urllib.parse import quote
         shop_id = shop.sakura_shop_id or shop.id
-        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id={review_request.product_id}&order_id={review_request.order_id}&email={review_request.customer_email}"
+        customer_name = review_request.customer_name or ''
+        # URL encode the name to handle special characters
+        customer_name_encoded = quote(customer_name) if customer_name else ''
+        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id={review_request.product_id}&order_id={review_request.order_id}&email={quote(review_request.customer_email)}&name={customer_name_encoded}"
         
         # Build unsubscribe URL
         unsubscribe_token = base64.b64encode(f"{review_request.customer_email}:{shop.id}".encode()).decode()

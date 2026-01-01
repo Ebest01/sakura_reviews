@@ -373,11 +373,11 @@
             <div class="review-step" id="step4">
                 <h2 class="step-title">About you</h2>
                 <label>First name <span class="required">*</span></label>
-                <input type="text" id="firstName" required>
+                <input type="text" id="firstName" required value="{{ customer_first_name or '' }}">
                 <label>Last name</label>
-                <input type="text" id="lastName">
+                <input type="text" id="lastName" value="{{ customer_last_name or '' }}">
                 <label>Email <span class="required">*</span></label>
-                <input type="email" id="userEmail" required value="{{ customer_email or '' }}">
+                <input type="email" id="userEmail" required value="{{ customer_email or '' }}" {% if customer_email %}readonly style="background: #f8fafc; cursor: not-allowed;"{% endif %}>
                 <div class="legal-text">
                     By submitting, I acknowledge the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>, and that my review will be publicly posted and shared online.
                 </div>
@@ -420,14 +420,41 @@
         const productId = urlParams.get('product_id') || '{{ product_id }}';
         const orderId = urlParams.get('order_id') || '';
         const customerEmail = urlParams.get('email') || '{{ customer_email or '' }}';
+        const customerName = urlParams.get('name') || '';
+        
+        // Parse name from URL or use pre-filled values
+        let firstName = '{{ customer_first_name or '' }}';
+        let lastName = '{{ customer_last_name or '' }}';
+        
+        // If name is in URL but not in template, parse it
+        if (customerName && !firstName) {
+            const nameParts = customerName.trim().split(' ', 2);
+            firstName = nameParts[0] || '';
+            lastName = nameParts[1] || '';
+        }
+        
+        // Pre-fill form fields if values exist
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('userEmail');
+        
+        if (firstNameInput && firstName) {
+            firstNameInput.value = firstName;
+        }
+        if (lastNameInput && lastName) {
+            lastNameInput.value = lastName;
+        }
+        if (emailInput && customerEmail) {
+            emailInput.value = customerEmail;
+        }
         
         // Review data
         let reviewData = {
             rating: 0,
             photos: [],
             text: '',
-            firstName: '',
-            lastName: '',
+            firstName: firstName,
+            lastName: lastName,
             email: customerEmail
         };
         
