@@ -2518,23 +2518,41 @@ def import_single():
                 logger.info(f"🔵 Database import result: {result}")
                 
                 if result.get('success'):
-                    logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
-                    
-                    # Track in session
-                    if session_id and session_id in import_sessions:
-                        import_sessions[session_id]['imported_count'] += 1
-                    
-                    return jsonify({
-                        'success': True,
-                        'review_id': result['review_id'],
-                        'product_id': result['product_id'],
-                        'shopify_product_id': shopify_product_id,
-                        'imported_at': datetime.now().isoformat(),
-                        'status': 'imported',
-                        'quality_score': review.get('quality_score', 0),
-                        'platform': review.get('platform', 'unknown'),
-                        'message': 'Review imported and saved to database'
-                    })
+                    if result.get('duplicate', False):
+                        # Duplicate review - inform user
+                        logger.info(f"⚠️ Duplicate review detected: {result['review_id']} - Already imported for this product")
+                        return jsonify({
+                            'success': True,
+                            'review_id': result['review_id'],
+                            'product_id': result['product_id'],
+                            'shopify_product_id': shopify_product_id,
+                            'imported_at': datetime.now().isoformat(),
+                            'status': 'duplicate',
+                            'quality_score': review.get('quality_score', 0),
+                            'platform': review.get('platform', 'unknown'),
+                            'duplicate': True,
+                            'message': result.get('message', 'Review already imported for this product')
+                        })
+                    else:
+                        # New review imported
+                        logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
+                        
+                        # Track in session (only count new imports, not duplicates)
+                        if session_id and session_id in import_sessions:
+                            import_sessions[session_id]['imported_count'] += 1
+                        
+                        return jsonify({
+                            'success': True,
+                            'review_id': result['review_id'],
+                            'product_id': result['product_id'],
+                            'shopify_product_id': shopify_product_id,
+                            'imported_at': datetime.now().isoformat(),
+                            'status': 'imported',
+                            'quality_score': review.get('quality_score', 0),
+                            'platform': review.get('platform', 'unknown'),
+                            'duplicate': False,
+                            'message': 'Review imported and saved to database'
+                        })
                 else:
                     logger.error(f"❌ Database import failed: {result.get('error')}")
                     # Fall through to simulation mode

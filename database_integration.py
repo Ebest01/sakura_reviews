@@ -180,6 +180,25 @@ class DatabaseIntegration:
         
         db_logger.info(f"[DB] Processing {len(images_to_process)} images")
         
+        # Check for duplicate review (by source_review_id and shopify_product_id)
+        source_review_id = str(review_data.get('id', ''))
+        existing_review = Review.query.filter_by(
+            shop_id=shop_id,
+            shopify_product_id=shopify_product_id,
+            source_review_id=source_review_id
+        ).first()
+        
+        if existing_review:
+            db_logger.info(f"[DB] Duplicate review detected: source_review_id={source_review_id}, existing DB ID={existing_review.id}")
+            return {
+                'success': True,
+                'review_id': existing_review.id,
+                'product_id': product.id,
+                'shopify_product_id': shopify_product_id,
+                'duplicate': True,
+                'message': f'Review already imported for this product (Database ID: {existing_review.id})'
+            }
+        
         # Create review - need shopify_product_id for direct queries
         review = Review(
             shop_id=shop_id,
@@ -188,7 +207,7 @@ class DatabaseIntegration:
             source_platform=source_platform,
             source_product_id=review_data.get('product_id', review_data.get('source_product_id', '')),
             aliexpress_product_id=aliexpress_product_id,  # AliExpress product ID (for clarity)
-            source_review_id=str(review_data.get('id', '')),
+            source_review_id=source_review_id,
             reviewer_name=review_data.get('author', review_data.get('reviewer_name', 'Anonymous')),
             rating=rating,
             title=review_data.get('title', ''),
@@ -231,7 +250,72 @@ class DatabaseIntegration:
             'success': True,
             'review_id': review.id,
             'product_id': product.id,
-            'shopify_product_id': shopify_product_id
+            'shopify_product_id': shopify_product_id,
+            'duplicate': False
+        }
+    
+    def import_reviews_bulk(self, shop_id, shopify_product_id, reviews_data, source_platform='aliexpress'):
+        """
+        Import multiple reviews at once (more efficient than one-by-one)
+        Returns counts of imported, duplicates, and failed reviews
+        """
+        from backend.models_v2 import Review, ReviewMedia
+        import logging
+        db_logger = logging.getLogger(__name__)
+        
+        imported_count = 0
+        duplicates_count = 0
+        failed_count = 0
+        
+        # Get or create product
+        product = self.get_or_create_product(shop_id, shopify_product_id)
+        
+        for review_data in reviews_data:
+            try:
+                # Check for duplicate
+                source_review_id = str(review_data.get('id', ''))
+                existing = Review.query.filter_by(
+                    shop_id=shop_id,
+                    shopify_product_id=shopify_product_id,
+                    source_review_id=source_review_id
+                ).first()
+                
+                if existing:
+                    duplicates_count += 1
+                    continue
+                
+                # Import single review (reuse existing logic)
+                result = self.import_single_review(
+                    shop_id=shop_id,
+                    shopify_product_id=shopify_product_id,
+                    review_data=review_data,
+                    source_platform=source_platform
+                )
+                
+                if result.get('success') and not result.get('duplicate'):
+                    imported_count += 1
+                elif result.get('duplicate'):
+                    duplicates_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                db_logger.error(f"[DB] Bulk import error for review {review_data.get('id')}: {str(e)}")
+                failed_count += 1
+        
+        # Update shop's review count
+        shop = self.db.session.query(self.get_shop_model()).get(shop_id)
+        if shop:
+            shop.reviews_imported += imported_count
+            db_logger.info(f"[DB] Updated shop review count: +{imported_count} (total: {shop.reviews_imported})")
+        
+        self.db.session.commit()
+        
+        return {
+            'success': True,
+            'imported': imported_count,
+            'duplicates': duplicates_count,
+            'failed': failed_count
         }
     
     def get_product_reviews(self, shop_id, shopify_product_id, limit=20):
