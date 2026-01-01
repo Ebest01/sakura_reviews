@@ -22,7 +22,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            background: linear-gradient(135deg, #42377f, #7d2253);
             color: white;
             padding: 40px 30px;
             text-align: center;
@@ -159,32 +159,39 @@
             background: #ff69b4;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 10px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
             transition: all 0.2s;
+            text-indent: -9999px;
+            overflow: hidden;
+        }
+        .back-button::before {
+            content: '←';
+            font-size: 20px;
+            text-indent: 0;
+            display: block;
         }
         .back-button:hover {
             background: #ff1493;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .back-button::before {
-            content: '←';
-            font-size: 18px;
-        }
         @media (max-width: 768px) {
             .back-button {
                 top: 10px;
                 left: 10px;
-                padding: 10px 16px;
-                font-size: 13px;
+                width: 36px;
+                height: 36px;
+                padding: 8px;
             }
         }
     </style>
@@ -192,7 +199,7 @@
 <body>
     {% set shop_domain = request.args.get('shop') or '' %}
     {% if shop_domain %}
-    <button class="back-button" onclick="window.location.href='/app/email-settings?shop={{ shop_domain }}'">
+    <button class="back-button" onclick="window.location.href='/app/email-settings?shop={{ shop_domain }}'" title="Back to Email Settings">
         Back to Email Settings
     </button>
     {% endif %}
