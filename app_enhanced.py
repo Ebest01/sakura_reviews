@@ -188,8 +188,16 @@ try:
     from database_integration import DatabaseIntegration
     db_integration = DatabaseIntegration(db)
     logger.info("✅ Database integration initialized")
+except ImportError as e:
+    logger.error(f"❌ Database integration import failed: {e}")
+    logger.error(f"   Make sure database_integration.py exists in the project root")
+    import traceback
+    logger.error(f"   Traceback: {traceback.format_exc()}")
+    db_integration = None
 except Exception as e:
-    logger.warning(f"⚠️ Database integration not available: {e}")
+    logger.error(f"❌ Database integration initialization failed: {e}")
+    import traceback
+    logger.error(f"   Full traceback: {traceback.format_exc()}")
     db_integration = None
 
 # Configuration
@@ -2493,9 +2501,11 @@ def import_single():
         # Save to database if integration is available
         if db_integration:
             try:
+                logger.info(f"🔵 Attempting database import for product {shopify_product_id}")
                 # Use demo shop for testing
                 shop_domain = "sakura-rev-test-store.myshopify.com"
                 shop = db_integration.get_or_create_shop(shop_domain)
+                logger.info(f"🔵 Shop found/created: {shop.id} ({shop_domain})")
                 
                 # Import review to database
                 result = db_integration.import_single_review(
@@ -2505,7 +2515,9 @@ def import_single():
                     source_platform=data.get('platform', 'aliexpress')
                 )
                 
-                if result['success']:
+                logger.info(f"🔵 Database import result: {result}")
+                
+                if result.get('success'):
                     logger.info(f"✅ Review saved to database: {result['review_id']} - Score: {review.get('quality_score')}")
                     
                     # Track in session
@@ -2531,6 +2543,8 @@ def import_single():
                 import traceback
                 logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
                 # Fall through to simulation mode
+        else:
+            logger.warning(f"⚠️ db_integration is None - cannot save to database. Check server logs for initialization errors.")
         
         # Fallback: Simulate import (if database not available)
         imported_review = {
@@ -2553,7 +2567,13 @@ def import_single():
             'imported_review': imported_review,
             'message': 'Review imported successfully (database not available - using simulation)',
             'database_available': False,
-            'review_id': None  # No database ID since save failed
+            'review_id': None,  # No database ID since save failed
+            'product_id': None,
+            'shopify_product_id': shopify_product_id,
+            'imported_at': datetime.now().isoformat(),
+            'status': 'imported',
+            'quality_score': review.get('quality_score', 0),
+            'platform': review.get('platform', 'unknown')
         })
         
     except Exception as e:
