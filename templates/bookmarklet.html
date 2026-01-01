@@ -74,17 +74,24 @@
     <div class="container">
         <div class="icon">🌸</div>
         <h1>Sakura Reviews</h1>
-        <p>Click the button below to activate the review importer on any product page.</p>
-        <div class="status" id="status">Ready to import reviews...</div>
-        <a href="javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();" 
-           class="btn" 
-           onclick="document.getElementById('status').textContent='✅ Bookmarklet activated! Check the product page.'; return false;">
-            🌸 Import Reviews
-        </a>
-        <p style="margin-top: 30px; font-size: 14px; color: #94a3b8;">
-            <strong>Tip:</strong> Bookmark this page to access the importer anytime!
-        </p>
+        <p id="message">Activating review importer...</p>
+        <div class="status" id="status">Loading bookmarklet...</div>
     </div>
+    
+    <script>
+        // Auto-execute bookmarklet when page loads
+        (function(){
+            var s = document.createElement('script');
+            s.src = 'https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v=' + Date.now();
+            document.head.appendChild(s);
+            
+            // Update status
+            setTimeout(function() {
+                document.getElementById('status').textContent = '✅ Bookmarklet activated! Check the product page.';
+                document.getElementById('message').textContent = 'Review importer is now active on this page!';
+            }, 500);
+        })();
+    </script>
 </body>
 </html>
 
