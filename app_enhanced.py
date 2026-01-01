@@ -2560,28 +2560,76 @@ def import_bulk():
         min_quality = filters.get('min_quality_score', 0)
         filtered_reviews = [r for r in non_skipped_reviews if r.get('quality_score', 0) >= min_quality]
         
-        # Bulk import to Shopify
+        # Get shop from product_id (extract shop_id from product or use default)
+        shop_domain = "sakura-rev-test-store.myshopify.com"  # Default for now
+        shop = None
+        if db_integration:
+            shop = db_integration.get_or_create_shop(shop_domain)
+        
+        # Bulk import to database (with duplicate checking)
         imported = []
         failed = []
+        duplicates = []
         
         for review in filtered_reviews[:50]:  # Limit to 50 at once
             try:
-                result = shopify_helper.add_review_to_product(shopify_product_id, review)
+                # Check for duplicate in database using source_review_id
+                source_review_id = str(review.get('id', ''))
+                if shop and db_integration:
+                    from backend.models_v2 import Review
+                    existing = Review.query.filter_by(
+                        shop_id=shop.id,
+                        shopify_product_id=str(shopify_product_id),
+                        source_review_id=source_review_id
+                    ).first()
+                    
+                    if existing:
+                        duplicates.append({
+                            'id': review.get('id'),
+                            'reason': 'Duplicate review already exists in database'
+                        })
+                        continue
                 
-                if result['success']:
-                    imported.append({
-                        'id': review.get('id'),
-                        'imported_at': datetime.now().isoformat(),
-                        'quality_score': review.get('quality_score'),
-                        'shopify_product_id': shopify_product_id,
-                        'review_id': result['review_id']
-                    })
+                # Import to database
+                if shop and db_integration:
+                    result = db_integration.import_single_review(
+                        shop_id=shop.id,
+                        shopify_product_id=shopify_product_id,
+                        review_data=review,
+                        source_platform=review.get('platform', 'aliexpress')
+                    )
+                    
+                    if result.get('success'):
+                        imported.append({
+                            'id': review.get('id'),
+                            'imported_at': datetime.now().isoformat(),
+                            'quality_score': review.get('quality_score'),
+                            'shopify_product_id': shopify_product_id,
+                            'review_id': result.get('review_id')
+                        })
+                    else:
+                        failed.append({
+                            'id': review.get('id'),
+                            'error': result.get('error', 'Database import failed')
+                        })
                 else:
-                    failed.append({
-                        'id': review.get('id'),
-                        'error': result['error']
-                    })
+                    # Fallback: Use Shopify metafields if database not available
+                    result = shopify_helper.add_review_to_product(shopify_product_id, review)
+                    if result['success']:
+                        imported.append({
+                            'id': review.get('id'),
+                            'imported_at': datetime.now().isoformat(),
+                            'quality_score': review.get('quality_score'),
+                            'shopify_product_id': shopify_product_id,
+                            'review_id': result['review_id']
+                        })
+                    else:
+                        failed.append({
+                            'id': review.get('id'),
+                            'error': result['error']
+                        })
             except Exception as e:
+                logger.error(f"Error importing review {review.get('id')}: {str(e)}")
                 failed.append({
                     'id': review.get('id'),
                     'error': str(e)
@@ -2591,16 +2639,21 @@ def import_bulk():
         if session_id and session_id in import_sessions:
             import_sessions[session_id]['imported_count'] += len(imported)
         
-        logger.info(f"Bulk import to Shopify: {len(imported)} successful, {len(failed)} failed, {len(session_skipped)} skipped")
+        # Combine skipped (user-skipped) and duplicates (database duplicates)
+        total_skipped = len(session_skipped) + len(duplicates)
+        
+        logger.info(f"Bulk import completed: {len(imported)} imported, {len(failed)} failed, {len(session_skipped)} user-skipped, {len(duplicates)} duplicates")
         
         return jsonify({
             'success': True,
             'imported_count': len(imported),
             'failed_count': len(failed),
-            'skipped_count': len(session_skipped),
+            'skipped_count': total_skipped,  # Total skipped (user + duplicates)
+            'duplicates_count': len(duplicates),  # Separate count for duplicates
             'imported_reviews': imported,
             'failed_reviews': failed,
-            'message': f'Bulk import completed: {len(imported)} imported, {len(failed)} failed, {len(session_skipped)} skipped'
+            'duplicate_reviews': duplicates,
+            'message': f'Bulk import completed: {len(imported)} imported, {len(failed)} failed, {total_skipped} skipped ({len(duplicates)} duplicates)'
         })
         
     except Exception as e:
@@ -3705,6 +3758,20 @@ def bookmarklet():
                     </button>
                 </div>
                 
+                <!-- Import Status Display (Progress Bar & Results) -->
+                <div id="rk-import-status" style="display: none; background: linear-gradient(135deg, #7d2253 0%, #42377f 100%); 
+                            padding: 20px; border-radius: 12px; margin-bottom: 24px; color: white;">
+                    <div id="rk-import-message" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">
+                        Importing reviews...
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 8px; height: 8px; margin-bottom: 12px; overflow: hidden;">
+                        <div id="rk-import-progress" style="background: #48bb78; height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 8px;"></div>
+                    </div>
+                    <div id="rk-import-details" style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.6;">
+                        <!-- Details will be populated here -->
+                    </div>
+                </div>
+                
                 <!-- Country Filter & Translation Toggle (Loox-inspired) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
                     <div>
@@ -3941,7 +4008,28 @@ def bookmarklet():
                 return;
             }}
             
+            // Show progress bar
+            const statusDiv = document.getElementById('rk-import-status');
+            const progressBar = document.getElementById('rk-import-progress');
+            const messageDiv = document.getElementById('rk-import-message');
+            const detailsDiv = document.getElementById('rk-import-details');
+            
+            if (statusDiv) {{
+                statusDiv.style.display = 'block';
+                messageDiv.textContent = 'Importing reviews...';
+                progressBar.style.width = '0%';
+                detailsDiv.innerHTML = 'Preparing import...';
+            }}
+            
             try {{
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {{
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    if (progressBar) progressBar.style.width = progress + '%';
+                }}, 200);
+                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
@@ -3955,6 +4043,9 @@ def bookmarklet():
                     }})
                 }});
                 
+                clearInterval(progressInterval);
+                if (progressBar) progressBar.style.width = '100%';
+                
                 const result = await response.json();
                 
                 if (result.success) {{
@@ -3962,15 +4053,23 @@ def bookmarklet():
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Bulk+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    alert(`🎉 Bulk import completed!\\n\\n` +
-                          `✅ Imported: ${{result.imported_count}}\\n` +
-                          `❌ Failed: ${{result.failed_count}}\\n` +
-                          `⏭️ Skipped: ${{result.skipped_count}}`);
+                    // Update status display
+                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
+                    if (detailsDiv) {{
+                        const withPhotos = result.imported_reviews ? result.imported_reviews.filter(r => r.images && r.images.length > 0).length : 0;
+                        detailsDiv.innerHTML = `Successfully imported ${{withPhotos}} reviews with photos! ` +
+                            `✓ Imported: ${{result.imported_count}} | ` +
+                            `❌ Failed: ${{result.failed_count}} | ` +
+                            `🔄 Duplicates: ${{result.skipped_count}}`;
+                    }}
                 }} else {{
-                    alert('Bulk import failed: ' + result.error);
+                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
                 }}
             }} catch (error) {{
-                alert('Bulk import failed. Please try again.');
+                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
+                if (progressBar) progressBar.style.width = '0%';
             }}
         }}
         
@@ -3986,7 +4085,28 @@ def bookmarklet():
                 return;
             }}
             
+            // Show progress bar
+            const statusDiv = document.getElementById('rk-import-status');
+            const progressBar = document.getElementById('rk-import-progress');
+            const messageDiv = document.getElementById('rk-import-message');
+            const detailsDiv = document.getElementById('rk-import-details');
+            
+            if (statusDiv) {{
+                statusDiv.style.display = 'block';
+                messageDiv.textContent = 'Importing reviews with photos...';
+                progressBar.style.width = '0%';
+                detailsDiv.innerHTML = 'Preparing import...';
+            }}
+            
             try {{
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {{
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    if (progressBar) progressBar.style.width = progress + '%';
+                }}, 200);
+                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
@@ -3997,15 +4117,28 @@ def bookmarklet():
                     }})
                 }});
                 
+                clearInterval(progressInterval);
+                if (progressBar) progressBar.style.width = '100%';
+                
                 const result = await response.json();
                 
                 if (result.success) {{
-                    alert(`✅ Imported ${{result.imported_count}} reviews with photos!`);
+                    // Update status display
+                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
+                    if (detailsDiv) {{
+                        detailsDiv.innerHTML = `Successfully imported ${{result.imported_count}} reviews with photos! ` +
+                            `✓ Imported: ${{result.imported_count}} | ` +
+                            `❌ Failed: ${{result.failed_count}} | ` +
+                            `🔄 Duplicates: ${{result.skipped_count}}`;
+                    }}
                 }} else {{
-                    alert('Import failed: ' + result.error);
+                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
                 }}
             }} catch (error) {{
-                alert('Import failed. Please try again.');
+                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
+                if (progressBar) progressBar.style.width = '0%';
             }}
         }}
         
@@ -4021,7 +4154,28 @@ def bookmarklet():
                 return;
             }}
             
+            // Show progress bar
+            const statusDiv = document.getElementById('rk-import-status');
+            const progressBar = document.getElementById('rk-import-progress');
+            const messageDiv = document.getElementById('rk-import-message');
+            const detailsDiv = document.getElementById('rk-import-details');
+            
+            if (statusDiv) {{
+                statusDiv.style.display = 'block';
+                messageDiv.textContent = 'Importing reviews without photos...';
+                progressBar.style.width = '0%';
+                detailsDiv.innerHTML = 'Preparing import...';
+            }}
+            
             try {{
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {{
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    if (progressBar) progressBar.style.width = progress + '%';
+                }}, 200);
+                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
@@ -4032,15 +4186,28 @@ def bookmarklet():
                     }})
                 }});
                 
+                clearInterval(progressInterval);
+                if (progressBar) progressBar.style.width = '100%';
+                
                 const result = await response.json();
                 
                 if (result.success) {{
-                    alert(`✅ Imported ${{result.imported_count}} reviews without photos!`);
+                    // Update status display
+                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
+                    if (detailsDiv) {{
+                        detailsDiv.innerHTML = `Successfully imported ${{result.imported_count}} reviews without photos! ` +
+                            `✓ Imported: ${{result.imported_count}} | ` +
+                            `❌ Failed: ${{result.failed_count}} | ` +
+                            `🔄 Duplicates: ${{result.skipped_count}}`;
+                    }}
                 }} else {{
-                    alert('Import failed: ' + result.error);
+                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
                 }}
             }} catch (error) {{
-                alert('Import failed. Please try again.');
+                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
+                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
+                if (progressBar) progressBar.style.width = '0%';
             }}
         }}
         
