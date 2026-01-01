@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write a Review - {{ shop_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .review-container {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .review-header {
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .review-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .review-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .review-content {
+            padding: 40px 30px;
+        }
+        .product-info {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .product-info img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .product-details h3 {
+            font-size: 18px;
+            margin-bottom: 4px;
+            color: #1a202c;
+        }
+        .product-details p {
+            font-size: 14px;
+            color: #64748b;
+        }
+        .review-step {
+            display: none;
+        }
+        .review-step.active {
+            display: block;
+        }
+        .step-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+            color: #1a202c;
+        }
+        .step-subtitle {
+            font-size: 16px;
+            color: #718096;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 32px 0;
+            font-size: 48px;
+            cursor: pointer;
+        }
+        .star {
+            color: #e2e8f0;
+            transition: color 0.2s;
+        }
+        .star.active {
+            color: #fbbf24;
+        }
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            font-size: 14px;
+            color: #666;
+        }
+        .photo-upload-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin: 24px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .photo-upload-area:hover {
+            border-color: #ff69b4;
+            background: #fff5f9;
+        }
+        .photo-upload-area.dragover {
+            border-color: #ff69b4;
+            background: #fff5f9;
+        }
+        .photo-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .photo-preview {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .photo-preview img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .photo-preview .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin: 24px 0;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #ff69b4;
+        }
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            margin-bottom: 20px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff69b4;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        .required {
+            color: #e53e3e;
+        }
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #ff69b4;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #ff1493;
+        }
+        .btn-primary:disabled {
+            background: #e2e8f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #1a202c;
+        }
+        .btn-secondary:hover {
+            color: #ff69b4;
+        }
+        .step-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .progress-indicator {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        .progress-bar {
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+            background: #e2e8f0;
+            transition: background 0.2s;
+        }
+        .progress-bar.active {
+            background: #ff69b4;
+        }
+        .success-message {
+            text-align: center;
+            padding: 40px 30px;
+        }
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #48bb78;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 24px;
+        }
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .legal-text {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+        .legal-text a {
+            color: #ff69b4;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="review-container">
+        <div class="review-header">
+            <h1>🌸 Write a Review</h1>
+            <p>Share your experience with {{ shop_name }}</p>
+        </div>
+        
+        <div class="review-content">
+            <!-- Product Info -->
+            <div class="product-info">
+                {% if product_image %}
+                <img src="{{ product_image }}" alt="{{ product_name }}">
+                {% endif %}
+                <div class="product-details">
+                    <h3>{{ product_name }}</h3>
+                    <p>Ordered on {{ order_date }}</p>
+                </div>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            
+            <!-- Step 1: Rating -->
+            <div class="review-step active" id="step1">
+                <h2 class="step-title">How would you rate this item?</h2>
+                <div class="rating-stars" id="ratingStars">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <div class="rating-labels">
+                    <span>Dislike it</span>
+                    <span>Love it!</span>
+                </div>
+                <div class="step-actions">
+                    <div></div>
+                    <button class="btn btn-primary" id="step1Next" disabled>Next →</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Photos -->
+            <div class="review-step" id="step2">
+                <h2 class="step-title">Show it off</h2>
+                <p class="step-subtitle">We'd love to see it in action! (Optional)</p>
+                <div class="photo-upload-area" id="photoUploadArea">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📷</div>
+                    <div style="font-size: 16px; color: #1a202c; margin-bottom: 8px;">Add photos</div>
+                    <div style="font-size: 14px; color: #718096;">Click to upload or drag and drop</div>
+                    <input type="file" id="photoInput" multiple accept="image/*">
+                </div>
+                <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+                <div class="step-actions">
+                    <button class="btn btn-secondary" id="step2Back">← Back</button>
+                    <div>
+                        <button class="btn btn-secondary" id="step2Skip" style="margin-right: 8px;">Skip</button>
+                        <button class="btn btn-primary" id="step2Next">Next →</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Review Text -->
+            <div class="review-step" id="step3">
+                <h2 class="step-title">Tell us more!</h2>
+                <p class="step-subtitle">Share your experience (Optional)</p>
+                <textarea id="reviewText" placeholder="What did you like? What could be improved?"></textarea>
+                <div class="step-actions">
+                    <button class="btn btn-secondary" id="step3Back">← Back</button>
+                    <button class="btn btn-primary" id="step3Next">Next →</button>
+                </div>
+            </div>
+            
+            <!-- Step 4: User Info -->
+            <div class="review-step" id="step4">
+                <h2 class="step-title">About you</h2>
+                <label>First name <span class="required">*</span></label>
+                <input type="text" id="firstName" required>
+                <label>Last name</label>
+                <input type="text" id="lastName">
+                <label>Email <span class="required">*</span></label>
+                <input type="email" id="userEmail" required value="{{ customer_email or '' }}">
+                <div class="legal-text">
+                    By submitting, I acknowledge the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>, and that my review will be publicly posted and shared online.
+                </div>
+                <div class="step-actions">
+                    <button class="btn btn-secondary" id="step4Back">← Back</button>
+                    <button class="btn btn-primary" id="step4Submit">Submit Review</button>
+                </div>
+            </div>
+            
+            <!-- Step 5: Success -->
+            <div class="review-step" id="step5">
+                <div class="success-message">
+                    <div class="success-icon">✓</div>
+                    <h2 class="step-title">Review submitted!</h2>
+                    <p class="step-subtitle">Thank you for your feedback. Your review helps other customers make informed decisions.</p>
+                    {% if discount_code %}
+                    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 16px; margin: 24px 0;">
+                        <div style="font-size: 14px; color: #166534; margin-bottom: 8px;">🎁 Your discount code:</div>
+                        <div style="font-size: 24px; font-weight: 600; color: #166534; font-family: monospace;">{{ discount_code }}</div>
+                    </div>
+                    {% endif %}
+                    <button class="btn btn-primary" onclick="window.close()" style="width: 100%;">Close</button>
+                </div>
+            </div>
+            
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-bar active" id="progress1"></div>
+                <div class="progress-bar" id="progress2"></div>
+                <div class="progress-bar" id="progress3"></div>
+                <div class="progress-bar" id="progress4"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopId = urlParams.get('shop_id') || '{{ shop_id }}';
+        const productId = urlParams.get('product_id') || '{{ product_id }}';
+        const orderId = urlParams.get('order_id') || '';
+        const customerEmail = urlParams.get('email') || '{{ customer_email or '' }}';
+        
+        // Review data
+        let reviewData = {
+            rating: 0,
+            photos: [],
+            text: '',
+            firstName: '',
+            lastName: '',
+            email: customerEmail
+        };
+        
+        let currentStep = 1;
+        
+        // Show step function
+        function showStep(step) {
+            // Hide all steps
+            for (let i = 1; i <= 5; i++) {
+                const stepEl = document.getElementById('step' + i);
+                if (stepEl) {
+                    stepEl.classList.remove('active');
+                }
+            }
+            // Show current step
+            const currentStepEl = document.getElementById('step' + step);
+            if (currentStepEl) {
+                currentStepEl.classList.add('active');
+            }
+            
+            // Update progress bars
+            for (let i = 1; i <= 4; i++) {
+                const progressBar = document.getElementById('progress' + i);
+                if (progressBar) {
+                    if (i <= step) {
+                        progressBar.classList.add('active');
+                    } else {
+                        progressBar.classList.remove('active');
+                    }
+                }
+            }
+            
+            currentStep = step;
+        }
+        
+        // Error handling
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+                setTimeout(() => {
+                    errorEl.classList.remove('show');
+                }, 5000);
+            }
+        }
+        
+        // Step 1: Rating
+        const stars = document.querySelectorAll('.star');
+        const step1Next = document.getElementById('step1Next');
+        
+        stars.forEach((star) => {
+            star.addEventListener('click', function() {
+                reviewData.rating = parseInt(star.getAttribute('data-rating'));
+                stars.forEach((s, i) => {
+                    if (i < reviewData.rating) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+                if (step1Next) {
+                    step1Next.disabled = false;
+                }
+            });
+        });
+        
+        document.getElementById('step1Next').addEventListener('click', () => {
+            if (reviewData.rating > 0) {
+                showStep(2);
+            }
+        });
+        
+        // Step 2: Photos
+        const photoUploadArea = document.getElementById('photoUploadArea');
+        const photoInput = document.getElementById('photoInput');
+        const photoPreviewGrid = document.getElementById('photoPreviewGrid');
+        
+        photoUploadArea.addEventListener('click', () => photoInput.click());
+        
+        photoUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            photoUploadArea.classList.add('dragover');
+        });
+        
+        photoUploadArea.addEventListener('dragleave', () => {
+            photoUploadArea.classList.remove('dragover');
+        });
+        
+        photoUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            photoUploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            handlePhotoFiles(files);
+        });
+        
+        photoInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handlePhotoFiles(files);
+        });
+        
+        function handlePhotoFiles(files) {
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    showError('Photo size must be less than 5MB');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    reviewData.photos.push(file);
+                    const preview = document.createElement('div');
+                    preview.className = 'photo-preview';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button class="remove-photo" onclick="removePhoto(${reviewData.photos.length - 1})">×</button>
+                    `;
+                    photoPreviewGrid.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function removePhoto(index) {
+            reviewData.photos.splice(index, index);
+            photoPreviewGrid.innerHTML = '';
+            reviewData.photos.forEach((file, i) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.createElement('div');
+                    preview.className = 'photo-preview';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button class="remove-photo" onclick="removePhoto(${i})">×</button>
+                    `;
+                    photoPreviewGrid.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        document.getElementById('step2Back').addEventListener('click', () => showStep(1));
+        document.getElementById('step2Skip').addEventListener('click', () => showStep(3));
+        document.getElementById('step2Next').addEventListener('click', () => showStep(3));
+        
+        // Step 3: Review Text
+        document.getElementById('step3Back').addEventListener('click', () => showStep(2));
+        document.getElementById('step3Next').addEventListener('click', () => {
+            reviewData.text = document.getElementById('reviewText').value;
+            showStep(4);
+        });
+        
+        // Step 4: User Info
+        document.getElementById('step4Back').addEventListener('click', () => showStep(3));
+        document.getElementById('step4Submit').addEventListener('click', async () => {
+            reviewData.firstName = document.getElementById('firstName').value.trim();
+            reviewData.lastName = document.getElementById('lastName').value.trim();
+            reviewData.email = document.getElementById('userEmail').value.trim();
+            
+            if (!reviewData.firstName || !reviewData.email) {
+                showError('First name and email are required');
+                return;
+            }
+            
+            if (!reviewData.rating || reviewData.rating < 1 || reviewData.rating > 5) {
+                showError('Please select a rating');
+                return;
+            }
+            
+            // Submit review
+            const formData = new FormData();
+            formData.append('rating', reviewData.rating);
+            formData.append('text', reviewData.text);
+            formData.append('reviewer_name', reviewData.firstName + (reviewData.lastName ? ' ' + reviewData.lastName : ''));
+            formData.append('reviewer_email', reviewData.email);
+            
+            reviewData.photos.forEach((photo, index) => {
+                formData.append(`photo_${index}`, photo);
+            });
+            
+            try {
+                const response = await fetch(`/widget/${shopId}/reviews/${productId}/submit`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStep(5);
+                } else {
+                    showError(result.error || 'Failed to submit review. Please try again.');
+                }
+            } catch (error) {
+                showError('Network error. Please check your connection and try again.');
+                console.error('Review submission error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -428,6 +428,65 @@ def app_email_settings():
                          error=error)
 
 
+@app.route('/review/submit')
+def review_submit_page():
+    """
+    Standalone review submission page - accessible from email links
+    URL params: shop_id, product_id, order_id, email
+    """
+    from backend.models_v2 import Shop, Product, EmailSettings
+    
+    shop_id = request.args.get('shop_id')
+    product_id = request.args.get('product_id')
+    order_id = request.args.get('order_id', '')
+    customer_email = request.args.get('email', '')
+    
+    # Get shop
+    shop = None
+    if shop_id:
+        try:
+            shop = Shop.query.get(int(shop_id))
+        except:
+            shop = Shop.query.filter_by(sakura_shop_id=str(shop_id)).first()
+    
+    if not shop:
+        return "Shop not found", 404
+    
+    # Get product
+    product = None
+    product_name = 'Your Product'
+    product_image = None
+    if product_id:
+        product = Product.query.filter_by(
+            shop_id=shop.id,
+            shopify_product_id=product_id
+        ).first()
+        
+        if product:
+            product_name = product.shopify_product_title or 'Your Product'
+            product_image = product.image_url
+    
+    # Get email settings for discount code
+    settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+    discount_code = None
+    if settings and settings.discount_enabled:
+        discount_code = f"REVIEW{settings.discount_percent}"
+    
+    # Get order date (can be from order_id if we have it)
+    order_date = datetime.utcnow().strftime('%B %d, %Y')
+    
+    return render_template('review-submit.html',
+                         shop_id=shop.sakura_shop_id or shop.id,
+                         shop_name=shop.shop_name or shop.shop_domain,
+                         product_id=product_id,
+                         product_name=product_name,
+                         product_image=product_image or 'https://via.placeholder.com/100',
+                         order_id=order_id,
+                         order_date=order_date,
+                         customer_email=customer_email,
+                         discount_code=discount_code)
+
+
 @app.route('/app/email-preview')
 def app_email_preview():
     """
@@ -439,6 +498,10 @@ def app_email_preview():
     shop = Shop.query.filter_by(shop_domain=shop_domain).first() if shop_domain else None
     settings = EmailSettings.query.filter_by(shop_id=shop.id).first() if shop else None
     
+    # Build review URL for preview
+    shop_id = shop.sakura_shop_id if shop else '1'
+    review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id=sample-product&order_id=sample-order&email=john@example.com"
+    
     return render_template('email-review-request.html',
                          customer_name='John',
                          shop_name=shop.shop_name if shop else 'Your Store',
@@ -446,7 +509,7 @@ def app_email_preview():
                          product_name='Sample Product',
                          product_image='https://via.placeholder.com/100',
                          order_date='December 25, 2025',
-                         review_url=f"https://{shop_domain}/review",
+                         review_url=review_url,
                          discount_enabled=settings.discount_enabled if settings else False,
                          discount_percent=settings.discount_percent if settings else 10,
                          discount_code='REVIEW10',
@@ -516,8 +579,8 @@ def app_email_test():
         if not smtp_user or not smtp_password:
             return redirect(f'/app/email-settings?shop={shop_domain}&error=SMTP not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.')
         
-        # Build review URL
-        review_url = f"https://{shop_domain}/products/{product_id}#sakura-reviews"
+        # Build review URL - link to standalone review submission page
+        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop.sakura_shop_id or shop.id}&product_id={product_id}&order_id=test-order&email={test_email}"
         unsubscribe_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/email/unsubscribe/test-token"
         
         # Render email template
