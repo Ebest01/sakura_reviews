@@ -535,8 +535,9 @@ def app_email_preview():
     settings = EmailSettings.query.filter_by(shop_id=shop.id).first() if shop else None
     
     # Build review URL for preview
+    from urllib.parse import quote
     shop_id = shop.sakura_shop_id if shop else '1'
-    review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id=sample-product&order_id=sample-order&email=john@example.com"
+    review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id=sample-product&order_id=sample-order&email={quote('john@example.com')}&name={quote('John')}"
     
     return render_template('email-review-request.html',
                          customer_name='John',
