@@ -3444,7 +3444,7 @@ def bookmarklet():
                                     display: flex; align-items: center; gap: 12px;"
                              onmouseover="this.style.background='#f8f9fa'" 
                              onmouseout="this.style.background='white'"
-                             onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}')">
+                             onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}', '${{product.image || ''}}')">
                             ${{product.image ? `<img src="${{product.image}}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}}
                             <div>
                                 <div style="font-weight: 500; color: #333; font-size: 14px;">${{product.title}}</div>
@@ -4114,12 +4114,20 @@ def bookmarklet():
                          box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 120px; overflow-y: auto; color: #333;"></div>
                     <div id="selected-product" style="display: block; margin-top: 8px; padding: 8px 12px; 
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
-                        ✓ Target Product Selected: ${{this.selectedProduct.title}}
-                        <button onclick="window.reviewKingClient.clearProduct()" 
-                                style="background: rgba(255,255,255,0.2); border: none; color: white; 
-                                       padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;">
-                            Change
-                        </button>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                ${{this.selectedProduct.image ? `<img src="${{this.selectedProduct.image}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3);">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>'}}
+                                <div>
+                                    <div style="font-weight: 500;">✓ Target Product Selected</div>
+                                    <div style="opacity: 0.8; font-size: 12px;">${{this.selectedProduct.title}}</div>
+                                </div>
+                            </div>
+                            <button onclick="window.reviewKingClient.clearProduct()" 
+                                    style="background: rgba(255,255,255,0.2); border: none; color: white; 
+                                           padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Change
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
