@@ -85,6 +85,7 @@
             margin-bottom: 16px;
         }
         
+        .logo-bookmarklet { background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; }
         .logo-loox { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
         .logo-judgeme { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
         .logo-yotpo { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: white; }
@@ -322,6 +323,80 @@
             color: #64748b;
             font-family: monospace;
         }
+        
+        .bookmarklet-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .bookmarklet-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .bookmarklet-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+        }
+        
+        .arrow-container {
+            position: relative;
+            margin: 20px 0;
+            height: 80px;
+        }
+        
+        .arrow-up {
+            font-size: 48px;
+            color: #ff69b4;
+            animation: bounce 1.5s infinite;
+            display: block;
+            line-height: 1;
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+        
+        .bookmarklet-hint {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 12px;
+        }
+        
+        .step-highlight {
+            background: #fdf2f8;
+            border-left: 4px solid #ff69b4;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+        
+        .step-highlight .step-title {
+            color: #ff69b4;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .step-highlight .step-description {
+            color: #1a202c;
+            font-size: 15px;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -332,6 +407,12 @@
         </div>
         
         <div class="import-grid">
+            <div class="import-card" data-source="bookmarklet" onclick="selectSource('bookmarklet')">
+                <div class="card-logo logo-bookmarklet">🌸</div>
+                <h3 class="card-title">One-Click Import</h3>
+                <p class="card-description">Import from AliExpress, Amazon, eBay, Walmart & more</p>
+            </div>
+            
             <div class="import-card" data-source="loox" onclick="selectSource('loox')">
                 <div class="card-logo logo-loox">L</div>
                 <h3 class="card-title">Loox</h3>
@@ -366,6 +447,68 @@
                 <div class="card-logo logo-csv">📄</div>
                 <h3 class="card-title">Custom CSV</h3>
                 <p class="card-description">Import from any CSV file</p>
+            </div>
+        </div>
+        
+        <!-- Bookmarklet Instructions -->
+        <div class="steps-container" id="steps-bookmarklet">
+            <div class="steps-header">
+                <div class="steps-logo logo-bookmarklet">🌸</div>
+                <h2 class="steps-title">One-Click Import with Bookmarklet</h2>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-highlight">
+                        <div class="step-title">Add Bookmarklet</div>
+                        <div class="step-description">
+                            Drag the 'Add to Sakura Reviews' bookmarklet to your browser's bookmark bar. One-click import, makes AI scoring.
+                        </div>
+                    </div>
+                    
+                    <div class="bookmarklet-container">
+                        <div class="arrow-container">
+                            <span class="arrow-up">⬆</span>
+                        </div>
+                        <a href="javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();" 
+                           class="bookmarklet-link" 
+                           id="bookmarklet-link"
+                           draggable="true"
+                           ondragstart="handleBookmarkletDrag(event)">
+                            🌸 Add to Sakura Reviews
+                        </a>
+                        <div class="bookmarklet-hint">Drag this button to your browser's bookmark bar</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-highlight">
+                        <div class="step-title">Browse & Click</div>
+                        <div class="step-description">
+                            Visit any product on AliExpress, Amazon, eBay, Walmart, WooCommerce, Etsy, or other supported platforms. Choose a product, once in the product page, click the Sakura Reviews Bookmarklet to import instantly.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-highlight">
+                        <div class="step-title">Import Reviews</div>
+                        <div class="step-description">
+                            Select your Shopify store, choose reviews to be imported (or import all 150+ at once), and import. Easy. Import 150+ reviews in 2 minutes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px; font-size: 24px; font-weight: 700; color: #ff69b4;">
+                That simple!
             </div>
         </div>
         
@@ -530,6 +673,14 @@
     
     <script>
         let selectedFiles = {};
+        
+        function handleBookmarkletDrag(e) {
+            // Set the bookmarklet code as the drag data
+            const bookmarkletCode = "javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();";
+            e.dataTransfer.setData('text/plain', bookmarkletCode);
+            e.dataTransfer.setData('text/uri-list', bookmarkletCode);
+            e.dataTransfer.effectAllowed = 'copy';
+        }
         
         function selectSource(source) {
             // Update card selection
