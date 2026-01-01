@@ -475,8 +475,11 @@ def review_submit_page():
     # Get order date (can be from order_id if we have it)
     order_date = datetime.utcnow().strftime('%B %d, %Y')
     
+    # Get shop ID for API calls (use numeric ID, not sakura_shop_id)
+    api_shop_id = shop.id
+    
     return render_template('review-submit.html',
-                         shop_id=shop.sakura_shop_id or shop.id,
+                         shop_id=api_shop_id,
                          shop_name=shop.shop_name or shop.shop_domain,
                          product_id=product_id,
                          product_name=product_name,

@@ -550,8 +550,8 @@
             });
         }
         
-        function removePhoto(index) {
-            reviewData.photos.splice(index, index);
+        window.removePhoto = function(index) {
+            reviewData.photos.splice(index, 1);
             photoPreviewGrid.innerHTML = '';
             reviewData.photos.forEach((file, i) => {
                 const reader = new FileReader();
