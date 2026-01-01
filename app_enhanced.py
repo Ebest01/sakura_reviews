@@ -2359,9 +2359,9 @@ def import_url():
             
             # Apply AI scoring to real reviews
             for review in reviews:
-                review['quality_score'] = extractor._ai_quality_score(review)
-                review['ai_recommended'] = review['quality_score'] >= 8
-                review['sentiment'] = extractor._sentiment_score(review)
+                review['quality_score'] = extractor._calculate_quality_score(review)
+                review['ai_recommended'] = (review['quality_score'] >= 8 and review.get('rating', 0) >= 80)
+                review['sentiment_score'] = extractor._calculate_sentiment(review.get('text', ''))
                 review['has_images'] = len(review.get('images', [])) > 0
             
             # Sort by quality
