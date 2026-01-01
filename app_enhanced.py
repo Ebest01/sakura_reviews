@@ -4198,33 +4198,65 @@ def bookmarklet():
                     </div>
                 </div>
                 
-                <!-- Bulk Import Buttons (like your design) -->
-                <div style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importAllReviews()">
-                        Import All Reviews
-                    </button>
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importWithPhotos()">
-                        Import only with Photos
-                    </button>
-                    <button class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
-                            onclick="window.reviewKingClient.importWithoutPhotos()">
-                        Import with no Photos
-                    </button>
+                <!-- Bulk Import Progress Loader -->
+                <div id="rk-import-loader" style="display: none; margin-bottom: 16px; padding: 16px; background: rgba(255, 45, 133, 0.1); border: 2px solid #FF2D85; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <div class="rk-spinner" style="width: 20px; height: 20px; border: 3px solid rgba(255, 45, 133, 0.3); border-top-color: #FF2D85; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <div style="color: #FF2D85; font-weight: 600; font-size: 14px;">
+                            <span id="rk-import-status">Importing reviews...</span>
+                        </div>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255, 45, 133, 0.2); border-radius: 3px; overflow: hidden;">
+                        <div id="rk-import-progress" style="height: 100%; background: linear-gradient(90deg, #FF2D85, #FF1493); width: 0%; transition: width 0.3s ease; border-radius: 3px;"></div>
+                    </div>
+                    <div id="rk-import-message" style="margin-top: 8px; font-size: 12px; color: #9ca3af;"></div>
                 </div>
                 
-                <!-- Import Status Display (Progress Bar & Results) -->
-                <div id="rk-import-status" style="display: none; background: linear-gradient(135deg, #7d2253 0%, #42377f 100%); 
-                            padding: 20px; border-radius: 12px; margin-bottom: 24px; color: white;">
-                    <div id="rk-import-message" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">
-                        Importing reviews...
+                <!-- Bulk Import Section -->
+                <div style="margin-bottom: 24px;">
+                    <div style="color: #9ca3af; font-size: 16px; margin-bottom: 12px; font-weight: 600;">Bulk Imports:</div>
+                    
+                    <!-- Bulk Import Buttons Row 1 -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <button id="rk-btn-import-all" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importAllReviews()">
+                            All Reviews (${{this.allReviews.length}})
+                        </button>
+                        <button id="rk-btn-import-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importWithPhotos()">
+                            With Photos (${{this.stats.with_photos}})
+                        </button>
+                        <button id="rk-btn-import-no-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importWithoutPhotos()">
+                            No Photos (${{this.allReviews.length - this.stats.with_photos}})
+                        </button>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 8px; height: 8px; margin-bottom: 12px; overflow: hidden;">
-                        <div id="rk-import-progress" style="background: #48bb78; height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 8px;"></div>
+                    
+                    <!-- Bulk Import Buttons Row 2 -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button id="rk-btn-import-ai" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.importAIRecommended()">
+                            AI Recommended (${{this.stats.ai_recommended}})
+                        </button>
+                        <button id="rk-btn-import-45star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.import45Star()">
+                            4-5 ★ (${{this.stats.reviews_45star}})
+                        </button>
+                        <button id="rk-btn-import-3star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
+                                onclick="window.reviewKingClient.import3Star()">
+                            3 ★ (${{this.stats.reviews_3star}})
+                        </button>
                     </div>
-                    <div id="rk-import-details" style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.6;">
-                        <!-- Details will be populated here -->
+                </div>
+                
+                <!-- Warning Message -->
+                <div style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 18px;">⚠️</span>
+                        <div style="flex: 1;">
+                            <div style="color: #92400e; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Warning: Bulk Import Notice</div>
+                            <div style="color: #78350f; font-size: 12px; line-height: 1.5;">Bulk import operations may include negative reviews (1-2 star ratings). Please review the selected reviews before importing.</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -4257,8 +4289,8 @@ def bookmarklet():
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'all' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('all')">All (${{this.allReviews.length}})</button>
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'photos' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('photos')">&#128247; With Photos (${{this.stats.with_photos}})</button>
                         <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'ai_recommended' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('ai_recommended')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff69b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg> AI Recommended (${{this.stats.ai_recommended}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733;</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; Only</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733; (${{this.stats.reviews_45star}})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; (${{this.stats.reviews_3star}})</button>
                     </div>
                     <div style="color: #6b7280; font-size: 12px;">
                         Showing ${{this.currentIndex + 1}} of ${{this.reviews.length}} reviews
@@ -4462,53 +4494,145 @@ def bookmarklet():
             }}
         }}
         
+        // Helper methods for bulk import progress
+        showImportLoader(statusText, totalReviews) {{
+            this.isImporting = true;
+            const loader = document.getElementById('rk-import-loader');
+            const status = document.getElementById('rk-import-status');
+            const progress = document.getElementById('rk-import-progress');
+            const message = document.getElementById('rk-import-message');
+            
+            if (loader && status && progress && message) {{
+                loader.style.display = 'block';
+                status.textContent = statusText || 'Importing reviews...';
+                progress.style.width = '0%';
+                message.textContent = '';
+            }}
+            
+            // Disable all bulk import buttons
+            this.setBulkImportButtonsEnabled(false);
+        }}
+        
+        updateImportProgress(current, total) {{
+            const progress = document.getElementById('rk-import-progress');
+            const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+            if (progress) {{
+                progress.style.width = percentage + '%';
+            }}
+        }}
+        
+        hideImportLoader(success, message, details) {{
+            this.isImporting = false;
+            const loader = document.getElementById('rk-import-loader');
+            const status = document.getElementById('rk-import-status');
+            const progress = document.getElementById('rk-import-progress');
+            const messageEl = document.getElementById('rk-import-message');
+            
+            if (loader && status && progress && messageEl) {{
+                if (success) {{
+                    status.textContent = '✓ Import completed!';
+                    status.style.color = '#10b981';
+                    progress.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    progress.style.width = '100%';
+                }} else {{
+                    status.textContent = '❌ Import failed';
+                    status.style.color = '#ef4444';
+                    progress.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+                }}
+                
+                if (message) {{
+                    messageEl.textContent = message;
+                    messageEl.style.color = success ? '#10b981' : '#ef4444';
+                }}
+                
+                if (details) {{
+                    messageEl.textContent += ' ' + details;
+                }}
+            }}
+            
+            // Re-enable all bulk import buttons
+            this.setBulkImportButtonsEnabled(true);
+            
+            // Hide loader after 5 seconds
+            setTimeout(() => {{
+                if (loader) loader.style.display = 'none';
+                // Reset progress bar
+                if (progress) {{
+                    progress.style.width = '0%';
+                    progress.style.background = 'linear-gradient(90deg, #FF2D85, #FF1493)';
+                }}
+                if (status) {{
+                    status.textContent = 'Importing reviews...';
+                    status.style.color = '#FF2D85';
+                }}
+            }}, 5000);
+        }}
+        
+        setBulkImportButtonsEnabled(enabled) {{
+            // Update all bulk import buttons including new ones
+            const buttons = [
+                document.getElementById('rk-btn-import-all'),
+                document.getElementById('rk-btn-import-photos'),
+                document.getElementById('rk-btn-import-no-photos'),
+                document.getElementById('rk-btn-import-ai'),
+                document.getElementById('rk-btn-import-45star'),
+                document.getElementById('rk-btn-import-3star')
+            ];
+            
+            buttons.forEach(btn => {{
+                if (btn) {{
+                    btn.disabled = !enabled;
+                    btn.style.opacity = enabled ? '1' : '0.5';
+                    btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+                }}
+            }});
+        }}
+        
         async importAllReviews() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            if (!confirm(`Import all non-skipped reviews to "${{this.selectedProduct.title}}"?\\n\\nThis will import multiple reviews at once.`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
             
-            // Show progress bar
-            const statusDiv = document.getElementById('rk-import-status');
-            const progressBar = document.getElementById('rk-import-progress');
-            const messageDiv = document.getElementById('rk-import-message');
-            const detailsDiv = document.getElementById('rk-import-details');
+            // Count negative reviews for warning
+            const negativeReviews = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
             
-            if (statusDiv) {{
-                statusDiv.style.display = 'block';
-                messageDiv.textContent = 'Importing reviews...';
-                progressBar.style.width = '0%';
-                detailsDiv.innerHTML = 'Preparing import...';
+            const warningMsg = negativeReviews.length > 0 
+                ? `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).\\n\\nThis will import multiple reviews at once.`
+                : `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\nThis will import multiple reviews at once.`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
             }}
             
+            this.showImportLoader(`Importing ${{this.allReviews.length}} reviews...`, this.allReviews.length);
+            
             try {{
-                // Simulate progress
-                let progress = 0;
-                const progressInterval = setInterval(() => {{
-                    progress += Math.random() * 15;
-                    if (progress > 90) progress = 90;
-                    if (progressBar) progressBar.style.width = progress + '%';
-                }}, 200);
-                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
-                        reviews: this.reviews,
+                        reviews: this.allReviews,  // Use allReviews, not filtered reviews
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
+                        platform: 'aliexpress',
                         filters: {{
                             min_quality_score: 0  // Import all quality levels
                         }}
                     }})
                 }});
-                
-                clearInterval(progressInterval);
-                if (progressBar) progressBar.style.width = '100%';
                 
                 const result = await response.json();
                 
@@ -4517,161 +4641,331 @@ def bookmarklet():
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Bulk+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    // Update status display
-                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
-                    if (detailsDiv) {{
-                        const withPhotos = result.imported_reviews ? result.imported_reviews.filter(r => r.images && r.images.length > 0).length : 0;
-                        detailsDiv.innerHTML = `Successfully imported ${{withPhotos}} reviews with photos! ` +
-                            `✓ Imported: ${{result.imported_count}} | ` +
-                            `❌ Failed: ${{result.failed_count}} | ` +
-                            `🔄 Duplicates: ${{result.skipped_count}}`;
-                    }}
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}} | ⏭️ Skipped: ${{result.skipped_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews!`, message);
                 }} else {{
-                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
-                if (progressBar) progressBar.style.width = '0%';
+                console.error('Bulk import error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
         async importWithPhotos() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            const reviewsWithPhotos = this.reviews.filter(r => r.images && r.images.length > 0);
-            
-            if (!confirm(`Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
             
-            // Show progress bar
-            const statusDiv = document.getElementById('rk-import-status');
-            const progressBar = document.getElementById('rk-import-progress');
-            const messageDiv = document.getElementById('rk-import-message');
-            const detailsDiv = document.getElementById('rk-import-details');
+            // Filter allReviews (not just filtered display reviews) for reviews with photos
+            const reviewsWithPhotos = this.allReviews.filter(r => r.images && r.images.length > 0);
             
-            if (statusDiv) {{
-                statusDiv.style.display = 'block';
-                messageDiv.textContent = 'Importing reviews with photos...';
-                progressBar.style.width = '0%';
-                detailsDiv.innerHTML = 'Preparing import...';
+            if (reviewsWithPhotos.length === 0) {{
+                alert('⚠️ No reviews with photos found for this product.\\n\\nPlease try selecting a different product with photo reviews.');
+                return;
             }}
             
+            // Count negative reviews for warning
+            const negativeReviews = reviewsWithPhotos.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviewsWithPhotos.length}} reviews with photos...`, reviewsWithPhotos.length);
+            
             try {{
-                // Simulate progress
-                let progress = 0;
-                const progressInterval = setInterval(() => {{
-                    progress += Math.random() * 15;
-                    if (progress > 90) progress = 90;
-                    if (progressBar) progressBar.style.width = progress + '%';
-                }}, 200);
-                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
                         reviews: reviewsWithPhotos,
                         shopify_product_id: this.selectedProduct.id,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
                     }})
                 }});
-                
-                clearInterval(progressInterval);
-                if (progressBar) progressBar.style.width = '100%';
                 
                 const result = await response.json();
                 
                 if (result.success) {{
-                    // Update status display
-                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
-                    if (detailsDiv) {{
-                        detailsDiv.innerHTML = `Successfully imported ${{result.imported_count}} reviews with photos! ` +
-                            `✓ Imported: ${{result.imported_count}} | ` +
-                            `❌ Failed: ${{result.failed_count}} | ` +
-                            `🔄 Duplicates: ${{result.skipped_count}}`;
-                    }}
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with photos!`, message);
                 }} else {{
-                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
-                if (progressBar) progressBar.style.width = '0%';
+                console.error('Import with photos error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
         async importWithoutPhotos() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
             if (!this.selectedProduct) {{
                 alert('Please select a target product first!');
                 return;
             }}
             
-            const reviewsWithoutPhotos = this.reviews.filter(r => !r.images || r.images.length === 0);
-            
-            if (!confirm(`Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?`)) {{
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
                 return;
             }}
             
-            // Show progress bar
-            const statusDiv = document.getElementById('rk-import-status');
-            const progressBar = document.getElementById('rk-import-progress');
-            const messageDiv = document.getElementById('rk-import-message');
-            const detailsDiv = document.getElementById('rk-import-details');
+            // Filter allReviews (not just filtered display reviews) for reviews without photos
+            const reviewsWithoutPhotos = this.allReviews.filter(r => !r.images || r.images.length === 0);
             
-            if (statusDiv) {{
-                statusDiv.style.display = 'block';
-                messageDiv.textContent = 'Importing reviews without photos...';
-                progressBar.style.width = '0%';
-                detailsDiv.innerHTML = 'Preparing import...';
+            if (reviewsWithoutPhotos.length === 0) {{
+                alert('⚠️ No reviews without photos found for this product.\\n\\nAll reviews for this product have photos. Please try selecting a different product.');
+                return;
             }}
             
+            // Count negative reviews for warning
+            const negativeReviews = reviewsWithoutPhotos.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviewsWithoutPhotos.length}} reviews without photos...`, reviewsWithoutPhotos.length);
+            
             try {{
-                // Simulate progress
-                let progress = 0;
-                const progressInterval = setInterval(() => {{
-                    progress += Math.random() * 15;
-                    if (progress > 90) progress = 90;
-                    if (progressBar) progressBar.style.width = progress + '%';
-                }}, 200);
-                
                 const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
                         reviews: reviewsWithoutPhotos,
                         shopify_product_id: this.selectedProduct.id,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
                     }})
                 }});
-                
-                clearInterval(progressInterval);
-                if (progressBar) progressBar.style.width = '100%';
                 
                 const result = await response.json();
                 
                 if (result.success) {{
-                    // Update status display
-                    if (messageDiv) messageDiv.innerHTML = '✓ Import completed!';
-                    if (detailsDiv) {{
-                        detailsDiv.innerHTML = `Successfully imported ${{result.imported_count}} reviews without photos! ` +
-                            `✓ Imported: ${{result.imported_count}} | ` +
-                            `❌ Failed: ${{result.failed_count}} | ` +
-                            `🔄 Duplicates: ${{result.skipped_count}}`;
-                    }}
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews without photos!`, message);
                 }} else {{
-                    if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                    if (detailsDiv) detailsDiv.innerHTML = result.error || 'Unknown error occurred';
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }}
             }} catch (error) {{
-                if (messageDiv) messageDiv.innerHTML = '❌ Import failed';
-                if (detailsDiv) detailsDiv.innerHTML = 'Network error. Please try again.';
-                if (progressBar) progressBar.style.width = '0%';
+                console.error('Import without photos error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async importAIRecommended() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for AI recommended reviews
+            const aiRecommendedReviews = this.allReviews.filter(r => r.ai_recommended);
+            
+            if (aiRecommendedReviews.length === 0) {{
+                alert('⚠️ No AI recommended reviews found for this product.\\n\\nAI recommended reviews are reviews with high quality scores. Please try selecting a different product.');
+                return;
+            }}
+            
+            // Count negative reviews for warning
+            const negativeReviews = aiRecommendedReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating <= 2;
+            }});
+            
+            const warningMsg = negativeReviews.length > 0
+                ? `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?\\n\\n⚠️ WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
+                : `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?`;
+            
+            if (!confirm(warningMsg)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{aiRecommendedReviews.length}} AI recommended reviews...`, aiRecommendedReviews.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: aiRecommendedReviews,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} AI recommended reviews!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import AI recommended error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async import45Star() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for 4-5 star reviews
+            const reviews45star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 4 || rating === 5;
+            }});
+            
+            if (reviews45star.length === 0) {{
+                alert('⚠️ No 4-5 star reviews found for this product.\\n\\nPlease try selecting a different product with higher-rated reviews.');
+                return;
+            }}
+            
+            if (!confirm(`Import ${{reviews45star.length}} reviews with 4-5 stars to "${{this.selectedProduct.title}}"?`)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviews45star.length}} reviews with 4-5 stars...`, reviews45star.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: reviews45star,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 4-5 stars!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import 4-5 star error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
+            }}
+        }}
+        
+        async import3Star() {{
+            if (this.isImporting) {{
+                return; // Prevent multiple simultaneous imports
+            }}
+            
+            if (!this.selectedProduct) {{
+                alert('Please select a target product first!');
+                return;
+            }}
+            
+            if (!this.allReviews || this.allReviews.length === 0) {{
+                alert('No reviews available to import. Please load reviews first.');
+                return;
+            }}
+            
+            // Filter allReviews for 3 star reviews
+            const reviews3star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 3;
+            }});
+            
+            if (reviews3star.length === 0) {{
+                alert('⚠️ No 3 star reviews found for this product.\\n\\nPlease try selecting a different product.');
+                return;
+            }}
+            
+            if (!confirm(`Import ${{reviews3star.length}} reviews with 3 stars to "${{this.selectedProduct.title}}"?`)) {{
+                return;
+            }}
+            
+            this.showImportLoader(`Importing ${{reviews3star.length}} reviews with 3 stars...`, reviews3star.length);
+            
+            try {{
+                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        reviews: reviews3star,
+                        shopify_product_id: this.selectedProduct.id,
+                        session_id: this.sessionId,
+                        platform: 'aliexpress'
+                    }})
+                }});
+                
+                const result = await response.json();
+                
+                if (result.success) {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${{result.duplicate_count}}` : '';
+                    const message = `✓ Imported: ${{result.imported_count}} | ❌ Failed: ${{result.failed_count}}${{duplicateMsg}}`;
+                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 3 stars!`, message);
+                }} else {{
+                    this.hideImportLoader(false, 'Import failed: ' + result.error, '');
+                }}
+            }} catch (error) {{
+                console.error('Import 3 star error:', error);
+                this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
             }}
         }}
         
