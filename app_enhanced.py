@@ -5223,6 +5223,120 @@ def submit_review(shop_id, product_id):
 
 # ==================== EMAIL SENDING FUNCTIONS ====================
 
+def send_review_request_email(review_request):
+    """
+    Send review request email to customer
+    This is called when a ReviewRequest is ready to be sent (scheduled_at time reached)
+    """
+    try:
+        from flask import render_template
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        from backend.models_v2 import Shop, EmailSettings, EmailUnsubscribe
+        import base64
+        
+        shop = Shop.query.get(review_request.shop_id)
+        if not shop:
+            logger.error(f"Shop not found for review request {review_request.id}")
+            return False
+        
+        settings = EmailSettings.query.filter_by(shop_id=shop.id).first()
+        if not settings or not settings.enabled:
+            logger.info(f"Email settings disabled for shop {shop.id}")
+            return False
+        
+        # Check if customer is unsubscribed
+        is_unsubscribed = EmailUnsubscribe.query.filter(
+            (EmailUnsubscribe.email == review_request.customer_email) &
+            ((EmailUnsubscribe.shop_id == shop.id) | (EmailUnsubscribe.shop_id.is_(None)))
+        ).first()
+        
+        if is_unsubscribed:
+            logger.info(f"Customer {review_request.customer_email} is unsubscribed")
+            review_request.status = 'unsubscribed'
+            db.session.commit()
+            return False
+        
+        # Get email configuration
+        smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+        smtp_user = os.environ.get('SMTP_USER', '')
+        smtp_password = os.environ.get('SMTP_PASSWORD', '')
+        email_from = os.environ.get('EMAIL_FROM', 'noreply@sakurareviews.com')
+        email_from_name = settings.email_from_name or shop.shop_name or 'Sakura Reviews'
+        
+        if not smtp_user or not smtp_password:
+            logger.warning("SMTP not configured - cannot send review request email")
+            return False
+        
+        # Build review URL - link to standalone review submission page
+        shop_id = shop.sakura_shop_id or shop.id
+        review_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/review/submit?shop_id={shop_id}&product_id={review_request.product_id}&order_id={review_request.order_id}&email={review_request.customer_email}"
+        
+        # Build unsubscribe URL
+        unsubscribe_token = base64.b64encode(f"{review_request.customer_email}:{shop.id}".encode()).decode()
+        unsubscribe_url = f"https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/email/unsubscribe/{unsubscribe_token}"
+        
+        # Format order date
+        order_date_str = review_request.order_date.strftime('%B %d, %Y') if review_request.order_date else datetime.utcnow().strftime('%B %d, %Y')
+        
+        # Render email template
+        email_html = render_template('email-review-request.html',
+            customer_name=review_request.customer_name or 'there',
+            shop_name=shop.shop_name or shop.shop_domain,
+            shop_url=f"https://{shop.shop_domain}",
+            product_name=review_request.product_name or 'Your Product',
+            product_image=review_request.product_image or 'https://via.placeholder.com/100',
+            order_date=order_date_str,
+            review_url=review_url,
+            discount_enabled=settings.discount_enabled,
+            discount_percent=settings.discount_percent,
+            discount_code=review_request.discount_code or f"REVIEW{settings.discount_percent}",
+            unsubscribe_url=unsubscribe_url
+        )
+        
+        # Create email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = settings.email_subject or "We'd love your feedback!"
+        msg['From'] = f"{email_from_name} <{email_from}>"
+        msg['To'] = review_request.customer_email
+        
+        # Add HTML part
+        html_part = MIMEText(email_html, 'html')
+        msg.attach(html_part)
+        
+        # Send email
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            
+            # Update review request status
+            review_request.status = 'sent'
+            review_request.emails_sent = (review_request.emails_sent or 0) + 1
+            if not review_request.first_sent_at:
+                review_request.first_sent_at = datetime.utcnow()
+            review_request.last_sent_at = datetime.utcnow()
+            db.session.commit()
+            
+            logger.info(f"✅ Review request email sent to {review_request.customer_email} for product {review_request.product_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send review request email via SMTP: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error in send_review_request_email: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return False
+
+
 def send_review_acknowledgment_email(review, shop, product):
     """
     Send acknowledgment email when a customer submits a review
@@ -5294,6 +5408,52 @@ def send_review_acknowledgment_email(review, shop, product):
     except Exception as e:
         logger.error(f"Error in send_review_acknowledgment_email: {str(e)}")
         # Don't raise - email is optional
+
+
+@app.route('/admin/process-review-requests', methods=['GET', 'POST'])
+def process_review_requests():
+    """
+    Process pending review request emails
+    This endpoint should be called periodically (via cron job or scheduled task)
+    to send emails for ReviewRequest records where scheduled_at time has passed
+    """
+    from backend.models_v2 import ReviewRequest
+    from datetime import datetime
+    
+    try:
+        # Find pending review requests that are ready to send
+        now = datetime.utcnow()
+        pending_requests = ReviewRequest.query.filter(
+            ReviewRequest.status == 'pending',
+            ReviewRequest.scheduled_at <= now
+        ).limit(50).all()  # Process 50 at a time
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for request in pending_requests:
+            success = send_review_request_email(request)
+            if success:
+                sent_count += 1
+            else:
+                failed_count += 1
+        
+        return jsonify({
+            'success': True,
+            'processed': len(pending_requests),
+            'sent': sent_count,
+            'failed': failed_count,
+            'message': f'Processed {len(pending_requests)} review requests'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing review requests: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/uploads/reviews/<int:review_id>/<filename>')
