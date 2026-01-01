@@ -4415,11 +4415,19 @@ def bookmarklet():
                     fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Post+imported&c=${{this.sessionId}}`, 
                           {{ method: 'GET' }});
                     
-                    const message = result.review_id 
-                        ? `✓ Review imported successfully! Database ID: ${{result.review_id}}`
-                        : `✓ Review imported (simulation mode - database unavailable)`;
-                    alert(message);
-                    this.nextReview();
+                    // Handle duplicate vs new import
+                    if (result.duplicate) {{
+                        const message = result.message || `⚠️ Review already imported for this product (Database ID: ${{result.review_id}})`;
+                        alert(message);
+                        // Don't auto-advance for duplicates - let user see what happened
+                        // this.nextReview();
+                    }} else {{
+                        const message = result.review_id 
+                            ? `✓ Review imported successfully! Database ID: ${{result.review_id}}`
+                            : `✓ Review imported (simulation mode - database unavailable)`;
+                        alert(message);
+                        this.nextReview();
+                    }}
                 }} else {{
                     alert('Failed to import: ' + result.error);
                 }}
