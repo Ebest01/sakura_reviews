@@ -2259,14 +2259,15 @@ def review_helpful_vote(review_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/admin/reviews/import/url', methods=['GET'])
-@app.route('/-/admin/reviews/import/url', methods=['GET'])
+@app.route('/admin/reviews/import/url', methods=['GET', 'POST'])
+@app.route('/-/admin/reviews/import/url', methods=['GET', 'POST'])
 def import_url():
     """
-    Loox-compatible endpoint: GET /admin/reviews/import/url
+    Loox-compatible endpoint: GET/POST /admin/reviews/import/url
     Returns paginated reviews for preview
+    IMPROVED: Now accepts scraped data from client-side (from app_ultimate.py)
     
-    Query params:
+    Query params (GET) or Body (POST):
     - productId: Product ID
     - platform: aliexpress, amazon, ebay, walmart
     - page: Page number
@@ -2274,20 +2275,33 @@ def import_url():
     - country: Country filter
     - with_photos: Photos only (true/false)
     - translate: Language (optional)
+    - scraped: Client-scraped review data (POST only)
+    - session_id: Existing session ID for caching
     """
     try:
-        # Get query parameters
-        product_id = request.args.get('productId')
-        page = int(request.args.get('page', 1))
-        platform = request.args.get('platform', 'aliexpress')
-        per_page = int(request.args.get('per_page', 150))  # Load 150 reviews to account for duplicates
+        # Get data from POST body or GET params
+        if request.method == 'POST':
+            data = request.json or {}
+            product_id = data.get('productId') or request.args.get('productId')
+            page = int(data.get('page', request.args.get('page', 1)))
+            platform = data.get('platform', request.args.get('platform', 'aliexpress'))
+            per_page = int(data.get('per_page', request.args.get('per_page', 150)))
+            scraped = data.get('scraped')
+            session_id = data.get('session_id') or request.args.get('id')
+        else:
+            product_id = request.args.get('productId')
+            page = int(request.args.get('page', 1))
+            platform = request.args.get('platform', 'aliexpress')
+            per_page = int(request.args.get('per_page', 150))
+            scraped = None
+            session_id = request.args.get('id')
         
         # Filters
         filters = {
-            'rating': request.args.get('rating'),
-            'country': request.args.get('country'),
-            'with_photos': request.args.get('with_photos'),
-            'translate': request.args.get('translate')
+            'rating': request.args.get('rating') or (request.json or {}).get('rating'),
+            'country': request.args.get('country') or (request.json or {}).get('country'),
+            'with_photos': request.args.get('with_photos') or (request.json or {}).get('with_photos'),
+            'translate': request.args.get('translate') or (request.json or {}).get('translate')
         }
         
         # Remove None values
@@ -2299,7 +2313,106 @@ def import_url():
                 'error': 'productId parameter required'
             }), 400
         
-        # Extract reviews
+        # IMPROVED: Try to load from existing session FIRST (session caching)
+        if session_id and session_id in import_sessions:
+            cached_session = import_sessions[session_id]
+            if 'reviews' in cached_session:
+                logger.info(f"📦 Loading cached data from session {session_id[:8]}...")
+                cached_reviews = cached_session['reviews']
+                
+                # Apply filters to cached reviews
+                filtered_reviews = cached_reviews
+                if filters.get('with_photos'):
+                    filtered_reviews = [r for r in filtered_reviews if r.get('images') and len(r.get('images', [])) > 0]
+                if filters.get('rating'):
+                    min_rating = int(filters['rating'])
+                    filtered_reviews = [r for r in filtered_reviews if r.get('rating', 0) >= min_rating]
+                
+                # Paginate
+                start = (page - 1) * per_page
+                end = start + per_page
+                paginated_reviews = filtered_reviews[start:end]
+                
+                return jsonify({
+                    'success': True,
+                    'reviews': paginated_reviews,
+                    'total': len(filtered_reviews),
+                    'page': page,
+                    'per_page': per_page,
+                    'has_next': end < len(filtered_reviews),
+                    'session_id': session_id,
+                    'data_source': 'cached',
+                    'stats': {
+                        'ai_recommended': len([r for r in cached_reviews if r.get('ai_recommended')]),
+                        'with_photos': len([r for r in cached_reviews if r.get('images') and len(r.get('images', [])) > 0]),
+                        'avg_quality': sum(r.get('quality_score', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
+                        'avg_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0
+                    }
+                })
+        
+        # IMPROVED: Use client-scraped data if available
+        if scraped and scraped.get('reviews'):
+            logger.info(f"✅ Got {len(scraped['reviews'])} REAL reviews from browser!")
+            reviews = scraped['reviews']
+            platform = scraped.get('platform', platform)
+            product_id = scraped.get('productId') or product_id
+            
+            # Apply AI scoring to real reviews
+            for review in reviews:
+                review['quality_score'] = extractor._ai_quality_score(review)
+                review['ai_recommended'] = review['quality_score'] >= 8
+                review['sentiment'] = extractor._sentiment_score(review)
+                review['has_images'] = len(review.get('images', [])) > 0
+            
+            # Sort by quality
+            reviews.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
+            
+            # Create/Update session WITH reviews for caching
+            if not session_id:
+                session_id = str(uuid.uuid4())
+            
+            import_sessions[session_id] = {
+                'product_id': product_id,
+                'platform': platform,
+                'reviews': reviews,  # CACHE the reviews!
+                'started_at': datetime.now().isoformat(),
+                'imported_count': 0,
+                'real_data': True
+            }
+            
+            # Apply filters
+            filtered_reviews = reviews
+            if filters.get('with_photos'):
+                filtered_reviews = [r for r in filtered_reviews if r.get('images') and len(r.get('images', [])) > 0]
+            if filters.get('rating'):
+                min_rating = int(filters['rating'])
+                filtered_reviews = [r for r in filtered_reviews if r.get('rating', 0) >= min_rating]
+            
+            # Paginate
+            start = (page - 1) * per_page
+            end = start + per_page
+            paginated_reviews = filtered_reviews[start:end]
+            
+            return jsonify({
+                'success': True,
+                'platform': platform,
+                'product_id': product_id,
+                'reviews': paginated_reviews,
+                'total': len(filtered_reviews),
+                'page': page,
+                'per_page': per_page,
+                'has_next': end < len(filtered_reviews),
+                'session_id': session_id,
+                'data_source': 'browser_scraped',
+                'stats': {
+                    'ai_recommended': len([r for r in reviews if r.get('ai_recommended')]),
+                    'with_photos': len([r for r in reviews if r.get('images') and len(r.get('images', [])) > 0]),
+                    'avg_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
+                    'avg_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0
+                }
+            })
+        
+        # Fallback: Server-side extraction
         product_data = {
             'productId': product_id,
             'platform': platform,
@@ -2315,7 +2428,8 @@ def import_url():
         )
         
         # Create session ID for tracking
-        session_id = request.args.get('id', str(uuid.uuid4()))
+        if not session_id:
+            session_id = str(uuid.uuid4())
         import_sessions[session_id] = {
             'product_id': product_id,
             'platform': platform,
@@ -3402,6 +3516,9 @@ def bookmarklet():
             try {{
                 console.log('Loading reviews...', {{ productId: this.productData.productId, platform: this.productData.platform }});
                 
+                // IMPROVED: Try client-side scraping first (from app_ultimate.py)
+                const scrapedData = this.scrapePageData();
+                
                 const params = new URLSearchParams({{
                     productId: this.productData.productId,
                     platform: this.productData.platform,
@@ -3413,11 +3530,26 @@ def bookmarklet():
                 const url = `${{API_URL}}/admin/reviews/import/url?${{params}}`;
                 console.log('Fetching:', url);
                 
-                const response = await fetch(url);
+                // Send scraped data if available
+                const response = await fetch(url, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        scraped: scrapedData,
+                        session_id: this.sessionId
+                    }})
+                }});
+                
                 console.log('Response status:', response.status);
                 
                 const result = await response.json();
                 console.log('Result:', result);
+                
+                // Save session_id if returned (for caching)
+                if (result.session_id) {{
+                    this.sessionId = result.session_id;
+                    console.log(`Session saved: ${{this.sessionId.substring(0, 8)}}...`);
+                }}
                 
                 if (result.success) {{
                     this.allReviews = result.reviews;  // Store all reviews
@@ -3447,6 +3579,279 @@ def bookmarklet():
                 console.error('Exception loading reviews:', error);
                 this.showError('Failed to load reviews: ' + error.message);
             }}
+        }}
+        
+        // IMPROVED: Client-side scraping from app_ultimate.py
+        scrapePageData() {{
+            const hostname = window.location.hostname;
+            
+            if (hostname.includes('aliexpress')) {{
+                return this.scrapeAliExpress();
+            }} else if (hostname.includes('amazon')) {{
+                return this.scrapeAmazon();
+            }}
+            
+            return null;
+        }}
+        
+        scrapeAliExpress() {{
+            try {{
+                console.log('=== ALIEXPRESS SCRAPING DEBUG ===');
+                console.log('window.runParams exists?', typeof window.runParams);
+                console.log('window.runParams?.data:', window.runParams?.data ? 'YES' : 'NO');
+                
+                // Method 1: Extract from window.runParams (EXACTLY like Loox!)
+                const runParams = window.runParams?.data || window.runParams || {{}};
+                const feedbackModule = runParams.feedbackModule || runParams.productDetailReviewSummary || {{}};
+                
+                console.log('feedbackModule exists?', Object.keys(feedbackModule).length > 0);
+                console.log('feedbackList exists?', feedbackModule.feedbackList ? 'YES' : 'NO');
+                console.log('feedbackList length:', feedbackModule.feedbackList?.length || 0);
+                
+                // Extract product info
+                const productId = runParams.productId || 
+                                feedbackModule.productId ||
+                                this.extractProductIdFromUrl();
+                
+                const sellerId = feedbackModule.sellerAdminSeq || 
+                                runParams.sellerAdminSeq ||
+                                runParams.adminSeq;
+                
+                console.log('Extracted productId:', productId);
+                console.log('Extracted sellerId:', sellerId);
+                
+                // Extract reviews from feedbackModule
+                let reviews = [];
+                
+                if (feedbackModule.feedbackList && feedbackModule.feedbackList.length > 0) {{
+                    console.log(`✅ Found ${{feedbackModule.feedbackList.length}} reviews in runParams`);
+                    
+                    reviews = feedbackModule.feedbackList.map((r, idx) => {{
+                        // IMPROVED: Better image extraction - exclude avatars
+                        const reviewImages = [];
+                        
+                        if (r.images && Array.isArray(r.images)) {{
+                            r.images.forEach(img => {{
+                                let imgUrl = null;
+                                
+                                if (typeof img === 'string') {{
+                                    imgUrl = img;
+                                }} else if (img && typeof img === 'object') {{
+                                    imgUrl = img.imgUrl || img.url || img.src;
+                                }}
+                                
+                                // FILTER OUT AVATARS AND JUNK
+                                if (imgUrl && 
+                                    imgUrl.includes('aliexpress') && 
+                                    (imgUrl.includes('/kf/') || imgUrl.includes('ae-pic')) &&
+                                    !imgUrl.includes('avatar') && 
+                                    !imgUrl.includes('icon') &&
+                                    !imgUrl.includes('placeholder')) {{
+                                    reviewImages.push(imgUrl);
+                                }}
+                            }});
+                        }}
+                        
+                        console.log(`Review ${{idx}}: "${{r.buyerFeedback?.substring(0, 30)}}..." - ${{reviewImages.length}} photos`);
+                        
+                        return {{
+                            id: r.evaluationId || Math.random().toString(36),
+                            reviewer_name: r.buyerName || 'Anonymous',
+                            text: r.buyerFeedback || '',
+                            rating: parseInt(r.buyerEval || 5),
+                            date: r.evalTime || new Date().toISOString().split('T')[0],
+                            country: r.buyerCountry || 'Unknown',
+                            verified: true,
+                            images: reviewImages,
+                            platform: 'aliexpress'
+                        }};
+                    }});
+                }}
+                
+                // Method 2: Try DOM scraping if runParams failed
+                if (reviews.length === 0) {{
+                    console.warn('⚠️ No reviews in feedbackList, trying DOM scraping...');
+                    reviews = this.scrapeAliExpressDom();
+                }}
+                
+                console.log(`🎯 Total reviews extracted: ${{reviews.length}}`);
+                
+                return {{
+                    platform: 'aliexpress',
+                    productId: productId,
+                    sellerId: sellerId,
+                    reviews: reviews,
+                    source: reviews.length > 0 ? (feedbackModule.feedbackList ? 'runParams' : 'dom') : 'none'
+                }};
+                
+            }} catch (error) {{
+                console.error('❌ AliExpress scrape error:', error);
+                return {{ platform: 'aliexpress', reviews: [], error: error.message }};
+            }}
+        }}
+        
+        scrapeAliExpressDom() {{
+            // IMPROVED: Better DOM scraping from app_ultimate.py
+            const reviews = [];
+            
+            try {{
+                console.log('🔍 Starting DOM scraping...');
+                
+                const selectors = [
+                    '.list--itemWrap--ARYTMbR',
+                    '[class*="list"][class*="itemWrap"]',
+                    '[data-pl="product-customer-reviews"] [class*="review"]',
+                    'div[class*="review-item"]'
+                ];
+                
+                let reviewElements = [];
+                for (const selector of selectors) {{
+                    reviewElements = document.querySelectorAll(selector);
+                    if (reviewElements.length > 0 && reviewElements.length < 100) {{
+                        console.log(`✅ Found ${{reviewElements.length}} REAL reviews with: ${{selector}}`);
+                        break;
+                    }}
+                }}
+                
+                if (reviewElements.length === 0) {{
+                    console.warn('No review elements found, trying body search...');
+                    reviewElements = Array.from(document.querySelectorAll('div')).filter(el => {{
+                        const text = el.textContent || '';
+                        const hasRating = el.querySelector('[class*="star"], [class*="rating"]');
+                        const hasDate = /\\d{{1,2}}\\s+\\w+\\s+\\d{{4}}/.test(text) || /\\d{{4}}-\\d{{2}}-\\d{{2}}/.test(text);
+                        return hasRating && hasDate && text.length > 50 && text.length < 2000;
+                    }});
+                    console.log(`Body search found ${{reviewElements.length}} potential reviews`);
+                }}
+                
+                reviewElements.forEach((el, index) => {{
+                    try {{
+                        const infoEl = el.querySelector('.list--itemInfo--URmp38d, [class*="itemInfo"]');
+                        const infoText = infoEl?.textContent?.trim() || '';
+                        const infoParts = infoText.split('|').map(s => s.trim());
+                        const reviewer_name = infoParts[0] || 'Customer';
+                        const dateText = infoParts[1] || '';
+                        
+                        const textEl = el.querySelector('.list--itemReview--xQUhO78, [class*="itemReview"]');
+                        let text = textEl?.textContent?.trim() || '';
+                        
+                        if (!text || text.length < 5) {{
+                            return;
+                        }}
+                        
+                        let rating = 5;
+                        const starContainer = el.querySelector('.stars--box--d_zcrGb, [class*="stars"]');
+                        if (starContainer) {{
+                            const filledStars = starContainer.querySelectorAll('[class*="starreviewfilled"]');
+                            if (filledStars.length > 0) {{
+                                rating = filledStars.length;
+                            }}
+                        }}
+                        
+                        let date = new Date().toISOString().split('T')[0];
+                        if (dateText) {{
+                            try {{
+                                const parsedDate = new Date(dateText);
+                                if (!isNaN(parsedDate.getTime())) {{
+                                    date = parsedDate.toISOString().split('T')[0];
+                                }}
+                            }} catch(e) {{}}
+                        }}
+                        
+                        // IMPROVED: Better image extraction - exclude avatars
+                        const images = [];
+                        const imgElements = el.querySelectorAll('img');
+                        imgElements.forEach(img => {{
+                            const isAvatar = img.closest('.list--itemPhoto--ZgH4_cc') || 
+                                           img.closest('[class*="itemPhoto"]');
+                            if (isAvatar) return;
+                            
+                            const src = img.src || img.dataset.src || img.getAttribute('data-src');
+                            
+                            if (src && 
+                                (src.includes('/kf/') || src.includes('ae-pic') || src.includes('ae01.alicdn')) &&
+                                !src.includes('avatar') && 
+                                !src.includes('icon') &&
+                                !src.includes('logo') &&
+                                src.length > 50) {{
+                                images.push(src);
+                            }}
+                        }});
+                        
+                        if (text && text.length > 10) {{
+                            reviews.push({{
+                                id: 'dom_' + index,
+                                reviewer_name: reviewer_name,
+                                text: text.substring(0, 500),
+                                rating: rating,
+                                date: date,
+                                country: 'Unknown',
+                                verified: true,
+                                images: images,
+                                platform: 'aliexpress'
+                            }});
+                            console.log(`✅ Scraped review ${{index}}: ${{reviewer_name}} - "${{text.substring(0,30)}}..." (${{images.length}} photos)`);
+                        }}
+                    }} catch (reviewError) {{
+                        console.error(`Error processing review ${{index}}:`, reviewError);
+                    }}
+                }});
+                
+                console.log(`🎯 DOM scraping complete: ${{reviews.length}} reviews extracted`);
+            }} catch (error) {{
+                console.error('❌ DOM scrape error:', error);
+            }}
+            
+            return reviews;
+        }}
+        
+        scrapeAmazon() {{
+            try {{
+                const asin = window.location.pathname.match(/\\/dp\\/([A-Z0-9]{{10}})/)?.[1];
+                
+                const reviews = [];
+                const reviewElements = document.querySelectorAll('[data-hook="review"]');
+                
+                reviewElements.forEach((el, index) => {{
+                    const nameEl = el.querySelector('[class*="author"]');
+                    const textEl = el.querySelector('[data-hook="review-body"]');
+                    const ratingEl = el.querySelector('[data-hook="review-star-rating"]');
+                    
+                    const images = [];
+                    el.querySelectorAll('img[data-hook="review-image"]').forEach(img => {{
+                        images.push(img.src);
+                    }});
+                    
+                    if (textEl) {{
+                        reviews.push({{
+                            id: 'amz_' + index,
+                            reviewer_name: nameEl?.textContent?.trim() || 'Amazon Customer',
+                            text: textEl.textContent?.trim() || '',
+                            rating: parseInt(ratingEl?.textContent?.match(/\\d/)?.[0] || 5),
+                            date: new Date().toISOString().split('T')[0],
+                            country: 'US',
+                            verified: el.querySelector('[data-hook="avp-badge"]') !== null,
+                            images: images,
+                            platform: 'amazon'
+                        }});
+                    }}
+                }});
+                
+                return {{
+                    platform: 'amazon',
+                    productId: asin,
+                    reviews: reviews
+                }};
+                
+            }} catch (error) {{
+                console.error('Amazon scrape error:', error);
+                return {{ platform: 'amazon', reviews: [], error: error.message }};
+            }}
+        }}
+        
+        extractProductIdFromUrl() {{
+            const match = window.location.pathname.match(/\\/item\\/(\\d+)/);
+            return match ? match[1] : null;
         }}
         
         applyFilter() {{
