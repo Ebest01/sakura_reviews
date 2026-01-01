@@ -4244,6 +4244,7 @@ def help_import_custom_file():
 
 # ==================== IMPORT FROM COMPETITORS ====================
 
+@app.route('/import')
 @app.route('/app/import-reviews')
 @app.route('/import/competitors')
 def import_competitors_page():
