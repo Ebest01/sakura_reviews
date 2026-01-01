@@ -441,16 +441,39 @@ def review_submit_page():
     order_id = request.args.get('order_id', '')
     customer_email = request.args.get('email', '')
     
-    # Get shop
+    # Validate required parameters
+    if not shop_id:
+        return render_template('error.html', 
+                             error_code=400,
+                             error_title="Missing Information",
+                             error_message="Shop ID is required. Please use the link from your review request email."), 400
+    
+    if not product_id:
+        return render_template('error.html',
+                             error_code=400,
+                             error_title="Missing Information", 
+                             error_message="Product ID is required. Please use the link from your review request email."), 400
+    
+    # Get shop - try multiple methods
     shop = None
-    if shop_id:
-        try:
-            shop = Shop.query.get(int(shop_id))
-        except:
+    try:
+        # Try as integer ID first
+        shop = Shop.query.get(int(shop_id))
+        if not shop:
+            # Try as sakura_shop_id
             shop = Shop.query.filter_by(sakura_shop_id=str(shop_id)).first()
+        if not shop:
+            # Try by shop_domain if shop_id looks like a domain
+            if '.myshopify.com' in str(shop_id):
+                shop = Shop.query.filter_by(shop_domain=str(shop_id)).first()
+    except Exception as e:
+        logger.error(f"Error finding shop with ID {shop_id}: {e}")
     
     if not shop:
-        return "Shop not found", 404
+        return render_template('error.html',
+                             error_code=404,
+                             error_title="Shop Not Found",
+                             error_message=f"Unable to find shop with ID: {shop_id}. Please contact support if you believe this is an error."), 404
     
     # Get product
     product = None
