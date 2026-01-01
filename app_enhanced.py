@@ -4244,6 +4244,15 @@ def help_import_custom_file():
 
 # ==================== IMPORT FROM COMPETITORS ====================
 
+@app.route('/bookmarklet')
+def bookmarklet_page():
+    """
+    Bookmarkable page with Sakura Reviews icon that executes the bookmarklet
+    This page can be bookmarked and will show the Sakura Reviews icon in the bookmark bar
+    """
+    return render_template('bookmarklet.html')
+
+
 @app.route('/import')
 @app.route('/app/import-reviews')
 @app.route('/import/competitors')

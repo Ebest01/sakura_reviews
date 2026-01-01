@@ -471,7 +471,7 @@
                         <div class="arrow-container">
                             <span class="arrow-up">⬆</span>
                         </div>
-                        <a href="javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();" 
+                        <a href="/bookmarklet?shop={{ shop_domain }}" 
                            class="bookmarklet-link" 
                            id="bookmarklet-link"
                            draggable="true"
@@ -479,6 +479,9 @@
                             🌸 Add to Sakura Reviews
                         </a>
                         <div class="bookmarklet-hint">Drag this button to your browser's bookmark bar</div>
+                        <div style="margin-top: 16px; font-size: 13px; color: #94a3b8;">
+                            💡 <strong>Tip:</strong> Bookmark the page that opens to get the Sakura Reviews icon in your bookmarks!
+                        </div>
                     </div>
                 </div>
             </div>
@@ -675,10 +678,10 @@
         let selectedFiles = {};
         
         function handleBookmarkletDrag(e) {
-            // Set the bookmarklet code as the drag data
-            const bookmarkletCode = "javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();";
-            e.dataTransfer.setData('text/plain', bookmarkletCode);
-            e.dataTransfer.setData('text/uri-list', bookmarkletCode);
+            // Set the bookmarklet page URL as the drag data (so it shows the icon)
+            const bookmarkletPageUrl = "{{ request.url_root }}bookmarklet?shop={{ shop_domain }}";
+            e.dataTransfer.setData('text/plain', bookmarkletPageUrl);
+            e.dataTransfer.setData('text/uri-list', bookmarkletPageUrl);
             e.dataTransfer.effectAllowed = 'copy';
         }
         

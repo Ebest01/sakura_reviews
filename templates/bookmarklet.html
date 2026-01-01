@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Sakura Reviews - Bookmarklet</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+        p {
+            color: #64748b;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .status {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #166534;
+            font-weight: 600;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff69b4, #ff1493);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🌸</div>
+        <h1>Sakura Reviews</h1>
+        <p>Click the button below to activate the review importer on any product page.</p>
+        <div class="status" id="status">Ready to import reviews...</div>
+        <a href="javascript:(function(){var s=document.createElement('script');s.src='https://sakura-reviews-sakrev-v15.utztjw.easypanel.host/js/bookmarklet.js?v='+Date.now();document.head.appendChild(s);})();" 
+           class="btn" 
+           onclick="document.getElementById('status').textContent='✅ Bookmarklet activated! Check the product page.'; return false;">
+            🌸 Import Reviews
+        </a>
+        <p style="margin-top: 30px; font-size: 14px; color: #94a3b8;">
+            <strong>Tip:</strong> Bookmark this page to access the importer anytime!
+        </p>
+    </div>
+</body>
+</html>
+
