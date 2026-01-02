@@ -1,24 +1,24 @@
 {% raw %}
 // [SSR MODE] INIT v" + Date.now() + "
 // ReviewKing Enhanced Bookmarklet - Superior to Loox
-(function() {{
+(function() {
     console.log('[REVIEWKING] \u{1F680} Bookmarklet script loaded!');
     
-    try {{
+    try {
         // Check if overlay already exists
         const existingOverlay = document.getElementById('reviewking-overlay');
-        if (existingOverlay) {{
+        if (existingOverlay) {
             console.log('[REVIEWKING] Already active, skipping...');
             return;
-        }}
+        }
         
         {% endraw %}
 const API_URL = '{{ api_url }}';
 {% raw %}
         console.log('[REVIEWKING] API URL:', API_URL);
         
-        class ReviewKingClient {{
-            constructor() {{
+        class ReviewKingClient {
+            constructor() {
                 console.log('[REVIEWKING] Creating ReviewKingClient instance...');
                 
                 // Assign to window FIRST so onclick handlers can reference it
@@ -35,47 +35,47 @@ const API_URL = '{{ api_url }}';
                 this.modalProductId = null;  // Store product ID clicked in modal
                 this.modalClickHandler = null;  // Store event handler for cleanup
                 this.currentIndex = 0;  // Initialize current review index
-                this.pagination = {{ has_next: false, page: 1 }};  // Initialize pagination
+                this.pagination = { has_next: false, page: 1 };  // Initialize pagination
                 // Initialize stats with all required properties
-                this.stats = {{ 
+                this.stats = { 
                     with_photos: 0, 
                     ai_recommended: 0,
                     average_quality: 0,
                     reviews_45star: 0,
                     reviews_3star: 0
-                }};
+                };
                 
                 console.log('[REVIEWKING] Calling init()...');
                 this.init();
-            }}
+            }
         
-        init() {{
+        init() {
             console.log('[REVIEWKING] Initializing...', window.location.href);
             
             // Check if we're on SSR/modal page
             const isModalPage = this.isModalPage();
             console.log('[REVIEWKING] Is modal page?', isModalPage);
             
-            if (isModalPage) {{
+            if (isModalPage) {
                 // \u{26A0}\u{FE0F} SSR page - setup modal detection and user guidance
                 // CRITICAL: This calls setupModalListener() which adds the "Get Reviews" button
                 // DO NOT REMOVE THIS CALL - it's essential for SSR functionality
                 console.log('[REVIEWKING] Setting up modal listener for SSR page');
                 this.setupModalListener();
                 return;
-            }}
+            }
             
             // Normal product page - detect product from URL
             console.log('[REVIEWKING] Detecting product...');
             this.productData = this.detectProduct();
             console.log('[REVIEWKING] Product data:', this.productData);
             
-            if (!this.productData.productId) {{
+            if (!this.productData.productId) {
                 console.error('[REVIEWKING] \u{274C} Could not detect product ID');
                 // Still create overlay to show helpful message
                 this.createOverlay();
                 const content = document.getElementById('reviewking-content');
-                if (content) {{
+                if (content) {
                     content.innerHTML = `
                         <div style="text-align: center; padding: 40px 20px; color: #fff;">
                             <div style="font-size: 48px; margin-bottom: 20px;">\u{1F338}</div>
@@ -85,49 +85,49 @@ const API_URL = '{{ api_url }}';
                                 The URL should contain <code style="background: #2d2d3d; padding: 2px 6px; border-radius: 4px;">/item/</code>
                             </p>
                             <p style="color: #888; font-size: 14px;">
-                                Current URL: <code style="background: #2d2d3d; padding: 2px 6px; border-radius: 4px; word-break: break-all;">${{window.location.href}}</code>
+                                Current URL: <code style="background: #2d2d3d; padding: 2px 6px; border-radius: 4px; word-break: break-all;">${window.location.href}</code>
                             </p>
                         </div>
                     `;
-                }}
+                }
                 return;
-            }}
+            }
             
             console.log('[REVIEWKING] \u{2705} Product detected, creating overlay...');
             this.createOverlay();
             this.loadReviews();
-        }}
+        }
         
-        isModalPage() {{
+        isModalPage() {
             // \u{26A0}\u{FE0F} CRITICAL: This method determines if we're on SSR page
             // If returns true, setupModalListener() is called which adds the "Get Reviews" button
             // Check if we're on a modal/immersive page (not a regular product page)
             const url = window.location.href;
             
             // If it's a direct product page (/item/xxxxx.html), it's NOT modal mode
-            if (url.includes('/item/') && /\\d{{13,}}\\.html/.test(url)) {{
+            if (url.includes('/item/') && /\\d{13,}\\.html/.test(url)) {
                 return false;
-            }}
+            }
             
             // Otherwise, check for modal/SSR page indicators
             return url.includes('_immersiveMode=true') || 
                    url.includes('disableNav=YES') ||
                    url.includes('/ssr/');
-        }}
+        }
         
-        detectProductFromModal() {{
+        detectProductFromModal() {
             console.log('[MODAL MODE] Detecting product from currently open modal...');
             
             // Simple approach: Check hidden input field that stores the clicked product ID
             const hiddenInput = document.getElementById('sakura-reviews-product-id');
-            if (hiddenInput && hiddenInput.value) {{
+            if (hiddenInput && hiddenInput.value) {
                 console.log('[MODAL MODE] \u{2705} Found product ID in hidden field:', hiddenInput.value);
                 return hiddenInput.value;
-            }}
+            }
             
             console.log('[MODAL MODE] \u{274C} No product ID found in hidden field');
             return null;
-        }}
+        }
         
         // ====================================================================
         // \u{26A0}\u{FE0F} CRITICAL SSR BUTTON CODE - DO NOT REMOVE OR MODIFY \u{26A0}\u{FE0F}
@@ -138,7 +138,7 @@ const API_URL = '{{ api_url }}';
         // Backup: See SSR_BUTTON_CODE_BACKUP.py for complete code reference
         // ====================================================================
         
-        setupModalListener() {{
+        setupModalListener() {
             console.log('[SSR MODE] Setting up Sakura Reviews for AliExpress SSR page...');
             
             // Check if AliExpress modal is currently open (try multiple selectors)
@@ -152,106 +152,106 @@ const API_URL = '{{ api_url }}';
             ];
             
             let modalFound = false;
-            for (const selector of modalSelectors) {{
+            for (const selector of modalSelectors) {
                 const element = document.querySelector(selector);
-                if (element) {{
+                if (element) {
                     console.log('[SSR MODE] \u{2705} Found modal with selector:', selector);
                     modalFound = true;
                     break;
-                }}
-            }}
+                }
+            }
             
-            if (modalFound) {{
+            if (modalFound) {
                 console.log('[SSR MODE] \u{2705} AliExpress modal is open - activating Sakura Reviews');
                 
                 // Show activation message
                 alert('\u{1F338} Sakura Reviews is now activated!\\n\\nClick on any product to add the "Get Reviews Now" button.');
                 
                 // Close the modal after user clicks OK
-                setTimeout(() => {{
+                setTimeout(() => {
                     const closeButton = document.querySelector('button[aria-label="Close"].comet-v2-modal-close') ||
                                      document.querySelector('.comet-v2-modal-close') ||
                                      document.querySelector('[aria-label*="Close"]');
-                    if (closeButton) {{
+                    if (closeButton) {
                         closeButton.click();
-                    }}
-                }}, 100);
+                    }
+                }, 100);
                 
                 // Setup click listener for products
                 this.setupProductClickListener();
                 
-            }} else {{
+            } else {
                 console.log('[SSR MODE] No modal currently open - setting up listener for when user clicks product');
                 // Even if modal isn't open, set up listener for when user clicks a product
                 this.setupProductClickListener();
                 
                 // Show helpful message
                 alert('\u{1F338} Sakura Reviews\\n\\nClick on any product in the search results to add the "Get Reviews" button to its modal.');
-            }}
-        }}
+            }
+        }
         
-        setupProductClickListener() {{
+        setupProductClickListener() {
             console.log('[SSR MODE] Setting up product click listener...');
             
             // Remove existing listener if it exists
-            if (this.modalClickHandler) {{
+            if (this.modalClickHandler) {
                 document.body.removeEventListener('click', this.modalClickHandler, true);
-            }}
+            }
             
             // Listen for clicks on products
-            this.modalClickHandler = (event) => {{
+            this.modalClickHandler = (event) => {
                 // Try multiple ways to find the product element
                 let productElement = event.target.closest('.productContainer');
-                if (!productElement) {{
+                if (!productElement) {
                     // Try other common product container classes
                     productElement = event.target.closest('[data-product-id]') ||
                                   event.target.closest('.product-item') ||
                                   event.target.closest('[id^="1005"]');
-                }}
+                }
                 
-                if (productElement) {{
+                if (productElement) {
                     // Try to get product ID from various sources
                     let productId = productElement.id || 
                                   productElement.getAttribute('data-product-id') ||
                                   productElement.getAttribute('data-spm-data');
                     
                     // Extract product ID if it's in a data attribute
-                    if (productId && productId.includes('productId')) {{
-                        try {{
+                    if (productId && productId.includes('productId')) {
+                        try {
                             const parsed = JSON.parse(productId);
                             productId = parsed.productId;
-                        }} catch (e) {{
+                        } catch (e) {
                             // Try regex extraction
                             const match = productId.match(/productId['":]?[\\s]*(\\d+)/);
                             if (match) productId = match[1];
-                        }}
-                    }}
+                        }
+                    }
                     
                     // Validate product ID (AliExpress IDs are usually 13+ digits starting with 1005)
-                    if (productId && /^1005\\d{{9,}}$/.test(String(productId))) {{
+                    if (productId && /^1005\\d{9,}$/.test(String(productId))) {
                         console.log('[SSR MODE] \u{2705} Product clicked:', productId);
                         // Store product ID and add "Get Reviews Now" button to the NEW modal
                         this.addSakuraButton(productId);
-                    }} else {{
+                    } else {
                         console.log('[SSR MODE] \u{26A0}\u{FE0F} Product element found but ID not valid:', productId);
-                    }}
-                }}
-            }};
+                    }
+                }
+            };
             
             // Attach listener to body with capture phase (runs on EVERY click)
             document.body.addEventListener('click', this.modalClickHandler, true);
             console.log('[SSR MODE] \u{2705} Product click listener attached - will trigger on every product click');
-        }}
+        }
         
         
-        addSakuraButton(productId) {{
+        addSakuraButton(productId) {
             console.log('[SSR MODE] Adding Sakura button for product:', productId);
             
             // Store the product ID for later use
             this.currentProductId = productId;
             
             // Try multiple times to add the button as the modal loads
-            const tryAddButton = (attempt = 1) => {{
+            const tryAddButton = (attempt = 1) => {
                 // Try multiple selectors for the review tab
                 const selectors = [
                     '#nav-review',
@@ -263,57 +263,57 @@ const API_URL = '{{ api_url }}';
                 ];
                 
                 let navReview = null;
-                for (const selector of selectors) {{
+                for (const selector of selectors) {
                     navReview = document.querySelector(selector);
-                    if (navReview) {{
-                        console.log(`[SSR MODE] \u{2705} Found review tab with selector: ${{selector}} (attempt ${{attempt}})`);
+                    if (navReview) {
+                        console.log(`[SSR MODE] \u{2705} Found review tab with selector: ${selector} (attempt ${attempt})`);
                         break;
-                    }}
-                }}
+                    }
+                }
                 
-                if (navReview) {{
+                if (navReview) {
                     // Remove any existing Sakura button
                     const existingButton = navReview.querySelector('.sakura-reviews-btn');
-                    if (existingButton) {{
+                    if (existingButton) {
                         console.log('[SSR MODE] Removing existing button');
                         existingButton.remove();
-                    }}
+                    }
                     
                     // Create the button
                     const btn = this.createSakuraButtonElement(productId);
                     
                     // Try to insert at the beginning of nav-review
-                    if (navReview.firstChild) {{
+                    if (navReview.firstChild) {
                         navReview.insertBefore(btn, navReview.firstChild);
-                    }} else {{
+                    } else {
                         navReview.appendChild(btn);
-                    }}
+                    }
                     
                     console.log('[SSR MODE] \u{2705} Sakura "Get Reviews" button added successfully');
-                }} else if (attempt < 10) {{
-                    console.log(`[SSR MODE] \u{23F3} Review tab not found, retry ${{attempt + 1}}/10...`);
+                } else if (attempt < 10) {
+                    console.log(`[SSR MODE] \u{23F3} Review tab not found, retry ${attempt + 1}/10...`);
                     setTimeout(() => tryAddButton(attempt + 1), 300);
-                }} else {{
+                } else {
                     console.log('[SSR MODE] \u{274C} Review tab not found after 10 attempts - trying alternative locations');
                     // Try adding to modal body as fallback
                     const modalBody = document.querySelector('.comet-v2-modal-body') || 
                                      document.querySelector('.product-detail-wrap') ||
                                      document.querySelector('.product-main');
-                    if (modalBody) {{
+                    if (modalBody) {
                         const btn = this.createSakuraButtonElement(productId);
                         modalBody.insertBefore(btn, modalBody.firstChild);
                         console.log('[SSR MODE] \u{2705} Button added to modal body as fallback');
-                    }}
-                }}
-            }};
+                    }
+                }
+            };
             
             // Start trying immediately and also after delays
             tryAddButton();
             setTimeout(() => tryAddButton(4), 600);
             setTimeout(() => tryAddButton(7), 1500);
-        }}
+        }
         
-        createSakuraButtonElement(productId) {{
+        createSakuraButtonElement(productId) {
             const btn = document.createElement('button');
             btn.className = 'sakura-reviews-btn';
             btn.innerHTML = `
@@ -358,189 +358,189 @@ const API_URL = '{{ api_url }}';
             `;
             
             // Add hover effects
-            btn.addEventListener('mouseenter', () => {{
+            btn.addEventListener('mouseenter', () => {
                 btn.style.background = '#ff69b4';
                 btn.style.color = 'white';
                 btn.style.transform = 'translateY(-1px)';
                 btn.style.boxShadow = '0 4px 12px rgba(255, 105, 180, 0.4)';
                 btn.style.borderColor = '#ff1493';
-            }});
+            });
             
-            btn.addEventListener('mouseleave', () => {{
+            btn.addEventListener('mouseleave', () => {
                 btn.style.background = 'white';
                 btn.style.color = '#8B4A8B';
                 btn.style.transform = 'translateY(0)';
                 btn.style.boxShadow = '0 2px 8px rgba(255, 105, 180, 0.2)';
                 btn.style.borderColor = '#ff69b4';
-            }});
+            });
             
             // Add click handler
-            btn.addEventListener('click', () => {{
+            btn.addEventListener('click', () => {
                 this.handleProductClick(productId);
-            }});
+            });
             
             return btn;
-        }}
+        }
         // ====================================================================
         // \u{2705} END OF CRITICAL SSR BUTTON CODE
         // If you see this marker, the SSR button code is intact.
         // ====================================================================
         
-        handleProductClick(productId) {{
+        handleProductClick(productId) {
             console.log('[SSR MODE] Processing product click:', productId);
             
             // Store the product data
-            this.productData = {{
+            this.productData = {
                 platform: 'aliexpress',
                 productId: productId,
                 url: window.location.href
-            }};
+            };
             
             // Create overlay and load reviews
             this.createOverlay();
             this.loadReviews();
-        }}
+        }
         
-        detectProduct() {{
+        detectProduct() {
             const url = window.location.href;
             const hostname = window.location.hostname;
             
             let platform = 'unknown', productId = null;
             
             // Try multiple methods for AliExpress
-            if (hostname.includes('aliexpress')) {{
+            if (hostname.includes('aliexpress')) {
                 platform = 'aliexpress';
                 
                 // Method 1: Extract from URL (supports .html extension)
                 const urlMatch = url.match(/\\/item\\/(\\d+)(?:\\.html)?/);
-                if (urlMatch) {{
+                if (urlMatch) {
                     productId = urlMatch[1];
                     console.log('[DETECT] Product ID from URL:', productId);
-                }}
+                }
                 
                 // Method 2: Try window.runParams (AliExpress global data)
-                if (!productId && typeof window.runParams === 'object' && window.runParams.data) {{
+                if (!productId && typeof window.runParams === 'object' && window.runParams.data) {
                     const data = window.runParams.data;
-                    if (data.feedbackModule && data.feedbackModule.productId) {{
+                    if (data.feedbackModule && data.feedbackModule.productId) {
                         productId = data.feedbackModule.productId;
                         console.log('[DETECT] Product ID from runParams.feedbackModule:', productId);
-                    }} else if (data.productId) {{
+                    } else if (data.productId) {
                         productId = data.productId;
                         console.log('[DETECT] Product ID from runParams.data:', productId);
-                    }} else if (data.storeModule && data.storeModule.productId) {{
+                    } else if (data.storeModule && data.storeModule.productId) {
                         productId = data.storeModule.productId;
                         console.log('[DETECT] Product ID from runParams.storeModule:', productId);
-                    }}
-                }}
+                    }
+                }
                 
                 // Method 3: Try to find in page meta/data attributes
-                if (!productId) {{
+                if (!productId) {
                     const metaProductId = document.querySelector('meta[property="product:id"]') || 
                                        document.querySelector('meta[name="product:id"]');
-                    if (metaProductId) {{
+                    if (metaProductId) {
                         productId = metaProductId.getAttribute('content');
                         console.log('[DETECT] Product ID from meta tag:', productId);
-                    }}
-                }}
-            }} else if (hostname.includes('amazon')) {{
+                    }
+                }
+            } else if (hostname.includes('amazon')) {
                 platform = 'amazon';
-                const match = url.match(/\\/dp\\/([A-Z0-9]{{10}})/);
+                const match = url.match(/\\/dp\\/([A-Z0-9]{10})/);
                 if (match) productId = match[1];
-            }} else if (hostname.includes('ebay')) {{
+            } else if (hostname.includes('ebay')) {
                 platform = 'ebay';
                 const match = url.match(/\\/itm\\/(\\d+)/);
                 if (match) productId = match[1];
-            }} else if (hostname.includes('walmart')) {{
+            } else if (hostname.includes('walmart')) {
                 platform = 'walmart';
                 const match = url.match(/\\/ip\\/[^\\/]+\\/(\\d+)/);
                 if (match) productId = match[1];
-            }}
+            }
             
-            console.log('[DETECT] Final result:', {{ platform, productId, url }});
-            return {{ platform, productId, url }};
-        }}
+            console.log('[DETECT] Final result:', { platform, productId, url });
+            return { platform, productId, url };
+        }
         
-        createOverlay() {{
+        createOverlay() {
             // Remove any existing overlay first to prevent duplicates
             const existingOverlay = document.getElementById('reviewking-overlay');
-            if (existingOverlay) {{
+            if (existingOverlay) {
                 console.log('[REVIEWKING] Removing existing overlay to prevent duplicates');
                 existingOverlay.remove();
-            }}
+            }
             
             const div = document.createElement('div');
             div.id = 'reviewking-overlay';
             div.innerHTML = `
                 <style>
-                    #reviewking-overlay {{
+                    #reviewking-overlay {
                         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                         background: rgba(0,0,0,0.90); z-index: 999999;
                         display: flex; align-items: center; justify-content: center;
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                    }}
-                    #reviewking-panel {{
+                    }
+                    #reviewking-panel {
                         background: #1e1e2e; border-radius: 16px; width: 90vw; max-width: 750px;
                         max-height: 90vh; display: flex; flex-direction: column;
                         box-shadow: 0 25px 80px rgba(0,0,0,0.5);
-                    }}
-                    #reviewking-header {{
+                    }
+                    #reviewking-header {
                         background: #1e1e2e;
                         color: white; padding: 20px 28px; border-radius: 16px 16px 0 0;
                         display: flex; justify-content: space-between; align-items: center;
                         border-bottom: 1px solid #2d2d3d;
-                    }}
-                    #reviewking-close {{
+                    }
+                    #reviewking-close {
                         background: #FF2D85; border: none; color: white;
                         font-size: 13px; padding: 10px 24px; border-radius: 8px;
                         cursor: pointer; display: flex; align-items: center; justify-content: center;
                         font-weight: 700; line-height: 1; gap: 6px;
                         transition: all 0.2s;
-                    }}
-                    #reviewking-close:hover {{ background: #E0186F; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 45, 133, 0.4); }}
-                    #reviewking-content {{
+                    }
+                    #reviewking-close:hover { background: #E0186F; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 45, 133, 0.4); }
+                    #reviewking-content {
                         flex: 1; padding: 24px 28px; overflow-y: auto;
                         background: #1e1e2e;
                         scrollbar-width: thin;
                         scrollbar-color: #4a4a5e #1e1e2e;
-                    }}
-                    #reviewking-content::-webkit-scrollbar {{
+                    }
+                    #reviewking-content::-webkit-scrollbar {
                         width: 8px;
-                    }}
-                    #reviewking-content::-webkit-scrollbar-track {{
+                    }
+                    #reviewking-content::-webkit-scrollbar-track {
                         background: #1e1e2e;
-                    }}
-                    #reviewking-content::-webkit-scrollbar-thumb {{
+                    }
+                    #reviewking-content::-webkit-scrollbar-thumb {
                         background: #4a4a5e;
                         border-radius: 4px;
-                    }}
-                    #reviewking-content::-webkit-scrollbar-thumb:hover {{
+                    }
+                    #reviewking-content::-webkit-scrollbar-thumb:hover {
                         background: #5a5a6e;
-                    }}
-                    .rk-btn {{
+                    }
+                    .rk-btn {
                         padding: 12px 20px; border: none; border-radius: 8px;
                         font-size: 13px; font-weight: 600; cursor: pointer;
                         transition: all 0.2s ease;
                         white-space: nowrap;
-                    }}
-                    .rk-btn:hover {{ transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }}
-                    .rk-btn:active {{ transform: translateY(0); }}
-                    .rk-btn-primary {{
+                    }
+                    .rk-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+                    .rk-btn:active { transform: translateY(0); }
+                    .rk-btn-primary {
                         background: #667eea; color: white;
-                    }}
-                    .rk-btn-primary:hover {{ background: #5568d3; }}
-                    .rk-btn-secondary {{
+                    }
+                    .rk-btn-primary:hover { background: #5568d3; }
+                    .rk-btn-secondary {
                         background: #2d2d3d; color: #e5e7eb;
                         border: 1px solid #3d3d4d;
-                    }}
-                    .rk-btn-secondary:hover {{ background: #3d3d4d; border-color: #4d4d5d; }}
-                    .rk-badge {{
+                    }
+                    .rk-btn-secondary:hover { background: #3d3d4d; border-color: #4d4d5d; }
+                    .rk-badge {
                         display: inline-block; padding: 4px 10px; border-radius: 12px;
                         font-size: 10px; font-weight: 700; text-transform: uppercase;
                         letter-spacing: 0.5px;
-                    }}
-                    .rk-badge-success {{ background: #10b981; color: white; }}
-                    .rk-badge-info {{ background: #3b82f6; color: white; }}
-                    @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
+                    }
+                    .rk-badge-success { background: #10b981; color: white; }
+                    .rk-badge-info { background: #3b82f6; color: white; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 </style>
                 <div id="reviewking-panel">
                     <div id="reviewking-header">
@@ -566,106 +566,106 @@ const API_URL = '{{ api_url }}';
             
             // Attach close button event listener
             const closeBtn = document.getElementById('reviewking-close');
-            if (closeBtn) {{
-                closeBtn.addEventListener('click', () => {{
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
                     this.close();
-                }});
-            }}
-        }}
+                });
+            }
+        }
         
-        setupProductSearch() {{
+        setupProductSearch() {
             const searchInput = document.getElementById('product-search-input');
             const dropdown = document.getElementById('product-dropdown');
             
             // Check if elements exist
-            if (!searchInput || !dropdown) {{
+            if (!searchInput || !dropdown) {
                 console.log('Product search elements not found yet');
                 return;
-            }}
+            }
             
             // Add search input event listener (only once)
-            if (searchInput.hasAttribute('data-listener-attached')) {{
+            if (searchInput.hasAttribute('data-listener-attached')) {
                 return;
-            }}
+            }
             searchInput.setAttribute('data-listener-attached', 'true');
             
-            searchInput.addEventListener('input', (e) => {{
+            searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.trim();
                 
                 // Clear previous timeout
-                if (this.searchTimeout) {{
+                if (this.searchTimeout) {
                     clearTimeout(this.searchTimeout);
-                }}
+                }
                 
                 const dropdownElement = document.getElementById('product-dropdown');
                 if (!dropdownElement) return;
                 
-                if (query.length < 2) {{
+                if (query.length < 2) {
                     dropdownElement.style.display = 'none';
                     return;
-                }}
+                }
                 
                 // Debounce search
-                this.searchTimeout = setTimeout(() => {{
+                this.searchTimeout = setTimeout(() => {
                     this.searchProducts(query);
-                }}, 300);
-            }});
+                }, 300);
+            });
             
             // Hide dropdown when clicking outside (only once)
-            if (!document.body.hasAttribute('data-dropdown-listener')) {{
+            if (!document.body.hasAttribute('data-dropdown-listener')) {
                 document.body.setAttribute('data-dropdown-listener', 'true');
-            document.addEventListener('click', (e) => {{
+            document.addEventListener('click', (e) => {
                     const dropdownElement = document.getElementById('product-dropdown');
-                    if (dropdownElement && !e.target.closest('#product-search-input') && !e.target.closest('#product-dropdown')) {{
+                    if (dropdownElement && !e.target.closest('#product-search-input') && !e.target.closest('#product-dropdown')) {
                         dropdownElement.style.display = 'none';
-                }}
-            }});
-            }}
-        }}
+                }
+            });
+            }
+        }
         
-        async searchProducts(query) {{
+        async searchProducts(query) {
             const dropdown = document.getElementById('product-dropdown');
             
-            if (!dropdown) {{
+            if (!dropdown) {
                 console.error('Dropdown element not found');
                 return;
-            }}
+            }
             
-            try {{
+            try {
                 dropdown.innerHTML = '<div style="padding: 12px; color: #666;">Searching...</div>';
                 dropdown.style.display = 'block';
                 
-                const response = await fetch(`${{API_URL}}/shopify/products/search?q=${{encodeURIComponent(query)}}`);
+                const response = await fetch(`${API_URL}/shopify/products/search?q=${encodeURIComponent(query)}`);
                 const result = await response.json();
                 
-                if (result.success && result.products.length > 0) {{
+                if (result.success && result.products.length > 0) {
                     dropdown.innerHTML = result.products.map(product => `
-                        <div class="product-option" data-product-id="${{product.id}}" 
-                             data-product-title="${{product.title}}"
+                        <div class="product-option" data-product-id="${product.id}" 
+                             data-product-title="${product.title}"
                              style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; 
                                     display: flex; align-items: center; gap: 12px;"
                              onmouseover="this.style.background='#f8f9fa'" 
                              onmouseout="this.style.background='white'"
-                             onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}', '${{product.image || ''}}')">
-                            ${{product.image ? '<img src="' + product.image + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}}
+                             onclick="window.reviewKingClient.selectProduct('${product.id}', '${product.title.replace(/'/g, "\\\\'")}', '${product.image || ''}')">
+                            ${product.image ? '<img src="' + product.image + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}
                             <div>
-                                <div style="font-weight: 500; color: #333; font-size: 14px;">${{product.title}}</div>
-                                <div style="font-size: 12px; color: #666;">ID: ${{product.id}}</div>
+                                <div style="font-weight: 500; color: #333; font-size: 14px;">${product.title}</div>
+                                <div style="font-size: 12px; color: #666;">ID: ${product.id}</div>
                             </div>
                         </div>
                     `).join('');
-                }} else {{
+                } else {
                     dropdown.innerHTML = '<div style="padding: 12px; color: #666;">No products found</div>';
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 dropdown.innerHTML = '<div style="padding: 12px; color: #e74c3c;">Search failed. Check Shopify API configuration.</div>';
-            }}
-        }}
+            }
+        }
         
-        selectProduct(productId, productTitle, productImage) {{
+        selectProduct(productId, productTitle, productImage) {
             console.log('Product selected:', productId, productTitle, productImage);
             
-            this.selectedProduct = {{ id: productId, title: productTitle, image: productImage || null }};
+            this.selectedProduct = { id: productId, title: productTitle, image: productImage || null };
             
             // Hide dropdown and clear input
             const dropdown = document.getElementById('product-dropdown');
@@ -675,19 +675,19 @@ const API_URL = '{{ api_url }}';
             if (dropdown) dropdown.style.display = 'none';
             if (searchInput) searchInput.value = '';
             
-            if (!selectedDiv) {{
+            if (!selectedDiv) {
                 console.error('Selected product div not found');
                 return;
-            }}
+            }
             
             // Show selected product with thumbnail (matching v12 style)
             selectedDiv.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        ${{productImage ? '<img src="' + productImage + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                        ${productImage ? '<img src="' + productImage + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}
                         <div>
                             <div style="font-weight: 500;">\u{2713} Target Product Selected</div>
-                            <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
+                            <div style="opacity: 0.8; font-size: 12px;">${productTitle}</div>
                         </div>
                     </div>
                     <button onclick="window.reviewKingClient.clearProduct()" 
@@ -702,49 +702,49 @@ const API_URL = '{{ api_url }}';
             // ALWAYS refresh display after product selection to show stats, bulk import buttons, etc.
             // Even if reviews aren't loaded yet, we should show the UI structure
             this.displayReview();
-        }}
+        }
         
-        clearProduct() {{
+        clearProduct() {
             this.selectedProduct = null;
             
             const selectedDiv = document.getElementById('selected-product');
-            if (selectedDiv) {{
+            if (selectedDiv) {
                 selectedDiv.style.display = 'none';
-            }}
+            }
             
             // Refresh current review display to hide import buttons
-            if (this.reviews && this.reviews.length > 0) {{
+            if (this.reviews && this.reviews.length > 0) {
                 this.displayReview();
-            }}
-        }}
+            }
+        }
         
-        async loadReviews(page = 1) {{
-            try {{
-                console.log('Loading reviews...', {{ productId: this.productData.productId, platform: this.productData.platform }});
+        async loadReviews(page = 1) {
+            try {
+                console.log('Loading reviews...', { productId: this.productData.productId, platform: this.productData.platform });
                 
                 // IMPROVED: Try client-side scraping first (from app_ultimate.py)
                 const scrapedData = this.scrapePageData();
                 
-                const params = new URLSearchParams({{
+                const params = new URLSearchParams({
                     productId: this.productData.productId,
                     platform: this.productData.platform,
                     page: page,
                     per_page: 150,  // Load 150 reviews to account for duplicates
                     id: this.sessionId
-                }});
+                });
                 
-                const url = `${{API_URL}}/admin/reviews/import/url?${{params}}`;
+                const url = `${API_URL}/admin/reviews/import/url?${params}`;
                 console.log('Fetching:', url);
                 
                 // Send scraped data if available
-                const response = await fetch(url, {{
+                const response = await fetch(url, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         scraped: scrapedData,
                         session_id: this.sessionId
-                    }})
-                }});
+                    })
+                });
                 
                 console.log('Response status:', response.status);
                 
@@ -752,88 +752,88 @@ const API_URL = '{{ api_url }}';
                 console.log('Result:', result);
                 
                 // Save session_id if returned (for caching)
-                if (result.session_id) {{
+                if (result.session_id) {
                     this.sessionId = result.session_id;
-                    console.log(`Session saved: ${{this.sessionId.substring(0, 8)}}...`);
-                }}
+                    console.log(`Session saved: ${this.sessionId.substring(0, 8)}...`);
+                }
                 
-                if (result.success) {{
+                if (result.success) {
                     this.allReviews = result.reviews;  // Store all reviews
                     this.currentIndex = 0;
                     this.pagination = result.pagination;
                     
                     // Calculate stats on client side (like v12) - more reliable
                     // Normalize property names from server
-                    const serverStats = result.stats || {{}};
+                    const serverStats = result.stats || {};
                     const avgQuality = serverStats.average_quality || serverStats.avg_quality || 0;
                     const avgRating = serverStats.average_rating || serverStats.avg_rating || 0;
                     
                     // Calculate rating counts (normalize AliExpress 0-100 to 1-5 scale) - like v12
-                    const reviews45star = this.allReviews.filter(r => {{
+                    const reviews45star = this.allReviews.filter(r => {
                         const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                         return rating === 4 || rating === 5;
-                    }});
-                    const reviews3star = this.allReviews.filter(r => {{
+                    });
+                    const reviews3star = this.allReviews.filter(r => {
                         const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                         return rating === 3;
-                    }});
+                    });
                     
                     // Store server stats (like v12 - only basic fields)
-                    this.stats = {{
+                    this.stats = {
                         ...this.stats,  // Keep existing stats (with defaults)
                         total: this.allReviews.length,
                         with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
                         ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
                         average_quality: avgQuality,
                         average_rating: avgRating
-                    }};
+                    };
                     console.log('All reviews loaded:', this.allReviews.length);
                     
                     // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
                     const aiRecommendedCount = this.allReviews.filter(r => r.ai_recommended).length;
-                    if (this.currentFilter === 'ai_recommended' && aiRecommendedCount < 3) {{
-                        console.log(`[Smart Fallback] Only ${{aiRecommendedCount}} AI recommended reviews, falling back to 'all' with smart sorting`);
+                    if (this.currentFilter === 'ai_recommended' && aiRecommendedCount < 3) {
+                        console.log(`[Smart Fallback] Only ${aiRecommendedCount} AI recommended reviews, falling back to 'all' with smart sorting`);
                         this.currentFilter = 'all';
                         this.useSmartSort = true;  // Flag for smart sorting
-                    }} else {{
+                    } else {
                         this.useSmartSort = false;
-                    }}
+                    }
                     
                     this.applyFilter();  // Apply current filter and display (will recalculate reviews_45star and reviews_3star)
-                }} else {{
+                } else {
                     console.error('Error loading reviews:', result.error);
                     // Show user-friendly error message
                     const errorMessage = result.message || result.error || 'Failed to load reviews';
                     this.showError(errorMessage);
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Exception loading reviews:', error);
                 this.showError('Failed to load reviews: ' + error.message);
-            }}
-        }}
+            }
+        }
         
         // IMPROVED: Client-side scraping from app_ultimate.py
-        scrapePageData() {{
+        scrapePageData() {
             const hostname = window.location.hostname;
             
-            if (hostname.includes('aliexpress')) {{
+            if (hostname.includes('aliexpress')) {
                 return this.scrapeAliExpress();
-            }} else if (hostname.includes('amazon')) {{
+            } else if (hostname.includes('amazon')) {
                 return this.scrapeAmazon();
-            }}
+            }
             
             return null;
-        }}
+        }
         
-        scrapeAliExpress() {{
-            try {{
+        scrapeAliExpress() {
+            try {
                 console.log('=== ALIEXPRESS SCRAPING DEBUG ===');
                 console.log('window.runParams exists?', typeof window.runParams);
                 console.log('window.runParams?.data:', window.runParams?.data ? 'YES' : 'NO');
                 
                 // Method 1: Extract from window.runParams (EXACTLY like Loox!)
-                const runParams = window.runParams?.data || window.runParams || {{}};
-                const feedbackModule = runParams.feedbackModule || runParams.productDetailReviewSummary || {{}};
+                const runParams = window.runParams?.data || window.runParams || {};
+                const feedbackModule = runParams.feedbackModule || runParams.productDetailReviewSummary || {};
                 
                 console.log('feedbackModule exists?', Object.keys(feedbackModule).length > 0);
                 console.log('feedbackList exists?', feedbackModule.feedbackList ? 'YES' : 'NO');
@@ -854,22 +854,22 @@ const API_URL = '{{ api_url }}';
                 // Extract reviews from feedbackModule
                 let reviews = [];
                 
-                if (feedbackModule.feedbackList && feedbackModule.feedbackList.length > 0) {{
-                    console.log(`\u{2705} Found ${{feedbackModule.feedbackList.length}} reviews in runParams`);
+                if (feedbackModule.feedbackList && feedbackModule.feedbackList.length > 0) {
+                    console.log(`\u{2705} Found ${feedbackModule.feedbackList.length} reviews in runParams`);
                     
-                    reviews = feedbackModule.feedbackList.map((r, idx) => {{
+                    reviews = feedbackModule.feedbackList.map((r, idx) => {
                         // IMPROVED: Better image extraction - exclude avatars
                         const reviewImages = [];
                         
-                        if (r.images && Array.isArray(r.images)) {{
-                            r.images.forEach(img => {{
+                        if (r.images && Array.isArray(r.images)) {
+                            r.images.forEach(img => {
                                 let imgUrl = null;
                                 
-                                if (typeof img === 'string') {{
+                                if (typeof img === 'string') {
                                     imgUrl = img;
-                                }} else if (img && typeof img === 'object') {{
+                                } else if (img && typeof img === 'object') {
                                     imgUrl = img.imgUrl || img.url || img.src;
-                                }}
+                                }
                                 
                                 // FILTER OUT AVATARS AND JUNK
                                 if (imgUrl && 
@@ -877,15 +877,15 @@ const API_URL = '{{ api_url }}';
                                     (imgUrl.includes('/kf/') || imgUrl.includes('ae-pic')) &&
                                     !imgUrl.includes('avatar') && 
                                     !imgUrl.includes('icon') &&
-                                    !imgUrl.includes('placeholder')) {{
+                                    !imgUrl.includes('placeholder')) {
                                     reviewImages.push(imgUrl);
-                                }}
-                            }});
-                        }}
+                                }
+                            });
+                        }
                         
-                        console.log(`Review ${{idx}}: "${{r.buyerFeedback?.substring(0, 30)}}..." - ${{reviewImages.length}} photos`);
+                        console.log(`Review ${idx}: "${r.buyerFeedback?.substring(0, 30)}..." - ${reviewImages.length} photos`);
                         
-                        return {{
+                        return {
                             id: r.evaluationId || Math.random().toString(36),
                             reviewer_name: r.buyerName || 'Anonymous',
                             text: r.buyerFeedback || '',
@@ -895,37 +895,37 @@ const API_URL = '{{ api_url }}';
                             verified: true,
                             images: reviewImages,
                             platform: 'aliexpress'
-                        }};
-                    }});
-                }}
+                        };
+                    });
+                }
                 
                 // Method 2: Try DOM scraping if runParams failed
-                if (reviews.length === 0) {{
+                if (reviews.length === 0) {
                     console.warn('\u{26A0}\u{FE0F} No reviews in feedbackList, trying DOM scraping...');
                     reviews = this.scrapeAliExpressDom();
-                }}
+                }
                 
-                console.log(`\u{1F3AF} Total reviews extracted: ${{reviews.length}}`);
+                console.log(`\u{1F3AF} Total reviews extracted: ${reviews.length}`);
                 
-                return {{
+                return {
                     platform: 'aliexpress',
                     productId: productId,
                     sellerId: sellerId,
                     reviews: reviews,
                     source: reviews.length > 0 ? (feedbackModule.feedbackList ? 'runParams' : 'dom') : 'none'
-                }};
+                };
                 
-            }} catch (error) {{
+            } catch (error) {
                 console.error('\u{274C} AliExpress scrape error:', error);
-                return {{ platform: 'aliexpress', reviews: [], error: error.message }};
-            }}
-        }}
+                return { platform: 'aliexpress', reviews: [], error: error.message };
+            }
+        }
         
-        scrapeAliExpressDom() {{
+        scrapeAliExpressDom() {
             // IMPROVED: Better DOM scraping from app_ultimate.py
             const reviews = [];
             
-            try {{
+            try {
                 console.log('\u{1F50D} Starting DOM scraping...');
                 
                 const selectors = [
@@ -936,27 +936,27 @@ const API_URL = '{{ api_url }}';
                 ];
                 
                 let reviewElements = [];
-                for (const selector of selectors) {{
+                for (const selector of selectors) {
                     reviewElements = document.querySelectorAll(selector);
-                    if (reviewElements.length > 0 && reviewElements.length < 100) {{
-                        console.log(`\u{2705} Found ${{reviewElements.length}} REAL reviews with: ${{selector}}`);
+                    if (reviewElements.length > 0 && reviewElements.length < 100) {
+                        console.log(`\u{2705} Found ${reviewElements.length} REAL reviews with: ${selector}`);
                         break;
-                    }}
-                }}
+                    }
+                }
                 
-                if (reviewElements.length === 0) {{
+                if (reviewElements.length === 0) {
                     console.warn('No review elements found, trying body search...');
-                    reviewElements = Array.from(document.querySelectorAll('div')).filter(el => {{
+                    reviewElements = Array.from(document.querySelectorAll('div')).filter(el => {
                         const text = el.textContent || '';
                         const hasRating = el.querySelector('[class*="star"], [class*="rating"]');
-                        const hasDate = /\\d{{1,2}}\\s+\\w+\\s+\\d{{4}}/.test(text) || /\\d{{4}}-\\d{{2}}-\\d{{2}}/.test(text);
+                        const hasDate = /\\d{1,2}\\s+\\w+\\s+\\d{4}/.test(text) || /\\d{4}-\\d{2}-\\d{2}/.test(text);
                         return hasRating && hasDate && text.length > 50 && text.length < 2000;
-                    }});
-                    console.log(`Body search found ${{reviewElements.length}} potential reviews`);
-                }}
+                    });
+                    console.log(`Body search found ${reviewElements.length} potential reviews`);
+                }
                 
-                reviewElements.forEach((el, index) => {{
-                    try {{
+                reviewElements.forEach((el, index) => {
+                    try {
                         const infoEl = el.querySelector('.list--itemInfo--URmp38d, [class*="itemInfo"]');
                         const infoText = infoEl?.textContent?.trim() || '';
                         const infoParts = infoText.split('|').map(s => s.trim());
@@ -966,33 +966,33 @@ const API_URL = '{{ api_url }}';
                         const textEl = el.querySelector('.list--itemReview--xQUhO78, [class*="itemReview"]');
                         let text = textEl?.textContent?.trim() || '';
                         
-                        if (!text || text.length < 5) {{
+                        if (!text || text.length < 5) {
                             return;
-                        }}
+                        }
                         
                         let rating = 5;
                         const starContainer = el.querySelector('.stars--box--d_zcrGb, [class*="stars"]');
-                        if (starContainer) {{
+                        if (starContainer) {
                             const filledStars = starContainer.querySelectorAll('[class*="starreviewfilled"]');
-                            if (filledStars.length > 0) {{
+                            if (filledStars.length > 0) {
                                 rating = filledStars.length;
-                            }}
-                        }}
+                            }
+                        }
                         
                         let date = new Date().toISOString().split('T')[0];
-                        if (dateText) {{
-                            try {{
+                        if (dateText) {
+                            try {
                                 const parsedDate = new Date(dateText);
-                                if (!isNaN(parsedDate.getTime())) {{
+                                if (!isNaN(parsedDate.getTime())) {
                                     date = parsedDate.toISOString().split('T')[0];
-                                }}
-                            }} catch(e) {{}}
-                        }}
+                                }
+                            } catch(e) {}
+                        }
                         
                         // IMPROVED: Better image extraction - exclude avatars
                         const images = [];
                         const imgElements = el.querySelectorAll('img');
-                        imgElements.forEach(img => {{
+                        imgElements.forEach(img => {
                             const isAvatar = img.closest('.list--itemPhoto--ZgH4_cc') || 
                                            img.closest('[class*="itemPhoto"]');
                             if (isAvatar) return;
@@ -1004,13 +1004,13 @@ const API_URL = '{{ api_url }}';
                                 !src.includes('avatar') && 
                                 !src.includes('icon') &&
                                 !src.includes('logo') &&
-                                src.length > 50) {{
+                                src.length > 50) {
                                 images.push(src);
-                            }}
-                        }});
+                            }
+                        });
                         
-                        if (text && text.length > 10) {{
-                            reviews.push({{
+                        if (text && text.length > 10) {
+                            reviews.push({
                                 id: 'dom_' + index,
                                 reviewer_name: reviewer_name,
                                 text: text.substring(0, 500),
@@ -1020,41 +1020,41 @@ const API_URL = '{{ api_url }}';
                                 verified: true,
                                 images: images,
                                 platform: 'aliexpress'
-                            }});
-                            console.log(`\u{2705} Scraped review ${{index}}: ${{reviewer_name}} - "${{text.substring(0,30)}}..." (${{images.length}} photos)`);
-                        }}
-                    }} catch (reviewError) {{
-                        console.error(`Error processing review ${{index}}:`, reviewError);
-                    }}
-                }});
+                            });
+                            console.log(`\u{2705} Scraped review ${index}: ${reviewer_name} - "${text.substring(0,30)}..." (${images.length} photos)`);
+                        }
+                    } catch (reviewError) {
+                        console.error(`Error processing review ${index}:`, reviewError);
+                    }
+                });
                 
-                console.log(`\u{1F3AF} DOM scraping complete: ${{reviews.length}} reviews extracted`);
-            }} catch (error) {{
+                console.log(`\u{1F3AF} DOM scraping complete: ${reviews.length} reviews extracted`);
+            } catch (error) {
                 console.error('\u{274C} DOM scrape error:', error);
-            }}
+            }
             
             return reviews;
-        }}
+        }
         
-        scrapeAmazon() {{
-            try {{
-                const asin = window.location.pathname.match(/\\/dp\\/([A-Z0-9]{{10}})/)?.[1];
+        scrapeAmazon() {
+            try {
+                const asin = window.location.pathname.match(/\\/dp\\/([A-Z0-9]{10})/)?.[1];
                 
                 const reviews = [];
                 const reviewElements = document.querySelectorAll('[data-hook="review"]');
                 
-                reviewElements.forEach((el, index) => {{
+                reviewElements.forEach((el, index) => {
                     const nameEl = el.querySelector('[class*="author"]');
                     const textEl = el.querySelector('[data-hook="review-body"]');
                     const ratingEl = el.querySelector('[data-hook="review-star-rating"]');
                     
                     const images = [];
-                    el.querySelectorAll('img[data-hook="review-image"]').forEach(img => {{
+                    el.querySelectorAll('img[data-hook="review-image"]').forEach(img => {
                         images.push(img.src);
-                    }});
+                    });
                     
-                    if (textEl) {{
-                        reviews.push({{
+                    if (textEl) {
+                        reviews.push({
                             id: 'amz_' + index,
                             reviewer_name: nameEl?.textContent?.trim() || 'Amazon Customer',
                             text: textEl.textContent?.trim() || '',
@@ -1064,50 +1064,50 @@ const API_URL = '{{ api_url }}';
                             verified: el.querySelector('[data-hook="avp-badge"]') !== null,
                             images: images,
                             platform: 'amazon'
-                        }});
-                    }}
-                }});
+                        });
+                    }
+                });
                 
-                return {{
+                return {
                     platform: 'amazon',
                     productId: asin,
                     reviews: reviews
-                }};
+                };
                 
-            }} catch (error) {{
+            } catch (error) {
                 console.error('Amazon scrape error:', error);
-                return {{ platform: 'amazon', reviews: [], error: error.message }};
-            }}
-        }}
+                return { platform: 'amazon', reviews: [], error: error.message };
+            }
+        }
         
-        extractProductIdFromUrl() {{
+        extractProductIdFromUrl() {
             const match = window.location.pathname.match(/\\/item\\/(\\d+)/);
             return match ? match[1] : null;
-        }}
+        }
         
-        applyFilter() {{
+        applyFilter() {
             // Step 1: Apply star rating filter
             let filtered = [...this.allReviews];
             
-            if (this.currentFilter === 'photos') {{
+            if (this.currentFilter === 'photos') {
                 filtered = filtered.filter(r => r.images && r.images.length > 0);
-            }} else if (this.currentFilter === 'ai_recommended') {{
+            } else if (this.currentFilter === 'ai_recommended') {
                 filtered = filtered.filter(r => r.ai_recommended);
-            }} else if (this.currentFilter === '4-5stars') {{
+            } else if (this.currentFilter === '4-5stars') {
                 // Rating >= 70 on the 0-100 scale (like old code)
                 filtered = filtered.filter(r => r.rating >= 70);
-            }} else if (this.currentFilter === '3stars') {{
+            } else if (this.currentFilter === '3stars') {
                 // Rating 50-69 on the 0-100 scale
                 filtered = filtered.filter(r => r.rating >= 50 && r.rating < 70);
-            }} else if (this.currentFilter === '5stars') {{
+            } else if (this.currentFilter === '5stars') {
                 // Rating >= 90 on the 0-100 scale
                 filtered = filtered.filter(r => r.rating >= 90);
-            }}
+            }
             
             // Step 2: Apply country filter
-            if (this.selectedCountry !== 'all') {{
+            if (this.selectedCountry !== 'all') {
                 filtered = filtered.filter(r => r.country === this.selectedCountry);
-            }}
+            }
             
             // Step 3: Smart sorting - prioritize photos, then rating, then quality
             // Applied when falling back from AI recommended OR always for best UX
@@ -1115,38 +1115,38 @@ const API_URL = '{{ api_url }}';
             
             this.reviews = filtered;
             
-            console.log(`[Filter] Applied filter "${{this.currentFilter}}" + country "${{this.selectedCountry}}": ${{this.reviews.length}} of ${{this.allReviews.length}} reviews`);
+            console.log(`[Filter] Applied filter "${this.currentFilter}" + country "${this.selectedCountry}": ${this.reviews.length} of ${this.allReviews.length} reviews`);
             
             // Reset to first review after filtering
             this.currentIndex = 0;
             
             // Update stats based on all reviews (not filtered) - like v12
             // Calculate rating counts (normalize AliExpress 0-100 to 1-5 scale)
-            const reviews45star = this.allReviews.filter(r => {{
+            const reviews45star = this.allReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating === 4 || rating === 5;
-            }});
-            const reviews3star = this.allReviews.filter(r => {{
+            });
+            const reviews3star = this.allReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating === 3;
-            }});
+            });
             
-            this.stats = {{
+            this.stats = {
                 ...this.stats,
                 total: this.allReviews.length,
                 with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
                 ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
                 reviews_45star: reviews45star.length,
                 reviews_3star: reviews3star.length
-            }};
+            };
             
             this.displayReview();
-        }}
+        }
         
-        smartSort(reviews) {{
+        smartSort(reviews) {
             // Smart sorting algorithm: Best reviews first
             // Priority: AI Recommended > Has Text Content > Has Photos > High Rating > Quality Score
-            return reviews.sort((a, b) => {{
+            return reviews.sort((a, b) => {
                 // 1. AI Recommended first (best quality reviews)
                 if (a.ai_recommended && !b.ai_recommended) return -1;
                 if (!a.ai_recommended && b.ai_recommended) return 1;
@@ -1178,99 +1178,99 @@ const API_URL = '{{ api_url }}';
                 const aQuality = a.quality_score || 0;
                 const bQuality = b.quality_score || 0;
                 return bQuality - aQuality;
-            }});
-        }}
+            });
+        }
         
-        setFilter(filter) {{
-            console.log(`[Filter] Changing filter from "${{this.currentFilter}}" to "${{filter}}"`);
+        setFilter(filter) {
+            console.log(`[Filter] Changing filter from "${this.currentFilter}" to "${filter}"`);
             this.currentFilter = filter;
             this.applyFilter();
-        }}
+        }
         
-        setCountry(country) {{
-            console.log(`[Country] Changing country filter from "${{this.selectedCountry}}" to "${{country}}"`);
+        setCountry(country) {
+            console.log(`[Country] Changing country filter from "${this.selectedCountry}" to "${country}"`);
             this.selectedCountry = country;
             this.applyFilter();
-        }}
+        }
         
-        toggleTranslation() {{
+        toggleTranslation() {
             this.showTranslations = !this.showTranslations;
-            console.log(`[Translation] Toggled to: ${{this.showTranslations}}`);
+            console.log(`[Translation] Toggled to: ${this.showTranslations}`);
             this.displayReview();  // Refresh display without re-filtering
-        }}
+        }
         
-        getCountryMap() {{
+        getCountryMap() {
             // Country code to flag/name mapping
-            return {{
-                'AD': {{'flag': '🇦🇩', 'name': 'Andorra'}}, 'AE': {{'flag': '🇦🇪', 'name': 'United Arab Emirates'}}, 'AF': {{'flag': '🇦🇫', 'name': 'Afghanistan'}}, 'AG': {{'flag': '🇦🇬', 'name': 'Antigua and Barbuda'}}, 'AI': {{'flag': '🇦🇮', 'name': 'Anguilla'}}, 'AL': {{'flag': '🇦🇱', 'name': 'Albania'}}, 'AM': {{'flag': '🇦🇲', 'name': 'Armenia'}}, 'AO': {{'flag': '🇦🇴', 'name': 'Angola'}}, 'AR': {{'flag': '🇦🇷', 'name': 'Argentina'}}, 'AS': {{'flag': '🇦🇸', 'name': 'American Samoa'}}, 'AT': {{'flag': '🇦🇹', 'name': 'Austria'}}, 'AU': {{'flag': '🇦🇺', 'name': 'Australia'}}, 'AW': {{'flag': '🇦🇼', 'name': 'Aruba'}}, 'AZ': {{'flag': '🇦🇿', 'name': 'Azerbaijan'}},
-                'BA': {{'flag': '🇧🇦', 'name': 'Bosnia and Herzegovina'}}, 'BB': {{'flag': '🇧🇧', 'name': 'Barbados'}}, 'BD': {{'flag': '🇧🇩', 'name': 'Bangladesh'}}, 'BE': {{'flag': '🇧🇪', 'name': 'Belgium'}}, 'BF': {{'flag': '🇧🇫', 'name': 'Burkina Faso'}}, 'BG': {{'flag': '🇧🇬', 'name': 'Bulgaria'}}, 'BH': {{'flag': '🇧🇭', 'name': 'Bahrain'}}, 'BI': {{'flag': '🇧🇮', 'name': 'Burundi'}}, 'BJ': {{'flag': '🇧🇯', 'name': 'Benin'}}, 'BM': {{'flag': '🇧🇲', 'name': 'Bermuda'}}, 'BN': {{'flag': '🇧🇳', 'name': 'Brunei'}}, 'BO': {{'flag': '🇧🇴', 'name': 'Bolivia'}}, 'BR': {{'flag': '🇧🇷', 'name': 'Brazil'}}, 'BS': {{'flag': '🇧🇸', 'name': 'Bahamas'}}, 'BT': {{'flag': '🇧🇹', 'name': 'Bhutan'}}, 'BW': {{'flag': '🇧🇼', 'name': 'Botswana'}}, 'BY': {{'flag': '🇧🇾', 'name': 'Belarus'}}, 'BZ': {{'flag': '🇧🇿', 'name': 'Belize'}},
-                'CA': {{'flag': '🇨🇦', 'name': 'Canada'}}, 'CD': {{'flag': '🇨🇩', 'name': 'Congo'}}, 'CF': {{'flag': '🇨🇫', 'name': 'Central African Republic'}}, 'CG': {{'flag': '🇨🇬', 'name': 'Congo'}}, 'CH': {{'flag': '🇨🇭', 'name': 'Switzerland'}}, 'CI': {{'flag': '🇨🇮', 'name': 'Côte D\\'Ivoire'}}, 'CK': {{'flag': '🇨🇰', 'name': 'Cook Islands'}}, 'CL': {{'flag': '🇨🇱', 'name': 'Chile'}}, 'CM': {{'flag': '🇨🇲', 'name': 'Cameroon'}}, 'CN': {{'flag': '🇨🇳', 'name': 'China'}}, 'CO': {{'flag': '🇨🇴', 'name': 'Colombia'}}, 'CR': {{'flag': '🇨🇷', 'name': 'Costa Rica'}}, 'CU': {{'flag': '🇨🇺', 'name': 'Cuba'}}, 'CV': {{'flag': '🇨🇻', 'name': 'Cape Verde'}}, 'CW': {{'flag': '🇨🇼', 'name': 'Curaçao'}}, 'CY': {{'flag': '🇨🇾', 'name': 'Cyprus'}}, 'CZ': {{'flag': '🇨🇿', 'name': 'Czech Republic'}},
-                'DE': {{'flag': '🇩🇪', 'name': 'Germany'}}, 'DJ': {{'flag': '🇩🇯', 'name': 'Djibouti'}}, 'DK': {{'flag': '🇩🇰', 'name': 'Denmark'}}, 'DM': {{'flag': '🇩🇲', 'name': 'Dominica'}}, 'DO': {{'flag': '🇩🇴', 'name': 'Dominican Republic'}}, 'DZ': {{'flag': '🇩🇿', 'name': 'Algeria'}},
-                'EC': {{'flag': '🇪🇨', 'name': 'Ecuador'}}, 'EE': {{'flag': '🇪🇪', 'name': 'Estonia'}}, 'EG': {{'flag': '🇪🇬', 'name': 'Egypt'}}, 'ER': {{'flag': '🇪🇷', 'name': 'Eritrea'}}, 'ES': {{'flag': '🇪🇸', 'name': 'Spain'}}, 'ET': {{'flag': '🇪🇹', 'name': 'Ethiopia'}},
-                'FI': {{'flag': '🇫🇮', 'name': 'Finland'}}, 'FJ': {{'flag': '🇫🇯', 'name': 'Fiji'}}, 'FR': {{'flag': '🇫🇷', 'name': 'France'}},
-                'GA': {{'flag': '🇬🇦', 'name': 'Gabon'}}, 'GB': {{'flag': '🇬🇧', 'name': 'United Kingdom'}}, 'GD': {{'flag': '🇬🇩', 'name': 'Grenada'}}, 'GE': {{'flag': '🇬🇪', 'name': 'Georgia'}}, 'GH': {{'flag': '🇬🇭', 'name': 'Ghana'}}, 'GI': {{'flag': '🇬🇮', 'name': 'Gibraltar'}}, 'GL': {{'flag': '🇬🇱', 'name': 'Greenland'}}, 'GM': {{'flag': '🇬🇲', 'name': 'Gambia'}}, 'GN': {{'flag': '🇬🇳', 'name': 'Guinea'}}, 'GR': {{'flag': '🇬🇷', 'name': 'Greece'}}, 'GT': {{'flag': '🇬🇹', 'name': 'Guatemala'}}, 'GU': {{'flag': '🇬🇺', 'name': 'Guam'}}, 'GY': {{'flag': '🇬🇾', 'name': 'Guyana'}},
-                'HK': {{'flag': '🇭🇰', 'name': 'Hong Kong'}}, 'HN': {{'flag': '🇭🇳', 'name': 'Honduras'}}, 'HR': {{'flag': '🇭🇷', 'name': 'Croatia'}}, 'HT': {{'flag': '🇭🇹', 'name': 'Haiti'}}, 'HU': {{'flag': '🇭🇺', 'name': 'Hungary'}},
-                'ID': {{'flag': '🇮🇩', 'name': 'Indonesia'}}, 'IE': {{'flag': '🇮🇪', 'name': 'Ireland'}}, 'IL': {{'flag': '🇮🇱', 'name': 'Israel'}}, 'IN': {{'flag': '🇮🇳', 'name': 'India'}}, 'IQ': {{'flag': '🇮🇶', 'name': 'Iraq'}}, 'IR': {{'flag': '🇮🇷', 'name': 'Iran'}}, 'IS': {{'flag': '🇮🇸', 'name': 'Iceland'}}, 'IT': {{'flag': '🇮🇹', 'name': 'Italy'}},
-                'JM': {{'flag': '🇯🇲', 'name': 'Jamaica'}}, 'JO': {{'flag': '🇯🇴', 'name': 'Jordan'}}, 'JP': {{'flag': '🇯🇵', 'name': 'Japan'}},
-                'KE': {{'flag': '🇰🇪', 'name': 'Kenya'}}, 'KG': {{'flag': '🇰🇬', 'name': 'Kyrgyzstan'}}, 'KH': {{'flag': '🇰🇭', 'name': 'Cambodia'}}, 'KI': {{'flag': '🇰🇮', 'name': 'Kiribati'}}, 'KM': {{'flag': '🇰🇲', 'name': 'Comoros'}}, 'KN': {{'flag': '🇰🇳', 'name': 'Saint Kitts and Nevis'}}, 'KP': {{'flag': '🇰🇵', 'name': 'North Korea'}}, 'KR': {{'flag': '🇰🇷', 'name': 'South Korea'}}, 'KW': {{'flag': '🇰🇼', 'name': 'Kuwait'}}, 'KY': {{'flag': '🇰🇾', 'name': 'Cayman Islands'}}, 'KZ': {{'flag': '🇰🇿', 'name': 'Kazakhstan'}},
-                'LA': {{'flag': '🇱🇦', 'name': 'Laos'}}, 'LB': {{'flag': '🇱🇧', 'name': 'Lebanon'}}, 'LC': {{'flag': '🇱🇨', 'name': 'Saint Lucia'}}, 'LI': {{'flag': '🇱🇮', 'name': 'Liechtenstein'}}, 'LK': {{'flag': '🇱🇰', 'name': 'Sri Lanka'}}, 'LR': {{'flag': '🇱🇷', 'name': 'Liberia'}}, 'LS': {{'flag': '🇱🇸', 'name': 'Lesotho'}}, 'LT': {{'flag': '🇱🇹', 'name': 'Lithuania'}}, 'LU': {{'flag': '🇱🇺', 'name': 'Luxembourg'}}, 'LV': {{'flag': '🇱🇻', 'name': 'Latvia'}}, 'LY': {{'flag': '🇱🇾', 'name': 'Libya'}},
-                'MA': {{'flag': '🇲🇦', 'name': 'Morocco'}}, 'MC': {{'flag': '🇲🇨', 'name': 'Monaco'}}, 'MD': {{'flag': '🇲🇩', 'name': 'Moldova'}}, 'ME': {{'flag': '🇲🇪', 'name': 'Montenegro'}}, 'MG': {{'flag': '🇲🇬', 'name': 'Madagascar'}}, 'MK': {{'flag': '🇲🇰', 'name': 'Macedonia'}}, 'ML': {{'flag': '🇲🇱', 'name': 'Mali'}}, 'MM': {{'flag': '🇲🇲', 'name': 'Myanmar'}}, 'MN': {{'flag': '🇲🇳', 'name': 'Mongolia'}}, 'MO': {{'flag': '🇲🇴', 'name': 'Macao'}}, 'MR': {{'flag': '🇲🇷', 'name': 'Mauritania'}}, 'MS': {{'flag': '🇲🇸', 'name': 'Montserrat'}}, 'MT': {{'flag': '🇲🇹', 'name': 'Malta'}}, 'MU': {{'flag': '🇲🇺', 'name': 'Mauritius'}}, 'MV': {{'flag': '🇲🇻', 'name': 'Maldives'}}, 'MW': {{'flag': '🇲🇼', 'name': 'Malawi'}}, 'MX': {{'flag': '🇲🇽', 'name': 'Mexico'}}, 'MY': {{'flag': '🇲🇾', 'name': 'Malaysia'}}, 'MZ': {{'flag': '🇲🇿', 'name': 'Mozambique'}},
-                'NA': {{'flag': '🇳🇦', 'name': 'Namibia'}}, 'NC': {{'flag': '🇳🇨', 'name': 'New Caledonia'}}, 'NE': {{'flag': '🇳🇪', 'name': 'Niger'}}, 'NG': {{'flag': '🇳🇬', 'name': 'Nigeria'}}, 'NI': {{'flag': '🇳🇮', 'name': 'Nicaragua'}}, 'NL': {{'flag': '🇳🇱', 'name': 'Netherlands'}}, 'NO': {{'flag': '🇳🇴', 'name': 'Norway'}}, 'NP': {{'flag': '🇳🇵', 'name': 'Nepal'}}, 'NR': {{'flag': '🇳🇷', 'name': 'Nauru'}}, 'NZ': {{'flag': '🇳🇿', 'name': 'New Zealand'}},
-                'OM': {{'flag': '🇴🇲', 'name': 'Oman'}},
-                'PA': {{'flag': '🇵🇦', 'name': 'Panama'}}, 'PE': {{'flag': '🇵🇪', 'name': 'Peru'}}, 'PG': {{'flag': '🇵🇬', 'name': 'Papua New Guinea'}}, 'PH': {{'flag': '🇵🇭', 'name': 'Philippines'}}, 'PK': {{'flag': '🇵🇰', 'name': 'Pakistan'}}, 'PL': {{'flag': '🇵🇱', 'name': 'Poland'}}, 'PR': {{'flag': '🇵🇷', 'name': 'Puerto Rico'}}, 'PS': {{'flag': '🇵🇸', 'name': 'Palestine'}}, 'PT': {{'flag': '🇵🇹', 'name': 'Portugal'}}, 'PW': {{'flag': '🇵🇼', 'name': 'Palau'}}, 'PY': {{'flag': '🇵🇾', 'name': 'Paraguay'}},
-                'QA': {{'flag': '🇶🇦', 'name': 'Qatar'}},
-                'RE': {{'flag': '🇷🇪', 'name': 'Réunion'}}, 'RO': {{'flag': '🇷🇴', 'name': 'Romania'}}, 'RS': {{'flag': '🇷🇸', 'name': 'Serbia'}}, 'RU': {{'flag': '🇷🇺', 'name': 'Russia'}}, 'RW': {{'flag': '🇷🇼', 'name': 'Rwanda'}},
-                'SA': {{'flag': '🇸🇦', 'name': 'Saudi Arabia'}}, 'SB': {{'flag': '🇸🇧', 'name': 'Solomon Islands'}}, 'SC': {{'flag': '🇸🇨', 'name': 'Seychelles'}}, 'SD': {{'flag': '🇸🇩', 'name': 'Sudan'}}, 'SE': {{'flag': '🇸🇪', 'name': 'Sweden'}}, 'SG': {{'flag': '🇸🇬', 'name': 'Singapore'}}, 'SI': {{'flag': '🇸🇮', 'name': 'Slovenia'}}, 'SK': {{'flag': '🇸🇰', 'name': 'Slovakia'}}, 'SL': {{'flag': '🇸🇱', 'name': 'Sierra Leone'}}, 'SM': {{'flag': '🇸🇲', 'name': 'San Marino'}}, 'SN': {{'flag': '🇸🇳', 'name': 'Senegal'}}, 'SO': {{'flag': '🇸🇴', 'name': 'Somalia'}}, 'SR': {{'flag': '🇸🇷', 'name': 'Suriname'}}, 'SS': {{'flag': '🇸🇸', 'name': 'South Sudan'}}, 'SV': {{'flag': '🇸🇻', 'name': 'El Salvador'}}, 'SY': {{'flag': '🇸🇾', 'name': 'Syria'}}, 'SZ': {{'flag': '🇸🇿', 'name': 'Swaziland'}},
-                'TC': {{'flag': '🇹🇨', 'name': 'Turks and Caicos'}}, 'TD': {{'flag': '🇹🇩', 'name': 'Chad'}}, 'TG': {{'flag': '🇹🇬', 'name': 'Togo'}}, 'TH': {{'flag': '🇹🇭', 'name': 'Thailand'}}, 'TJ': {{'flag': '🇹🇯', 'name': 'Tajikistan'}}, 'TK': {{'flag': '🇹🇰', 'name': 'Tokelau'}}, 'TL': {{'flag': '🇹🇱', 'name': 'Timor-Leste'}}, 'TM': {{'flag': '🇹🇲', 'name': 'Turkmenistan'}}, 'TN': {{'flag': '🇹🇳', 'name': 'Tunisia'}}, 'TO': {{'flag': '🇹🇴', 'name': 'Tonga'}}, 'TR': {{'flag': '🇹🇷', 'name': 'Turkey'}}, 'TT': {{'flag': '🇹🇹', 'name': 'Trinidad and Tobago'}}, 'TV': {{'flag': '🇹🇻', 'name': 'Tuvalu'}}, 'TW': {{'flag': '🇹🇼', 'name': 'Taiwan'}}, 'TZ': {{'flag': '🇹🇿', 'name': 'Tanzania'}},
-                'UA': {{'flag': '🇺🇦', 'name': 'Ukraine'}}, 'UG': {{'flag': '🇺🇬', 'name': 'Uganda'}}, 'US': {{'flag': '🇺🇸', 'name': 'United States'}}, 'UY': {{'flag': '🇺🇾', 'name': 'Uruguay'}}, 'UZ': {{'flag': '🇺🇿', 'name': 'Uzbekistan'}},
-                'VA': {{'flag': '🇻🇦', 'name': 'Vatican City'}}, 'VC': {{'flag': '🇻🇨', 'name': 'Saint Vincent'}}, 'VE': {{'flag': '🇻🇪', 'name': 'Venezuela'}}, 'VG': {{'flag': '🇻🇬', 'name': 'British Virgin Islands'}}, 'VI': {{'flag': '🇻🇮', 'name': 'US Virgin Islands'}}, 'VN': {{'flag': '🇻🇳', 'name': 'Vietnam'}}, 'VU': {{'flag': '🇻🇺', 'name': 'Vanuatu'}},
-                'WS': {{'flag': '🇼🇸', 'name': 'Samoa'}},
-                'YE': {{'flag': '🇾🇪', 'name': 'Yemen'}}, 'YT': {{'flag': '🇾🇹', 'name': 'Mayotte'}},
-                'ZA': {{'flag': '🇿🇦', 'name': 'South Africa'}}, 'ZM': {{'flag': '🇿🇲', 'name': 'Zambia'}}, 'ZW': {{'flag': '🇿🇼', 'name': 'Zimbabwe'}}
-            }};
-        }}
+            return {
+                'AD': {'flag': '🇦🇩', 'name': 'Andorra'}, 'AE': {'flag': '🇦🇪', 'name': 'United Arab Emirates'}, 'AF': {'flag': '🇦🇫', 'name': 'Afghanistan'}, 'AG': {'flag': '🇦🇬', 'name': 'Antigua and Barbuda'}, 'AI': {'flag': '🇦🇮', 'name': 'Anguilla'}, 'AL': {'flag': '🇦🇱', 'name': 'Albania'}, 'AM': {'flag': '🇦🇲', 'name': 'Armenia'}, 'AO': {'flag': '🇦🇴', 'name': 'Angola'}, 'AR': {'flag': '🇦🇷', 'name': 'Argentina'}, 'AS': {'flag': '🇦🇸', 'name': 'American Samoa'}, 'AT': {'flag': '🇦🇹', 'name': 'Austria'}, 'AU': {'flag': '🇦🇺', 'name': 'Australia'}, 'AW': {'flag': '🇦🇼', 'name': 'Aruba'}, 'AZ': {'flag': '🇦🇿', 'name': 'Azerbaijan'},
+                'BA': {'flag': '🇧🇦', 'name': 'Bosnia and Herzegovina'}, 'BB': {'flag': '🇧🇧', 'name': 'Barbados'}, 'BD': {'flag': '🇧🇩', 'name': 'Bangladesh'}, 'BE': {'flag': '🇧🇪', 'name': 'Belgium'}, 'BF': {'flag': '🇧🇫', 'name': 'Burkina Faso'}, 'BG': {'flag': '🇧🇬', 'name': 'Bulgaria'}, 'BH': {'flag': '🇧🇭', 'name': 'Bahrain'}, 'BI': {'flag': '🇧🇮', 'name': 'Burundi'}, 'BJ': {'flag': '🇧🇯', 'name': 'Benin'}, 'BM': {'flag': '🇧🇲', 'name': 'Bermuda'}, 'BN': {'flag': '🇧🇳', 'name': 'Brunei'}, 'BO': {'flag': '🇧🇴', 'name': 'Bolivia'}, 'BR': {'flag': '🇧🇷', 'name': 'Brazil'}, 'BS': {'flag': '🇧🇸', 'name': 'Bahamas'}, 'BT': {'flag': '🇧🇹', 'name': 'Bhutan'}, 'BW': {'flag': '🇧🇼', 'name': 'Botswana'}, 'BY': {'flag': '🇧🇾', 'name': 'Belarus'}, 'BZ': {'flag': '🇧🇿', 'name': 'Belize'},
+                'CA': {'flag': '🇨🇦', 'name': 'Canada'}, 'CD': {'flag': '🇨🇩', 'name': 'Congo'}, 'CF': {'flag': '🇨🇫', 'name': 'Central African Republic'}, 'CG': {'flag': '🇨🇬', 'name': 'Congo'}, 'CH': {'flag': '🇨🇭', 'name': 'Switzerland'}, 'CI': {'flag': '🇨🇮', 'name': 'Côte D\'Ivoire'}, 'CK': {'flag': '🇨🇰', 'name': 'Cook Islands'}, 'CL': {'flag': '🇨🇱', 'name': 'Chile'}, 'CM': {'flag': '🇨🇲', 'name': 'Cameroon'}, 'CN': {'flag': '🇨🇳', 'name': 'China'}, 'CO': {'flag': '🇨🇴', 'name': 'Colombia'}, 'CR': {'flag': '🇨🇷', 'name': 'Costa Rica'}, 'CU': {'flag': '🇨🇺', 'name': 'Cuba'}, 'CV': {'flag': '🇨🇻', 'name': 'Cape Verde'}, 'CW': {'flag': '🇨🇼', 'name': 'Curaçao'}, 'CY': {'flag': '🇨🇾', 'name': 'Cyprus'}, 'CZ': {'flag': '🇨🇿', 'name': 'Czech Republic'},
+                'DE': {'flag': '🇩🇪', 'name': 'Germany'}, 'DJ': {'flag': '🇩🇯', 'name': 'Djibouti'}, 'DK': {'flag': '🇩🇰', 'name': 'Denmark'}, 'DM': {'flag': '🇩🇲', 'name': 'Dominica'}, 'DO': {'flag': '🇩🇴', 'name': 'Dominican Republic'}, 'DZ': {'flag': '🇩🇿', 'name': 'Algeria'},
+                'EC': {'flag': '🇪🇨', 'name': 'Ecuador'}, 'EE': {'flag': '🇪🇪', 'name': 'Estonia'}, 'EG': {'flag': '🇪🇬', 'name': 'Egypt'}, 'ER': {'flag': '🇪🇷', 'name': 'Eritrea'}, 'ES': {'flag': '🇪🇸', 'name': 'Spain'}, 'ET': {'flag': '🇪🇹', 'name': 'Ethiopia'},
+                'FI': {'flag': '🇫🇮', 'name': 'Finland'}, 'FJ': {'flag': '🇫🇯', 'name': 'Fiji'}, 'FR': {'flag': '🇫🇷', 'name': 'France'},
+                'GA': {'flag': '🇬🇦', 'name': 'Gabon'}, 'GB': {'flag': '🇬🇧', 'name': 'United Kingdom'}, 'GD': {'flag': '🇬🇩', 'name': 'Grenada'}, 'GE': {'flag': '🇬🇪', 'name': 'Georgia'}, 'GH': {'flag': '🇬🇭', 'name': 'Ghana'}, 'GI': {'flag': '🇬🇮', 'name': 'Gibraltar'}, 'GL': {'flag': '🇬🇱', 'name': 'Greenland'}, 'GM': {'flag': '🇬🇲', 'name': 'Gambia'}, 'GN': {'flag': '🇬🇳', 'name': 'Guinea'}, 'GR': {'flag': '🇬🇷', 'name': 'Greece'}, 'GT': {'flag': '🇬🇹', 'name': 'Guatemala'}, 'GU': {'flag': '🇬🇺', 'name': 'Guam'}, 'GY': {'flag': '🇬🇾', 'name': 'Guyana'},
+                'HK': {'flag': '🇭🇰', 'name': 'Hong Kong'}, 'HN': {'flag': '🇭🇳', 'name': 'Honduras'}, 'HR': {'flag': '🇭🇷', 'name': 'Croatia'}, 'HT': {'flag': '🇭🇹', 'name': 'Haiti'}, 'HU': {'flag': '🇭🇺', 'name': 'Hungary'},
+                'ID': {'flag': '🇮🇩', 'name': 'Indonesia'}, 'IE': {'flag': '🇮🇪', 'name': 'Ireland'}, 'IL': {'flag': '🇮🇱', 'name': 'Israel'}, 'IN': {'flag': '🇮🇳', 'name': 'India'}, 'IQ': {'flag': '🇮🇶', 'name': 'Iraq'}, 'IR': {'flag': '🇮🇷', 'name': 'Iran'}, 'IS': {'flag': '🇮🇸', 'name': 'Iceland'}, 'IT': {'flag': '🇮🇹', 'name': 'Italy'},
+                'JM': {'flag': '🇯🇲', 'name': 'Jamaica'}, 'JO': {'flag': '🇯🇴', 'name': 'Jordan'}, 'JP': {'flag': '🇯🇵', 'name': 'Japan'},
+                'KE': {'flag': '🇰🇪', 'name': 'Kenya'}, 'KG': {'flag': '🇰🇬', 'name': 'Kyrgyzstan'}, 'KH': {'flag': '🇰🇭', 'name': 'Cambodia'}, 'KI': {'flag': '🇰🇮', 'name': 'Kiribati'}, 'KM': {'flag': '🇰🇲', 'name': 'Comoros'}, 'KN': {'flag': '🇰🇳', 'name': 'Saint Kitts and Nevis'}, 'KP': {'flag': '🇰🇵', 'name': 'North Korea'}, 'KR': {'flag': '🇰🇷', 'name': 'South Korea'}, 'KW': {'flag': '🇰🇼', 'name': 'Kuwait'}, 'KY': {'flag': '🇰🇾', 'name': 'Cayman Islands'}, 'KZ': {'flag': '🇰🇿', 'name': 'Kazakhstan'},
+                'LA': {'flag': '🇱🇦', 'name': 'Laos'}, 'LB': {'flag': '🇱🇧', 'name': 'Lebanon'}, 'LC': {'flag': '🇱🇨', 'name': 'Saint Lucia'}, 'LI': {'flag': '🇱🇮', 'name': 'Liechtenstein'}, 'LK': {'flag': '🇱🇰', 'name': 'Sri Lanka'}, 'LR': {'flag': '🇱🇷', 'name': 'Liberia'}, 'LS': {'flag': '🇱🇸', 'name': 'Lesotho'}, 'LT': {'flag': '🇱🇹', 'name': 'Lithuania'}, 'LU': {'flag': '🇱🇺', 'name': 'Luxembourg'}, 'LV': {'flag': '🇱🇻', 'name': 'Latvia'}, 'LY': {'flag': '🇱🇾', 'name': 'Libya'},
+                'MA': {'flag': '🇲🇦', 'name': 'Morocco'}, 'MC': {'flag': '🇲🇨', 'name': 'Monaco'}, 'MD': {'flag': '🇲🇩', 'name': 'Moldova'}, 'ME': {'flag': '🇲🇪', 'name': 'Montenegro'}, 'MG': {'flag': '🇲🇬', 'name': 'Madagascar'}, 'MK': {'flag': '🇲🇰', 'name': 'Macedonia'}, 'ML': {'flag': '🇲🇱', 'name': 'Mali'}, 'MM': {'flag': '🇲🇲', 'name': 'Myanmar'}, 'MN': {'flag': '🇲🇳', 'name': 'Mongolia'}, 'MO': {'flag': '🇲🇴', 'name': 'Macao'}, 'MR': {'flag': '🇲🇷', 'name': 'Mauritania'}, 'MS': {'flag': '🇲🇸', 'name': 'Montserrat'}, 'MT': {'flag': '🇲🇹', 'name': 'Malta'}, 'MU': {'flag': '🇲🇺', 'name': 'Mauritius'}, 'MV': {'flag': '🇲🇻', 'name': 'Maldives'}, 'MW': {'flag': '🇲🇼', 'name': 'Malawi'}, 'MX': {'flag': '🇲🇽', 'name': 'Mexico'}, 'MY': {'flag': '🇲🇾', 'name': 'Malaysia'}, 'MZ': {'flag': '🇲🇿', 'name': 'Mozambique'},
+                'NA': {'flag': '🇳🇦', 'name': 'Namibia'}, 'NC': {'flag': '🇳🇨', 'name': 'New Caledonia'}, 'NE': {'flag': '🇳🇪', 'name': 'Niger'}, 'NG': {'flag': '🇳🇬', 'name': 'Nigeria'}, 'NI': {'flag': '🇳🇮', 'name': 'Nicaragua'}, 'NL': {'flag': '🇳🇱', 'name': 'Netherlands'}, 'NO': {'flag': '🇳🇴', 'name': 'Norway'}, 'NP': {'flag': '🇳🇵', 'name': 'Nepal'}, 'NR': {'flag': '🇳🇷', 'name': 'Nauru'}, 'NZ': {'flag': '🇳🇿', 'name': 'New Zealand'},
+                'OM': {'flag': '🇴🇲', 'name': 'Oman'},
+                'PA': {'flag': '🇵🇦', 'name': 'Panama'}, 'PE': {'flag': '🇵🇪', 'name': 'Peru'}, 'PG': {'flag': '🇵🇬', 'name': 'Papua New Guinea'}, 'PH': {'flag': '🇵🇭', 'name': 'Philippines'}, 'PK': {'flag': '🇵🇰', 'name': 'Pakistan'}, 'PL': {'flag': '🇵🇱', 'name': 'Poland'}, 'PR': {'flag': '🇵🇷', 'name': 'Puerto Rico'}, 'PS': {'flag': '🇵🇸', 'name': 'Palestine'}, 'PT': {'flag': '🇵🇹', 'name': 'Portugal'}, 'PW': {'flag': '🇵🇼', 'name': 'Palau'}, 'PY': {'flag': '🇵🇾', 'name': 'Paraguay'},
+                'QA': {'flag': '🇶🇦', 'name': 'Qatar'},
+                'RE': {'flag': '🇷🇪', 'name': 'Réunion'}, 'RO': {'flag': '🇷🇴', 'name': 'Romania'}, 'RS': {'flag': '🇷🇸', 'name': 'Serbia'}, 'RU': {'flag': '🇷🇺', 'name': 'Russia'}, 'RW': {'flag': '🇷🇼', 'name': 'Rwanda'},
+                'SA': {'flag': '🇸🇦', 'name': 'Saudi Arabia'}, 'SB': {'flag': '🇸🇧', 'name': 'Solomon Islands'}, 'SC': {'flag': '🇸🇨', 'name': 'Seychelles'}, 'SD': {'flag': '🇸🇩', 'name': 'Sudan'}, 'SE': {'flag': '🇸🇪', 'name': 'Sweden'}, 'SG': {'flag': '🇸🇬', 'name': 'Singapore'}, 'SI': {'flag': '🇸🇮', 'name': 'Slovenia'}, 'SK': {'flag': '🇸🇰', 'name': 'Slovakia'}, 'SL': {'flag': '🇸🇱', 'name': 'Sierra Leone'}, 'SM': {'flag': '🇸🇲', 'name': 'San Marino'}, 'SN': {'flag': '🇸🇳', 'name': 'Senegal'}, 'SO': {'flag': '🇸🇴', 'name': 'Somalia'}, 'SR': {'flag': '🇸🇷', 'name': 'Suriname'}, 'SS': {'flag': '🇸🇸', 'name': 'South Sudan'}, 'SV': {'flag': '🇸🇻', 'name': 'El Salvador'}, 'SY': {'flag': '🇸🇾', 'name': 'Syria'}, 'SZ': {'flag': '🇸🇿', 'name': 'Swaziland'},
+                'TC': {'flag': '🇹🇨', 'name': 'Turks and Caicos'}, 'TD': {'flag': '🇹🇩', 'name': 'Chad'}, 'TG': {'flag': '🇹🇬', 'name': 'Togo'}, 'TH': {'flag': '🇹🇭', 'name': 'Thailand'}, 'TJ': {'flag': '🇹🇯', 'name': 'Tajikistan'}, 'TK': {'flag': '🇹🇰', 'name': 'Tokelau'}, 'TL': {'flag': '🇹🇱', 'name': 'Timor-Leste'}, 'TM': {'flag': '🇹🇲', 'name': 'Turkmenistan'}, 'TN': {'flag': '🇹🇳', 'name': 'Tunisia'}, 'TO': {'flag': '🇹🇴', 'name': 'Tonga'}, 'TR': {'flag': '🇹🇷', 'name': 'Turkey'}, 'TT': {'flag': '🇹🇹', 'name': 'Trinidad and Tobago'}, 'TV': {'flag': '🇹🇻', 'name': 'Tuvalu'}, 'TW': {'flag': '🇹🇼', 'name': 'Taiwan'}, 'TZ': {'flag': '🇹🇿', 'name': 'Tanzania'},
+                'UA': {'flag': '🇺🇦', 'name': 'Ukraine'}, 'UG': {'flag': '🇺🇬', 'name': 'Uganda'}, 'US': {'flag': '🇺🇸', 'name': 'United States'}, 'UY': {'flag': '🇺🇾', 'name': 'Uruguay'}, 'UZ': {'flag': '🇺🇿', 'name': 'Uzbekistan'},
+                'VA': {'flag': '🇻🇦', 'name': 'Vatican City'}, 'VC': {'flag': '🇻🇨', 'name': 'Saint Vincent'}, 'VE': {'flag': '🇻🇪', 'name': 'Venezuela'}, 'VG': {'flag': '🇻🇬', 'name': 'British Virgin Islands'}, 'VI': {'flag': '🇻🇮', 'name': 'US Virgin Islands'}, 'VN': {'flag': '🇻🇳', 'name': 'Vietnam'}, 'VU': {'flag': '🇻🇺', 'name': 'Vanuatu'},
+                'WS': {'flag': '🇼🇸', 'name': 'Samoa'},
+                'YE': {'flag': '🇾🇪', 'name': 'Yemen'}, 'YT': {'flag': '🇾🇹', 'name': 'Mayotte'},
+                'ZA': {'flag': '🇿🇦', 'name': 'South Africa'}, 'ZM': {'flag': '🇿🇲', 'name': 'Zambia'}, 'ZW': {'flag': '🇿🇼', 'name': 'Zimbabwe'}
+            };
+        }
         
-        getUniqueCountries() {{
+        getUniqueCountries() {
             // Extract unique countries from all reviews
             const countryCodes = [...new Set(this.allReviews.map(r => r.country).filter(c => c))];
             const countryMap = this.getCountryMap();
             
             // Count reviews per country
-            const countryReviewCounts = {{}};
-            this.allReviews.forEach(r => {{
-                if (r.country) {{
+            const countryReviewCounts = {};
+            this.allReviews.forEach(r => {
+                if (r.country) {
                     countryReviewCounts[r.country] = (countryReviewCounts[r.country] || 0) + 1;
-                }}
-            }});
+                }
+            });
             
             // Convert codes to objects with display info and count
             return countryCodes
-                .map(code => ({{
+                .map(code => ({
                     code: code,
                     flag: countryMap[code]?.flag || '\u{1F30D}',
                     name: countryMap[code]?.name || code,
                     count: countryReviewCounts[code] || 0
-                }}))
+                }))
                 .sort((a, b) => b.count - a.count); // Sort by count (most reviews first)
-        }}
+        }
         
-        displayReview() {{
+        displayReview() {
             const content = document.getElementById('reviewking-content');
             
-            if (!content) {{
+            if (!content) {
                 console.error('Content element not found');
                 return;
-            }}
+            }
             
-            console.log('Displaying review...', {{ 
+            console.log('Displaying review...', { 
                 hasSelectedProduct: !!this.selectedProduct,
                 hasReviews: !!this.reviews, 
                 reviewCount: this.reviews?.length,
                 allReviewsCount: this.allReviews?.length 
-            }});
+            });
             
             // First check if product is selected - if not, show product selection UI
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 content.innerHTML = `
                     <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                                 border-radius: 8px; color: white; margin-bottom: 20px;">
@@ -1294,18 +1294,18 @@ const API_URL = '{{ api_url }}';
                 `;
                 this.setupProductSearch();
                 return;
-            }}
+            }
             
             // If product is selected but reviews aren't loaded yet, initialize empty arrays
-            if (!this.allReviews) {{
+            if (!this.allReviews) {
                 this.allReviews = [];
-            }}
-            if (!this.reviews) {{
+            }
+            if (!this.reviews) {
                 this.reviews = [];
-            }}
+            }
             
             // Check if no reviews match the current filters (but still show UI if product is selected)
-            if (!this.reviews || this.reviews.length === 0) {{
+            if (!this.reviews || this.reviews.length === 0) {
                 const countryMap = this.getCountryMap();
                 const selectedCountryName = this.selectedCountry !== 'all' 
                     ? (countryMap[this.selectedCountry]?.name || this.selectedCountry)
@@ -1317,20 +1317,20 @@ const API_URL = '{{ api_url }}';
                         <div style="font-size: 64px; margin-bottom: 20px;">😕</div>
                         <h3 style="color: #92400e; margin: 0 0 12px; font-size: 22px;">No Reviews Match Your Filters</h3>
                         <p style="color: #b45309; margin: 0 0 24px; font-size: 15px; line-height: 1.6;">
-                            ${{selectedCountryName 
+                            ${selectedCountryName 
                                 ? 'No reviews found from <strong>' + selectedCountryName + '</strong> with your selected filters.'
                                 : 'No reviews match your current filter criteria.'
-                            }}
+                            }
                         </p>
                         <div style="background: white; padding: 20px; border-radius: 8px; margin: 0 auto; max-width: 400px; text-align: left;">
                             <p style="color: #666; font-size: 14px; margin: 0 0 16px; font-weight: 600;">💡 Try this:</p>
                             <ul style="color: #666; font-size: 14px; margin: 0; padding-left: 20px; line-height: 2;">
-                                ${{selectedCountryName 
+                                ${selectedCountryName 
                                     ? `<li>Select a different country from the dropdown</li>
                                        <li>Or choose "All Countries" to see all reviews</li>`
                                     : `<li>Try selecting "All" in the star rating filter</li>
                                        <li>Remove the "Photos Only" filter if applied</li>`
-                                }}
+                                }
                                 <li>Check if reviews were successfully loaded (see stats above)</li>
                             </ul>
                         </div>
@@ -1344,7 +1344,7 @@ const API_URL = '{{ api_url }}';
                     </div>
                 `;
                 return;
-            }}
+            }
             
             // Get current review if available (handle case where reviews aren't loaded yet)
             const review = this.reviews && this.reviews.length > 0 ? this.reviews[this.currentIndex] : null;
@@ -1391,10 +1391,10 @@ const API_URL = '{{ api_url }}';
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                ${{this.selectedProduct.image ? '<img src="' + this.selectedProduct.image + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                                ${this.selectedProduct.image ? '<img src="' + this.selectedProduct.image + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}
                                 <div style="flex: 1;">
                                     <div style="font-weight: 500;">\u{2713} Target Product Selected</div>
-                                    <div style="opacity: 0.9; font-size: 12px;">${{this.selectedProduct.title}}</div>
+                                    <div style="opacity: 0.9; font-size: 12px;">${this.selectedProduct.title}</div>
                                 </div>
                             </div>
                             <button onclick="window.reviewKingClient.clearProduct()" 
@@ -1412,19 +1412,19 @@ const API_URL = '{{ api_url }}';
                             box-shadow: 0 4px 16px rgba(255, 45, 133, 0.3);">
                     <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 16px;">
                         <div style="flex: 1; min-width: 80px;">
-                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{this.reviews.length}}</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${this.reviews.length}</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Total Loaded</div>
                         </div>
                         <div style="flex: 1; min-width: 80px;">
-                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{this.stats.ai_recommended}}</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${this.stats.ai_recommended}</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">AI Recommended</div>
                         </div>
                         <div style="flex: 1; min-width: 80px;">
-                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{this.stats.with_photos}}</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${this.stats.with_photos}</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">With Photos</div>
                         </div>
                         <div style="flex: 1; min-width: 80px;">
-                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{(this.stats.average_quality || 0).toFixed(1)}}<span style="font-size: 20px;">/10</span></div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${(this.stats.average_quality || 0).toFixed(1)}<span style="font-size: 20px;">/10</span></div>
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Avg Quality</div>
                         </div>
                     </div>
@@ -1452,15 +1452,15 @@ const API_URL = '{{ api_url }}';
                     <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
                         <button id="rk-btn-import-all" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.importAllReviews()">
-                            All Reviews (${{this.allReviews.length}})
+                            All Reviews (${this.allReviews.length})
                         </button>
                         <button id="rk-btn-import-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.importWithPhotos()">
-                            With Photos (${{this.stats.with_photos}})
+                            With Photos (${this.stats.with_photos})
                         </button>
                         <button id="rk-btn-import-no-photos" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.importWithoutPhotos()">
-                            No Photos (${{this.allReviews.length - this.stats.with_photos}})
+                            No Photos (${this.allReviews.length - this.stats.with_photos})
                         </button>
                     </div>
                     
@@ -1468,15 +1468,15 @@ const API_URL = '{{ api_url }}';
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button id="rk-btn-import-ai" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.importAIRecommended()">
-                            AI Recommended (${{this.stats.ai_recommended}})
+                            AI Recommended (${this.stats.ai_recommended})
                         </button>
                         <button id="rk-btn-import-45star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.import45Star()">
-                            4-5 \u{2605} (${{this.stats.reviews_45star}})
+                            4-5 \u{2605} (${this.stats.reviews_45star})
                         </button>
                         <button id="rk-btn-import-3star" class="rk-btn" style="background: #FF2D85; color: white; flex: 1; min-width: 150px; padding: 14px 18px; font-size: 14px; font-weight: 700;"
                                 onclick="window.reviewKingClient.import3Star()">
-                            3 \u{2605} (${{this.stats.reviews_3star}})
+                            3 \u{2605} (${this.stats.reviews_3star})
                         </button>
                     </div>
                 </div>
@@ -1498,15 +1498,15 @@ const API_URL = '{{ api_url }}';
                         <label style="color: #9ca3af; font-size: 13px; margin-bottom: 6px; display: block; font-weight: 500;">\u{1F30D} Reviews from</label>
                         <select id="rk-country-filter" onchange="window.reviewKingClient.setCountry(this.value)" 
                                 style="width: 100%; padding: 10px 12px; background: #0f0f23; color: white; border: 1px solid #2d2d3d; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                            <option value="all">\u{1F30D} All countries (${{this.allReviews.length}})</option>
-                            ${{this.getUniqueCountries().map(c => '<option value="' + c.code + '" ' + (this.selectedCountry === c.code ? 'selected' : '') + '>' + c.flag + ' ' + c.name + ' (' + c.count + ')</option>').join('')}}
+                            <option value="all">\u{1F30D} All countries (${this.allReviews.length})</option>
+                            ${this.getUniqueCountries().map(c => '<option value="' + c.code + '" ' + (this.selectedCountry === c.code ? 'selected' : '') + '>' + c.flag + ' ' + c.name + ' (' + c.count + ')</option>').join('')}
                         </select>
                     </div>
                     <div>
                         <label style="color: #9ca3af; font-size: 13px; margin-bottom: 6px; display: block; font-weight: 500;">🌐 Translate</label>
                         <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #0f0f23; border: 1px solid #2d2d3d; border-radius: 8px; cursor: pointer; height: 42px;">
                             <input type="checkbox" id="rk-translation-toggle" 
-                                   ${{this.showTranslations ? 'checked' : ''}}
+                                   ${this.showTranslations ? 'checked' : ''}
                                    onchange="window.reviewKingClient.toggleTranslation()"
                                    style="width: 18px; height: 18px; cursor: pointer; accent-color: #FF2D85;">
                             <span style="color: #d1d5db; font-size: 14px;">Show English translation</span>
@@ -1518,14 +1518,14 @@ const API_URL = '{{ api_url }}';
                 <div style="margin-bottom: 24px;">
                     <div style="color: #9ca3af; font-size: 13px; margin-bottom: 10px; font-weight: 500;">Filter Reviews:</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'all' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('all')">All (${{this.allReviews.length}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'photos' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('photos')">&#128247; With Photos (${{this.stats.with_photos}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === 'ai_recommended' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('ai_recommended')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff69b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg> AI Recommended (${{this.stats.ai_recommended}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733; (${{this.stats.reviews_45star}})</button>
-                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${{this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; (${{this.stats.reviews_3star}})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${this.currentFilter === 'all' ? 'background: #FF2D85; color: white; border: none;' : ''}" onclick="window.reviewKingClient.setFilter('all')">All (${this.allReviews.length})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${this.currentFilter === 'photos' ? 'background: #FF2D85; color: white; border: none;' : ''}" onclick="window.reviewKingClient.setFilter('photos')">&#128247; With Photos (${this.stats.with_photos})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${this.currentFilter === 'ai_recommended' ? 'background: #FF2D85; color: white; border: none;' : ''}" onclick="window.reviewKingClient.setFilter('ai_recommended')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff69b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg> AI Recommended (${this.stats.ai_recommended})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${this.currentFilter === '4-5stars' ? 'background: #FF2D85; color: white; border: none;' : ''}" onclick="window.reviewKingClient.setFilter('4-5stars')">4-5 &#9733; (${this.stats.reviews_45star})</button>
+                        <button class="rk-btn rk-btn-secondary" style="padding: 10px 16px; ${this.currentFilter === '3stars' ? 'background: #FF2D85; color: white; border: none;' : ''}" onclick="window.reviewKingClient.setFilter('3stars')">3 &#9733; (${this.stats.reviews_3star})</button>
                     </div>
                     <div style="color: #6b7280; font-size: 12px;">
-                        Showing ${{this.currentIndex + 1}} of ${{this.reviews.length}} reviews
+                        Showing ${this.currentIndex + 1} of ${this.reviews.length} reviews
                     </div>
                 </div>
                 
@@ -1533,56 +1533,56 @@ const API_URL = '{{ api_url }}';
                 <div style="background: #0f0f23; border-radius: 12px; padding: 28px; color: white; margin-bottom: 20px; border: 1px solid #1a1a2e;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 18px; align-items: flex-start;">
                         <div style="flex: 1;">
-                            <h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${{review.reviewer_name}}</h3>
-                            <div style="color: #fbbf24; font-size: 18px; margin: 6px 0; letter-spacing: 2px;">${{'\u{2605}'.repeat(Math.ceil(review.rating / 20)) + '\u{2606}'.repeat(5 - Math.ceil(review.rating / 20))}}</div>
-                            <div style="color: #9ca3af; font-size: 12px; font-weight: 500;">${{review.date}} • ${{review.country}}</div>
+                            <h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${review.reviewer_name}</h3>
+                            <div style="color: #fbbf24; font-size: 18px; margin: 6px 0; letter-spacing: 2px;">${'\u{2605}'.repeat(Math.ceil(review.rating / 20)) + '\u{2606}'.repeat(5 - Math.ceil(review.rating / 20))}</div>
+                            <div style="color: #9ca3af; font-size: 12px; font-weight: 500;">${review.date} • ${review.country}</div>
                         </div>
                         <div style="text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
-                            ${{isRecommended ? '<span style="background: #10b981; color: white; padding: 6px 12px; border-radius: 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; display: inline-block;">&#10004; AI RECOMMENDED</span>' : ''}}
-                            <span style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; display: inline-block;">QUALITY: ${{review.quality_score}}/10</span>
+                            ${isRecommended ? '<span style="background: #10b981; color: white; padding: 6px 12px; border-radius: 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; display: inline-block;">&#10004; AI RECOMMENDED</span>' : ''}
+                            <span style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; display: inline-block;">QUALITY: ${review.quality_score}/10</span>
                         </div>
                     </div>
                     
                     <!-- Review text with translation support -->
-                    ${{(() => {{
+                    ${(() => {
                         const hasTranslation = review.translation && review.text !== review.translation;
                         const displayText = (this.showTranslations && hasTranslation) ? review.translation : review.text;
                         const showOriginal = this.showTranslations && hasTranslation;
                         
                         return `
-                            <p style="color: #d1d5db; line-height: 1.7; margin: 0 0 18px; font-size: 15px;">${{displayText}}</p>
-                            ${{showOriginal ? 
+                            <p style="color: #d1d5db; line-height: 1.7; margin: 0 0 18px; font-size: 15px;">${displayText}</p>
+                            ${showOriginal ? 
                                 '<p style="color: #888; font-size: 13px; margin: 0 0 18px; font-style: italic; border-left: 2px solid #555; padding-left: 10px;">Original: ' + review.text + '</p>' 
                                 : ''
-                            }}
+                            }
                         `;
-                    }})()}}
+                    })()}
                     
-                    ${{review.images && review.images.length > 0 ? `
+                    ${review.images && review.images.length > 0 ? `
                         <div style="margin-bottom: 18px;">
                             <div style="color: #9ca3af; font-size: 12px; margin-bottom: 10px; font-weight: 600;">
-                                \u{1F4F8} ${{review.images.length}} Photo${{review.images.length > 1 ? 's' : ''}}
+                                \u{1F4F8} ${review.images.length} Photo${review.images.length > 1 ? 's' : ''}
                             </div>
                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                ${{review.images.map(img => 
+                                ${review.images.map(img => 
                                     '<img src="' + img + '" style="width: 100px; height: 100px; ' +
                                     'object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid #1a1a2e; ' +
                                     'transition: all 0.2s;" ' +
                                     'onmouseover="this.style.transform=\\'scale(1.05)\\'; this.style.borderColor=\\'#3b82f6\\';" ' +
                                     'onmouseout="this.style.transform=\\'scale(1)\\'; this.style.borderColor=\\'#1a1a2e\\';" ' +
                                     'onclick="window.open(\\'' + img + '\\', \\'_blank\\')">'
-                                ).join('')}}
+                                ).join('')}
                             </div>
                         </div>
-                    ` : '<div style="color: #6b7280; font-style: italic; margin-bottom: 18px; font-size: 13px;">No photos</div>'}}
+                    ` : '<div style="color: #6b7280; font-style: italic; margin-bottom: 18px; font-size: 13px;">No photos</div>'}
                     
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
-                        ${{review.verified ? '<span style="background: #10b981; color: white; padding: 5px 10px; border-radius: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">\u{2713} VERIFIED</span>' : ''}}
+                        ${review.verified ? '<span style="background: #10b981; color: white; padding: 5px 10px; border-radius: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">\u{2713} VERIFIED</span>' : ''}
                         <span style="background: #2d2d3d; color: #a1a1aa; padding: 5px 10px; border-radius: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #3d3d4d;">
-                            PLATFORM: ${{review.platform.toUpperCase()}}
+                            PLATFORM: ${review.platform.toUpperCase()}
                         </span>
                         <span style="background: #2d2d3d; color: #a1a1aa; padding: 5px 10px; border-radius: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #3d3d4d;">
-                            SENTIMENT: ${{Math.round(review.sentiment_score * 100)}}%
+                            SENTIMENT: ${Math.round(review.sentiment_score * 100)}%
                         </span>
                     </div>
                     
@@ -1610,29 +1610,29 @@ const API_URL = '{{ api_url }}';
                 <!-- Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #2d2d3d;">
                     <button class="rk-btn rk-btn-secondary" style="padding: 10px 20px;" onclick="window.reviewKingClient.prevReview()"
-                            ${{this.currentIndex === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}}>\u{2190} Previous</button>
+                            ${this.currentIndex === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>\u{2190} Previous</button>
                     <span style="color: #9ca3af; font-size: 14px; font-weight: 600;">
-                        ${{this.currentIndex + 1}} / ${{this.reviews.length}}
+                        ${this.currentIndex + 1} / ${this.reviews.length}
                     </span>
                     <button class="rk-btn rk-btn-secondary" style="padding: 10px 20px;" onclick="window.reviewKingClient.nextReview()"
-                            ${{this.currentIndex === this.reviews.length - 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}}>Next \u{2192}</button>
+                            ${this.currentIndex === this.reviews.length - 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>Next \u{2192}</button>
                 </div>
             `;
             
             this.setupProductSearch();
-        }}
+        }
         
-        async importReview() {{
-            if (!this.selectedProduct) {{
+        async importReview() {
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
             const review = this.reviews[this.currentIndex];
             
-            try {{
+            try {
                 // DEBUG: Log review data before sending
-                console.log('[DEBUG] Sending review to database:', {{
+                console.log('[DEBUG] Sending review to database:', {
                     review_id: review.id,
                     reviewer_name: review.author || review.reviewer_name,
                     rating: review.rating,
@@ -1640,167 +1640,167 @@ const API_URL = '{{ api_url }}';
                     shopify_product_id: this.selectedProduct.id,
                     shopify_product_title: this.selectedProduct.title,
                     review_data: review
-                }});
+                });
                 
-                const requestBody = {{
+                const requestBody = {
                     review: review,
                     shopify_product_id: this.selectedProduct.id,
                     session_id: this.sessionId
-                }};
+                };
                 
-                console.log('[DEBUG] Request URL:', `${{API_URL}}/admin/reviews/import/single`);
+                console.log('[DEBUG] Request URL:', `${API_URL}/admin/reviews/import/single`);
                 console.log('[DEBUG] Request body:', JSON.stringify(requestBody, null, 2));
                 
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/single`, {{
+                const response = await fetch(`${API_URL}/admin/reviews/import/single`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody)
-                }});
+                });
                 
                 console.log('[DEBUG] Response status:', response.status);
                 const result = await response.json();
                 console.log('[DEBUG] Response data:', result);
                 
-                if (result.success) {{
+                if (result.success) {
                     // Log database review ID if available
-                    if (result.review_id) {{
+                    if (result.review_id) {
                         console.log('\u{2705} [DATABASE] Review saved with DB ID:', result.review_id);
                         console.log('   Shopify Product ID:', result.shopify_product_id || this.selectedProduct.id);
                         console.log('   Database Product ID:', result.product_id || 'N/A');
                         console.log('   Imported at:', result.imported_at || new Date().toISOString());
-                    }} else {{
+                    } else {
                         console.warn('\u{26A0}\u{FE0F} [WARNING] Review imported but NO database ID returned - using simulation mode');
-                        if (result.imported_review) {{
+                        if (result.imported_review) {
                             console.log('   Source Review ID (not DB ID):', result.imported_review.id);
-                        }}
-                    }}
+                        }
+                    }
                     
                     // Track analytics
-                    fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Post+imported&c=${{this.sessionId}}`, 
-                          {{ method: 'GET' }});
+                    fetch(`${API_URL}/e?cat=Import+by+URL&a=Post+imported&c=${this.sessionId}`, 
+                          { method: 'GET' });
                     
                     // Handle duplicate vs new import
-                    if (result.duplicate) {{
-                        const message = result.message || `\u{26A0}\u{FE0F} Review already imported for this product (Database ID: ${{result.review_id}})`;
+                    if (result.duplicate) {
+                        const message = result.message || `\u{26A0}\u{FE0F} Review already imported for this product (Database ID: ${result.review_id})`;
                         alert(message);
                         // Don't auto-advance for duplicates - let user see what happened
                         // this.nextReview();
-                    }} else {{
+                    } else {
                         const message = result.review_id 
-                            ? `\u{2713} Review imported successfully! Database ID: ${{result.review_id}}`
+                            ? `\u{2713} Review imported successfully! Database ID: ${result.review_id}`
                             : `\u{2713} Review imported (simulation mode - database unavailable)`;
                         alert(message);
                         this.nextReview();
-                    }}
-                }} else {{
+                    }
+                } else {
                     alert('Failed to import: ' + result.error);
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 alert('Import failed. Please try again.');
-            }}
-        }}
+            }
+        }
         
-        async skipReview() {{
+        async skipReview() {
             const review = this.reviews[this.currentIndex];
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/skip`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/skip`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         review_id: review.id,
                         session_id: this.sessionId
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
+                if (result.success) {
                     alert('Review skipped. It will not be included in bulk import.');
                     this.nextReview();
-                }} else {{
+                } else {
                     alert('Failed to skip review: ' + result.error);
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 alert('Skip failed. Please try again.');
-            }}
-        }}
+            }
+        }
         
         // Helper methods for bulk import progress
-        showImportLoader(statusText, totalReviews) {{
+        showImportLoader(statusText, totalReviews) {
             this.isImporting = true;
             const loader = document.getElementById('rk-import-loader');
             const status = document.getElementById('rk-import-status');
             const progress = document.getElementById('rk-import-progress');
             const message = document.getElementById('rk-import-message');
             
-            if (loader && status && progress && message) {{
+            if (loader && status && progress && message) {
                 loader.style.display = 'block';
                 status.textContent = statusText || 'Importing reviews...';
                 progress.style.width = '0%';
                 message.textContent = '';
-            }}
+            }
             
             // Disable all bulk import buttons
             this.setBulkImportButtonsEnabled(false);
-        }}
+        }
         
-        updateImportProgress(current, total) {{
+        updateImportProgress(current, total) {
             const progress = document.getElementById('rk-import-progress');
             const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-            if (progress) {{
+            if (progress) {
                 progress.style.width = percentage + '%';
-            }}
-        }}
+            }
+        }
         
-        hideImportLoader(success, message, details) {{
+        hideImportLoader(success, message, details) {
             this.isImporting = false;
             const loader = document.getElementById('rk-import-loader');
             const status = document.getElementById('rk-import-status');
             const progress = document.getElementById('rk-import-progress');
             const messageEl = document.getElementById('rk-import-message');
             
-            if (loader && status && progress && messageEl) {{
-                if (success) {{
+            if (loader && status && progress && messageEl) {
+                if (success) {
                     status.textContent = '\u{2713} Import completed!';
                     status.style.color = '#10b981';
                     progress.style.background = 'linear-gradient(90deg, #10b981, #059669)';
                     progress.style.width = '100%';
-                }} else {{
+                } else {
                     status.textContent = '\u{274C} Import failed';
                     status.style.color = '#ef4444';
                     progress.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-                }}
+                }
                 
-                if (message) {{
+                if (message) {
                     messageEl.textContent = message;
                     messageEl.style.color = success ? '#10b981' : '#ef4444';
-                }}
+                }
                 
-                if (details) {{
+                if (details) {
                     messageEl.textContent += ' ' + details;
-                }}
-            }}
+                }
+            }
             
             // Re-enable all bulk import buttons
             this.setBulkImportButtonsEnabled(true);
             
             // Hide loader after 5 seconds
-            setTimeout(() => {{
+            setTimeout(() => {
                 if (loader) loader.style.display = 'none';
                 // Reset progress bar
-                if (progress) {{
+                if (progress) {
                     progress.style.width = '0%';
                     progress.style.background = 'linear-gradient(90deg, #FF2D85, #FF1493)';
-                }}
-                if (status) {{
+                }
+                if (status) {
                     status.textContent = 'Importing reviews...';
                     status.style.color = '#FF2D85';
-                }}
-            }}, 5000);
-        }}
+                }
+            }, 5000);
+        }
         
-        setBulkImportButtonsEnabled(enabled) {{
+        setBulkImportButtonsEnabled(enabled) {
             // Update all bulk import buttons including new ones
             const buttons = [
                 document.getElementById('rk-btn-import-all'),
@@ -1811,451 +1811,451 @@ const API_URL = '{{ api_url }}';
                 document.getElementById('rk-btn-import-3star')
             ];
             
-            buttons.forEach(btn => {{
-                if (btn) {{
+            buttons.forEach(btn => {
+                if (btn) {
                     btn.disabled = !enabled;
                     btn.style.opacity = enabled ? '1' : '0.5';
                     btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
-                }}
-            }});
-        }}
+                }
+            });
+        }
         
-        async importAllReviews() {{
-            if (this.isImporting) {{
+        async importAllReviews() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Count negative reviews for warning
-            const negativeReviews = this.allReviews.filter(r => {{
+            const negativeReviews = this.allReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating <= 2;
-            }});
+            });
             
             const warningMsg = negativeReviews.length > 0 
-                ? `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).\\n\\nThis will import multiple reviews at once.`
-                : `Import all ${{this.allReviews.length}} reviews to "${{this.selectedProduct.title}}"?\\n\\nThis will import multiple reviews at once.`;
+                ? `Import all ${this.allReviews.length} reviews to "${this.selectedProduct.title}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${negativeReviews.length} negative review(s) (1-2 stars).\\n\\nThis will import multiple reviews at once.`
+                : `Import all ${this.allReviews.length} reviews to "${this.selectedProduct.title}"?\\n\\nThis will import multiple reviews at once.`;
             
-            if (!confirm(warningMsg)) {{
+            if (!confirm(warningMsg)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{this.allReviews.length}} reviews...`, this.allReviews.length);
+            this.showImportLoader(`Importing ${this.allReviews.length} reviews...`, this.allReviews.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: this.allReviews,  // Use allReviews, not filtered reviews
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress',
-                        filters: {{
+                        filters: {
                             min_quality_score: 0  // Import all quality levels
-                        }}
-                    }})
-                }});
+                        }
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
+                if (result.success) {
                     // Track analytics
-                    fetch(`${{API_URL}}/e?cat=Import+by+URL&a=Bulk+imported&c=${{this.sessionId}}`, 
-                          {{ method: 'GET' }});
+                    fetch(`${API_URL}/e?cat=Import+by+URL&a=Bulk+imported&c=${this.sessionId}`, 
+                          { method: 'GET' });
                     
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}} | \u{23ED}\u{FE0F} Skipped: ${{result.skipped_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews!`, message);
-                }} else {{
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count} | \u{23ED}\u{FE0F} Skipped: ${result.skipped_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Bulk import error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        async importWithPhotos() {{
-            if (this.isImporting) {{
+        async importWithPhotos() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Filter allReviews (not just filtered display reviews) for reviews with photos
             const reviewsWithPhotos = this.allReviews.filter(r => r.images && r.images.length > 0);
             
-            if (reviewsWithPhotos.length === 0) {{
+            if (reviewsWithPhotos.length === 0) {
                 alert('\u{26A0}\u{FE0F} No reviews with photos found for this product.\\n\\nPlease try selecting a different product with photo reviews.');
                 return;
-            }}
+            }
             
             // Count negative reviews for warning
-            const negativeReviews = reviewsWithPhotos.filter(r => {{
+            const negativeReviews = reviewsWithPhotos.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating <= 2;
-            }});
+            });
             
             const warningMsg = negativeReviews.length > 0
-                ? `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
-                : `Import ${{reviewsWithPhotos.length}} reviews with photos to "${{this.selectedProduct.title}}"?`;
+                ? `Import ${reviewsWithPhotos.length} reviews with photos to "${this.selectedProduct.title}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${negativeReviews.length} negative review(s) (1-2 stars).`
+                : `Import ${reviewsWithPhotos.length} reviews with photos to "${this.selectedProduct.title}"?`;
             
-            if (!confirm(warningMsg)) {{
+            if (!confirm(warningMsg)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{reviewsWithPhotos.length}} reviews with photos...`, reviewsWithPhotos.length);
+            this.showImportLoader(`Importing ${reviewsWithPhotos.length} reviews with photos...`, reviewsWithPhotos.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: reviewsWithPhotos,
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress'
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with photos!`, message);
-                }} else {{
+                if (result.success) {
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with photos!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Import with photos error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        async importWithoutPhotos() {{
-            if (this.isImporting) {{
+        async importWithoutPhotos() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Filter allReviews (not just filtered display reviews) for reviews without photos
             const reviewsWithoutPhotos = this.allReviews.filter(r => !r.images || r.images.length === 0);
             
-            if (reviewsWithoutPhotos.length === 0) {{
+            if (reviewsWithoutPhotos.length === 0) {
                 alert('\u{26A0}\u{FE0F} No reviews without photos found for this product.\\n\\nAll reviews for this product have photos. Please try selecting a different product.');
                 return;
-            }}
+            }
             
             // Count negative reviews for warning
-            const negativeReviews = reviewsWithoutPhotos.filter(r => {{
+            const negativeReviews = reviewsWithoutPhotos.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating <= 2;
-            }});
+            });
             
             const warningMsg = negativeReviews.length > 0
-                ? `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
-                : `Import ${{reviewsWithoutPhotos.length}} reviews without photos to "${{this.selectedProduct.title}}"?`;
+                ? `Import ${reviewsWithoutPhotos.length} reviews without photos to "${this.selectedProduct.title}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${negativeReviews.length} negative review(s) (1-2 stars).`
+                : `Import ${reviewsWithoutPhotos.length} reviews without photos to "${this.selectedProduct.title}"?`;
             
-            if (!confirm(warningMsg)) {{
+            if (!confirm(warningMsg)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{reviewsWithoutPhotos.length}} reviews without photos...`, reviewsWithoutPhotos.length);
+            this.showImportLoader(`Importing ${reviewsWithoutPhotos.length} reviews without photos...`, reviewsWithoutPhotos.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: reviewsWithoutPhotos,
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress'
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews without photos!`, message);
-                }} else {{
+                if (result.success) {
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews without photos!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Import without photos error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        async importAIRecommended() {{
-            if (this.isImporting) {{
+        async importAIRecommended() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Filter allReviews for AI recommended reviews
             const aiRecommendedReviews = this.allReviews.filter(r => r.ai_recommended);
             
-            if (aiRecommendedReviews.length === 0) {{
+            if (aiRecommendedReviews.length === 0) {
                 alert('\u{26A0}\u{FE0F} No AI recommended reviews found for this product.\\n\\nAI recommended reviews are reviews with high quality scores. Please try selecting a different product.');
                 return;
-            }}
+            }
             
             // Count negative reviews for warning
-            const negativeReviews = aiRecommendedReviews.filter(r => {{
+            const negativeReviews = aiRecommendedReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating <= 2;
-            }});
+            });
             
             const warningMsg = negativeReviews.length > 0
-                ? `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${{negativeReviews.length}} negative review(s) (1-2 stars).`
-                : `Import ${{aiRecommendedReviews.length}} AI recommended reviews to "${{this.selectedProduct.title}}"?`;
+                ? `Import ${aiRecommendedReviews.length} AI recommended reviews to "${this.selectedProduct.title}"?\\n\\n\u{26A0}\u{FE0F} WARNING: This will import ${negativeReviews.length} negative review(s) (1-2 stars).`
+                : `Import ${aiRecommendedReviews.length} AI recommended reviews to "${this.selectedProduct.title}"?`;
             
-            if (!confirm(warningMsg)) {{
+            if (!confirm(warningMsg)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{aiRecommendedReviews.length}} AI recommended reviews...`, aiRecommendedReviews.length);
+            this.showImportLoader(`Importing ${aiRecommendedReviews.length} AI recommended reviews...`, aiRecommendedReviews.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: aiRecommendedReviews,
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress'
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} AI recommended reviews!`, message);
-                }} else {{
+                if (result.success) {
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} AI recommended reviews!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Import AI recommended error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        async import45Star() {{
-            if (this.isImporting) {{
+        async import45Star() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Filter allReviews for 4-5 star reviews
-            const reviews45star = this.allReviews.filter(r => {{
+            const reviews45star = this.allReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating === 4 || rating === 5;
-            }});
+            });
             
-            if (reviews45star.length === 0) {{
+            if (reviews45star.length === 0) {
                 alert('\u{26A0}\u{FE0F} No 4-5 star reviews found for this product.\\n\\nPlease try selecting a different product with higher-rated reviews.');
                 return;
-            }}
+            }
             
-            if (!confirm(`Import ${{reviews45star.length}} reviews with 4-5 stars to "${{this.selectedProduct.title}}"?`)) {{
+            if (!confirm(`Import ${reviews45star.length} reviews with 4-5 stars to "${this.selectedProduct.title}"?`)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{reviews45star.length}} reviews with 4-5 stars...`, reviews45star.length);
+            this.showImportLoader(`Importing ${reviews45star.length} reviews with 4-5 stars...`, reviews45star.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: reviews45star,
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress'
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 4-5 stars!`, message);
-                }} else {{
+                if (result.success) {
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with 4-5 stars!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Import 4-5 star error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        async import3Star() {{
-            if (this.isImporting) {{
+        async import3Star() {
+            if (this.isImporting) {
                 return; // Prevent multiple simultaneous imports
-            }}
+            }
             
-            if (!this.selectedProduct) {{
+            if (!this.selectedProduct) {
                 alert('Please select a target product first!');
                 return;
-            }}
+            }
             
-            if (!this.allReviews || this.allReviews.length === 0) {{
+            if (!this.allReviews || this.allReviews.length === 0) {
                 alert('No reviews available to import. Please load reviews first.');
                 return;
-            }}
+            }
             
             // Filter allReviews for 3 star reviews
-            const reviews3star = this.allReviews.filter(r => {{
+            const reviews3star = this.allReviews.filter(r => {
                 const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
                 return rating === 3;
-            }});
+            });
             
-            if (reviews3star.length === 0) {{
+            if (reviews3star.length === 0) {
                 alert('\u{26A0}\u{FE0F} No 3 star reviews found for this product.\\n\\nPlease try selecting a different product.');
                 return;
-            }}
+            }
             
-            if (!confirm(`Import ${{reviews3star.length}} reviews with 3 stars to "${{this.selectedProduct.title}}"?`)) {{
+            if (!confirm(`Import ${reviews3star.length} reviews with 3 stars to "${this.selectedProduct.title}"?`)) {
                 return;
-            }}
+            }
             
-            this.showImportLoader(`Importing ${{reviews3star.length}} reviews with 3 stars...`, reviews3star.length);
+            this.showImportLoader(`Importing ${reviews3star.length} reviews with 3 stars...`, reviews3star.length);
             
-            try {{
-                const response = await fetch(`${{API_URL}}/admin/reviews/import/bulk`, {{
+            try {
+                const response = await fetch(`${API_URL}/admin/reviews/import/bulk`, {
                     method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         reviews: reviews3star,
                         shopify_product_id: this.selectedProduct.id,
                         session_id: this.sessionId,
                         platform: 'aliexpress'
-                    }})
-                }});
+                    })
+                });
                 
                 const result = await response.json();
                 
-                if (result.success) {{
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${{result.duplicate_count}}` : '';
-                    const message = `\u{2713} Imported: ${{result.imported_count}} | \u{274C} Failed: ${{result.failed_count}}${{duplicateMsg}}`;
-                    this.hideImportLoader(true, `Successfully imported ${{result.imported_count}} reviews with 3 stars!`, message);
-                }} else {{
+                if (result.success) {
+                    const duplicateMsg = result.duplicate_count > 0 ? ` | \u{1F504} Duplicates: ${result.duplicate_count}` : '';
+                    const message = `\u{2713} Imported: ${result.imported_count} | \u{274C} Failed: ${result.failed_count}${duplicateMsg}`;
+                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with 3 stars!`, message);
+                } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
-                }}
-            }} catch (error) {{
+                }
+            } catch (error) {
                 console.error('Import 3 star error:', error);
                 this.hideImportLoader(false, 'Import failed. Please try again.', error.message || '');
-            }}
-        }}
+            }
+        }
         
-        nextReview() {{
-            if (this.currentIndex < this.reviews.length - 1) {{
+        nextReview() {
+            if (this.currentIndex < this.reviews.length - 1) {
                 this.currentIndex++;
                 this.displayReview();
-            }} else if (this.pagination.has_next) {{
+            } else if (this.pagination.has_next) {
                 this.loadReviews(this.pagination.page + 1);
-            }} else {{
+            } else {
                 alert('No more reviews!');
-            }}
-        }}
+            }
+        }
         
-        prevReview() {{
-            if (this.currentIndex > 0) {{
+        prevReview() {
+            if (this.currentIndex > 0) {
                 this.currentIndex--;
                 this.displayReview();
-            }}
-        }}
+            }
+        }
         
-        showError(message) {{
+        showError(message) {
             document.getElementById('reviewking-content').innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <div style="font-size: 48px; margin-bottom: 16px;">\u{26A0}\u{FE0F}</div>
                     <h3 style="color: #ef4444; margin: 0 0 8px;">Error</h3>
-                    <p style="color: #6b7280; margin: 0;">${{message}}</p>
+                    <p style="color: #6b7280; margin: 0;">${message}</p>
                     <button class="rk-btn rk-btn-primary" style="margin-top: 20px;"
                             onclick="if(window.reviewKingClient) window.reviewKingClient.close()">Close</button>
                 </div>
             `;
-        }}
+        }
         
-        close() {{
+        close() {
             console.log('[REVIEWKING] Closing and cleaning up...');
             
             // Remove overlay if it exists
             const overlay = document.getElementById('reviewking-overlay');
-            if (overlay) {{
+            if (overlay) {
                 overlay.remove();
-            }}
+            }
             
             // Clean up modal click handler if it exists
-            if (this.modalClickHandler) {{
+            if (this.modalClickHandler) {
                 document.body.removeEventListener('click', this.modalClickHandler);
                 this.modalClickHandler = null;
                 console.log('[REVIEWKING] Removed modal click handler');
-            }}
+            }
             
             // Cleanup complete - no need to restore body scroll or reset global state
-        }}
-    }}
+        }
+            }
     
     // Wrap initialization in try-catch for error handling
     // Note: window.reviewKingClient is assigned inside the constructor before init() runs
-    try {{
+    try {
         new ReviewKingClient();
-    }} catch (error) {{
+            } catch (error) {
         console.error('[REVIEWKING] Initialization error:', error);
         console.error('[REVIEWKING] Error stack:', error.stack);
         window.reviewKingActive = false;
@@ -2265,11 +2265,11 @@ const API_URL = '{{ api_url }}';
         // Clean up any partially created overlay
         const overlay = document.getElementById('reviewking-overlay');
         if (overlay) overlay.remove();
-    }}
-    }} catch (outerError) {{
+            }
+            } catch (outerError) {
         console.error('[REVIEWKING] Outer error:', outerError);
         console.error('[REVIEWKING] Error stack:', outerError.stack);
         alert('\u{1F338} Sakura Reviews failed to load:\\n\\n' + outerError.message + '\\n\\nCheck console for details.');
-    }}
-}})();
+            }
+            })();
     {% endraw %}
