@@ -4061,15 +4061,49 @@ def bookmarklet():
                 return;
             }}
             
-            console.log('Displaying review...', {{ hasReviews: !!this.reviews, reviewCount: this.reviews?.length }});
+            console.log('Displaying review...', {{ 
+                hasSelectedProduct: !!this.selectedProduct,
+                hasReviews: !!this.reviews, 
+                reviewCount: this.reviews?.length,
+                allReviewsCount: this.allReviews?.length 
+            }});
             
-            // Check if reviews are loaded initially
-            if (!this.allReviews || this.allReviews.length === 0) {{
-                content.innerHTML = '<div style="text-align: center; padding: 40px;">Loading reviews...</div>';
+            // First check if product is selected - if not, show product selection UI
+            if (!this.selectedProduct) {{
+                content.innerHTML = `
+                    <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                border-radius: 8px; color: white; margin-bottom: 20px;">
+                        <div style="margin-bottom: 12px;">
+                            <input type="text" id="product-search-input" 
+                                   placeholder="Enter Shopify product URL or name..." 
+                                   style="width: 100%; padding: 10px 12px; border: none; border-radius: 6px; 
+                                          background: rgba(255,255,255,0.9); color: #333; font-size: 14px;" />
+                        </div>
+                        <div id="product-dropdown" style="display: none; background: white; border-radius: 6px; 
+                             box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 120px; overflow-y: auto; color: #333;"></div>
+                        <div id="selected-product" style="display: none; margin-top: 8px; padding: 8px 12px; 
+                             background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;"></div>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 40px; background: #fef3c7; border-radius: 12px;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🎯</div>
+                        <h3 style="color: #92400e; margin: 0 0 8px;">Select Target Product First</h3>
+                        <p style="color: #b45309; margin: 0;">Use the search box above to select which Shopify product will receive these reviews</p>
+                    </div>
+                `;
+                this.setupProductSearch();
                 return;
             }}
             
-            // Check if no reviews match the current filters
+            // If product is selected but reviews aren't loaded yet, initialize empty arrays
+            if (!this.allReviews) {{
+                this.allReviews = [];
+            }}
+            if (!this.reviews) {{
+                this.reviews = [];
+            }}
+            
+            // Check if no reviews match the current filters (but still show UI if product is selected)
             if (!this.reviews || this.reviews.length === 0) {{
                 const countryMap = this.getCountryMap();
                 const selectedCountryName = this.selectedCountry !== 'all' 
@@ -4111,11 +4145,9 @@ def bookmarklet():
                 return;
             }}
             
-            const review = this.reviews[this.currentIndex];
-            const isRecommended = review.ai_recommended;
-            
-            // First show product search if no product selected
-            if (!this.selectedProduct) {{
+            // Get current review if available (handle case where reviews aren't loaded yet)
+            const review = this.reviews && this.reviews.length > 0 ? this.reviews[this.currentIndex] : null;
+            const isRecommended = review ? review.ai_recommended : false;
                 content.innerHTML = `
                     <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                                 border-radius: 8px; color: white; margin-bottom: 20px;">
