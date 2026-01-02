@@ -3613,11 +3613,20 @@ def bookmarklet():
                     this.currentIndex = 0;
                     this.pagination = result.pagination;
                     // Merge stats from server with existing stats to preserve all properties
+                    // Normalize property names (avg_quality -> average_quality, etc.)
+                    const serverStats = result.stats || {{}};
                     this.stats = {{
                         ...this.stats,  // Keep existing stats (with defaults)
-                        ...result.stats  // Override with server stats
+                        ...serverStats,  // Override with server stats
+                        // Normalize property names
+                        average_quality: serverStats.average_quality || serverStats.avg_quality || 0,
+                        average_rating: serverStats.average_rating || serverStats.avg_rating || 0,
+                        // Ensure all required properties exist
+                        reviews_45star: serverStats.reviews_45star || this.stats.reviews_45star || 0,
+                        reviews_3star: serverStats.reviews_3star || this.stats.reviews_3star || 0
                     }};
                     console.log('All reviews loaded:', this.allReviews.length);
+                    console.log('Stats:', this.stats);
                     console.log('Stats:', this.stats);
                     
                     // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
