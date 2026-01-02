@@ -1060,7 +1060,9 @@ class EnhancedReviewExtractor:
                         'with_photos': 0,
                         'ai_recommended': 0,
                         'average_rating': 0,
-                        'average_quality': 0
+                        'average_quality': 0,
+                        'reviews_45star': 0,
+                        'reviews_3star': 0
                     }
                 }
             
@@ -1096,7 +1098,9 @@ class EnhancedReviewExtractor:
                     'with_photos': len([r for r in reviews if r.get('images', [])]),
                     'ai_recommended': len([r for r in reviews if r.get('ai_recommended', False)]),
                     'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0
+                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
+                    'reviews_45star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
+                    'reviews_3star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
                 },
                 'filters_applied': filters or {},
                 'api_version': Config.API_VERSION
@@ -2353,8 +2357,10 @@ def import_url():
                     'stats': {
                         'ai_recommended': len([r for r in cached_reviews if r.get('ai_recommended')]),
                         'with_photos': len([r for r in cached_reviews if r.get('images') and len(r.get('images', [])) > 0]),
-                        'avg_quality': sum(r.get('quality_score', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
-                        'avg_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0
+                        'average_quality': sum(r.get('quality_score', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
+                        'average_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
+                        'reviews_45star': len([r for r in cached_reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
+                        'reviews_3star': len([r for r in cached_reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
                     }
                 })
         
@@ -2415,8 +2421,10 @@ def import_url():
                 'stats': {
                     'ai_recommended': len([r for r in reviews if r.get('ai_recommended')]),
                     'with_photos': len([r for r in reviews if r.get('images') and len(r.get('images', [])) > 0]),
-                    'avg_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'avg_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0
+                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
+                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
+                    'reviews_45star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
+                    'reviews_3star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
                 }
             })
         
@@ -3604,8 +3612,13 @@ def bookmarklet():
                     this.allReviews = result.reviews;  // Store all reviews
                     this.currentIndex = 0;
                     this.pagination = result.pagination;
-                    this.stats = result.stats;
+                    // Merge stats from server with existing stats to preserve all properties
+                    this.stats = {{
+                        ...this.stats,  // Keep existing stats (with defaults)
+                        ...result.stats  // Override with server stats
+                    }};
                     console.log('All reviews loaded:', this.allReviews.length);
+                    console.log('Stats:', this.stats);
                     
                     // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
                     const aiRecommendedCount = this.allReviews.filter(r => r.ai_recommended).length;
