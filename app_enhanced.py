@@ -4222,7 +4222,7 @@ def bookmarklet():
                         <h3 style="color: #92400e; margin: 0 0 12px; font-size: 22px;">No Reviews Match Your Filters</h3>
                         <p style="color: #b45309; margin: 0 0 24px; font-size: 15px; line-height: 1.6;">
                             ${{selectedCountryName 
-                                ? `No reviews found from <strong>${{selectedCountryName}}</strong> with your selected filters.`
+                                ? 'No reviews found from <strong>' + selectedCountryName + '</strong> with your selected filters.'
                                 : 'No reviews match your current filter criteria.'
                             }}
                         </p>
@@ -4456,7 +4456,7 @@ def bookmarklet():
                         return `
                             <p style="color: #d1d5db; line-height: 1.7; margin: 0 0 18px; font-size: 15px;">${{displayText}}</p>
                             ${{showOriginal ? 
-                                `<p style="color: #888; font-size: 13px; margin: 0 0 18px; font-style: italic; border-left: 2px solid #555; padding-left: 10px;">Original: ${{review.text}}</p>` 
+                                '<p style="color: #888; font-size: 13px; margin: 0 0 18px; font-style: italic; border-left: 2px solid #555; padding-left: 10px;">Original: ' + review.text + '</p>' 
                                 : ''
                             }}
                         `;
@@ -4469,12 +4469,12 @@ def bookmarklet():
                             </div>
                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 ${{review.images.map(img => 
-                                    `<img src="${{img}}" style="width: 100px; height: 100px; 
-                                    object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid #1a1a2e;
-                                    transition: all 0.2s;"
-                                    onmouseover="this.style.transform='scale(1.05)'; this.style.borderColor='#3b82f6';"
-                                    onmouseout="this.style.transform='scale(1)'; this.style.borderColor='#1a1a2e';"
-                                    onclick="window.open('${{img}}', '_blank')">`
+                                    '<img src="' + img + '" style="width: 100px; height: 100px; ' +
+                                    'object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid #1a1a2e; ' +
+                                    'transition: all 0.2s;" ' +
+                                    'onmouseover="this.style.transform=\\'scale(1.05)\\'; this.style.borderColor=\\'#3b82f6\\';" ' +
+                                    'onmouseout="this.style.transform=\\'scale(1)\\'; this.style.borderColor=\\'#1a1a2e\\';" ' +
+                                    'onclick="window.open(\\'' + img + '\\', \\'_blank\\')">'
                                 ).join('')}}
                             </div>
                         </div>
