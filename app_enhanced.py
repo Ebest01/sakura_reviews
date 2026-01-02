@@ -2440,9 +2440,8 @@ def import_url():
                     'ai_recommended': len([r for r in reviews if r.get('ai_recommended')]),
                     'with_photos': len([r for r in reviews if r.get('images') and len(r.get('images', [])) > 0]),
                     'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'reviews_45star': len([r for r in reviews if self._is_45_star_rating(r.get('rating', 0))]),
-                    'reviews_3star': len([r for r in reviews if self._is_3_star_rating(r.get('rating', 0))])
+                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0
+                    # Note: reviews_45star and reviews_3star are calculated on client side (like v12)
                 }
             })
         
@@ -3630,18 +3629,33 @@ def bookmarklet():
                     this.allReviews = result.reviews;  // Store all reviews
                     this.currentIndex = 0;
                     this.pagination = result.pagination;
-                    // Merge stats from server with existing stats to preserve all properties
-                    // Normalize property names (avg_quality -> average_quality, etc.)
+                    
+                    // Calculate stats on client side (like v12) - more reliable
+                    // Normalize property names from server
                     const serverStats = result.stats || {{}};
+                    const avgQuality = serverStats.average_quality || serverStats.avg_quality || 0;
+                    const avgRating = serverStats.average_rating || serverStats.avg_rating || 0;
+                    
+                    // Calculate rating counts (normalize AliExpress 0-100 to 1-5 scale) - like v12
+                    const reviews45star = this.allReviews.filter(r => {{
+                        const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                        return rating === 4 || rating === 5;
+                    }});
+                    const reviews3star = this.allReviews.filter(r => {{
+                        const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                        return rating === 3;
+                    }});
+                    
+                    // Update stats (like v12)
                     this.stats = {{
                         ...this.stats,  // Keep existing stats (with defaults)
-                        ...serverStats,  // Override with server stats
-                        // Normalize property names
-                        average_quality: serverStats.average_quality || serverStats.avg_quality || 0,
-                        average_rating: serverStats.average_rating || serverStats.avg_rating || 0,
-                        // Ensure all required properties exist
-                        reviews_45star: serverStats.reviews_45star || this.stats.reviews_45star || 0,
-                        reviews_3star: serverStats.reviews_3star || this.stats.reviews_3star || 0
+                        total: this.allReviews.length,
+                        with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
+                        ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
+                        average_quality: avgQuality,
+                        average_rating: avgRating,
+                        reviews_45star: reviews45star.length,
+                        reviews_3star: reviews3star.length
                     }};
                     console.log('All reviews loaded:', this.allReviews.length);
                     console.log('Stats:', this.stats);
