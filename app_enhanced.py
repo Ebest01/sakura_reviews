@@ -1094,14 +1094,7 @@ class EnhancedReviewExtractor:
                     'has_prev': page > 1,
                     'total_pages': (total_reviews + per_page - 1) // per_page
                 },
-                'stats': {
-                    'with_photos': len([r for r in reviews if r.get('images', [])]),
-                    'ai_recommended': len([r for r in reviews if r.get('ai_recommended', False)]),
-                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'reviews_45star': len([r for r in reviews if self._is_45_star_rating(r.get('rating', 0))]),
-                    'reviews_3star': len([r for r in reviews if self._is_3_star_rating(r.get('rating', 0))])
-                },
+                'stats': self._calculate_stats(reviews),
                 'filters_applied': filters or {},
                 'api_version': Config.API_VERSION
             }
