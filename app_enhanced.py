@@ -1060,9 +1060,7 @@ class EnhancedReviewExtractor:
                         'with_photos': 0,
                         'ai_recommended': 0,
                         'average_rating': 0,
-                        'average_quality': 0,
-                        'reviews_45star': 0,
-                        'reviews_3star': 0
+                        'average_quality': 0
                     }
                 }
             
@@ -1094,7 +1092,12 @@ class EnhancedReviewExtractor:
                     'has_prev': page > 1,
                     'total_pages': (total_reviews + per_page - 1) // per_page
                 },
-                'stats': self._calculate_stats(reviews),
+                'stats': {
+                    'with_photos': len([r for r in reviews if r.get('images', [])]),
+                    'ai_recommended': len([r for r in reviews if r.get('ai_recommended', False)]),
+                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
+                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0
+                },
                 'filters_applied': filters or {},
                 'api_version': Config.API_VERSION
             }
@@ -2376,9 +2379,7 @@ def import_url():
                         'ai_recommended': len([r for r in cached_reviews if r.get('ai_recommended')]),
                         'with_photos': len([r for r in cached_reviews if r.get('images') and len(r.get('images', [])) > 0]),
                         'average_quality': sum(r.get('quality_score', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
-                        'average_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
-                        'reviews_45star': len([r for r in cached_reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
-                        'reviews_3star': len([r for r in cached_reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
+                        'average_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0
                     }
                 })
         
@@ -3646,20 +3647,16 @@ def bookmarklet():
                         return rating === 3;
                     }});
                     
-                    // Update stats (like v12)
+                    // Store server stats (like v12 - only basic fields)
                     this.stats = {{
                         ...this.stats,  // Keep existing stats (with defaults)
                         total: this.allReviews.length,
                         with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
                         ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
                         average_quality: avgQuality,
-                        average_rating: avgRating,
-                        reviews_45star: reviews45star.length,
-                        reviews_3star: reviews3star.length
+                        average_rating: avgRating
                     }};
                     console.log('All reviews loaded:', this.allReviews.length);
-                    console.log('Stats:', this.stats);
-                    console.log('Stats:', this.stats);
                     
                     // Smart fallback: If AI recommended has < 3 reviews, show All with smart sorting
                     const aiRecommendedCount = this.allReviews.filter(r => r.ai_recommended).length;
@@ -3671,7 +3668,7 @@ def bookmarklet():
                         this.useSmartSort = false;
                     }}
                     
-                    this.applyFilter();  // Apply current filter and display
+                    this.applyFilter();  // Apply current filter and display (will recalculate reviews_45star and reviews_3star)
                 }} else {{
                     console.error('Error loading reviews:', result.error);
                     // Show user-friendly error message
@@ -3992,12 +3989,24 @@ def bookmarklet():
             // Reset to first review after filtering
             this.currentIndex = 0;
             
-            // Update stats based on all reviews (not filtered)
+            // Update stats based on all reviews (not filtered) - like v12
+            // Calculate rating counts (normalize AliExpress 0-100 to 1-5 scale)
+            const reviews45star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 4 || rating === 5;
+            }});
+            const reviews3star = this.allReviews.filter(r => {{
+                const rating = r.rating > 5 ? Math.ceil((r.rating / 100) * 5) : r.rating;
+                return rating === 3;
+            }});
+            
             this.stats = {{
                 ...this.stats,
                 total: this.allReviews.length,
                 with_photos: this.allReviews.filter(r => r.images && r.images.length > 0).length,
-                ai_recommended: this.allReviews.filter(r => r.ai_recommended).length
+                ai_recommended: this.allReviews.filter(r => r.ai_recommended).length,
+                reviews_45star: reviews45star.length,
+                reviews_3star: reviews3star.length
             }};
             
             this.displayReview();
