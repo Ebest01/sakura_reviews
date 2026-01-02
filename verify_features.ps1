@@ -55,11 +55,13 @@ if (Select-String -Path "app_enhanced.py" -Pattern "Target Product Selected" -Qu
 }
 
 if ($errors -eq 0) {
-    Write-Host "`n✅ All protected features verified!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "✅ All protected features verified!" -ForegroundColor Green
     exit 0
 } else {
-    Write-Host "`n❌ Found $errors error(s). Please fix before committing." -ForegroundColor Red
+    Write-Host ""
+    $errorMsg = "❌ Found $errors error(s). Please fix before committing."
+    Write-Host $errorMsg -ForegroundColor Red
     Write-Host '   See PROTECTED_FEATURES.md for details' -ForegroundColor Yellow
     exit 1
 }
-
