@@ -3535,10 +3535,9 @@ def bookmarklet():
             `;
             selectedDiv.style.display = 'block';
             
-            // Refresh current review display to show import buttons
-            if (this.reviews && this.reviews.length > 0) {{
-                this.displayReview();
-            }}
+            // ALWAYS refresh display after product selection to show stats, bulk import buttons, etc.
+            // Even if reviews aren't loaded yet, we should show the UI structure
+            this.displayReview();
         }}
         
         clearProduct() {{
