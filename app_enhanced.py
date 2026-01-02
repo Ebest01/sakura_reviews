@@ -2908,7 +2908,14 @@ def bookmarklet():
             this.modalClickHandler = null;  // Store event handler for cleanup
             this.currentIndex = 0;  // Initialize current review index
             this.pagination = {{ has_next: false, page: 1 }};  // Initialize pagination
-            this.stats = {{ with_photos: 0, ai_recommended: 0 }};  // Initialize stats
+            // Initialize stats with all required properties
+            this.stats = {{ 
+                with_photos: 0, 
+                ai_recommended: 0,
+                average_quality: 0,
+                reviews_45star: 0,
+                reviews_3star: 0
+            }};
             this.init();
         }}
         
@@ -4223,7 +4230,7 @@ def bookmarklet():
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">With Photos</div>
                         </div>
                         <div style="flex: 1; min-width: 80px;">
-                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{this.stats.average_quality.toFixed(1)}}<span style="font-size: 20px;">/10</span></div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${{(this.stats.average_quality || 0).toFixed(1)}}<span style="font-size: 20px;">/10</span></div>
                             <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Avg Quality</div>
                         </div>
                     </div>
