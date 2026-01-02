@@ -1099,8 +1099,8 @@ class EnhancedReviewExtractor:
                     'ai_recommended': len([r for r in reviews if r.get('ai_recommended', False)]),
                     'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
                     'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'reviews_45star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
-                    'reviews_3star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
+                    'reviews_45star': len([r for r in reviews if self._is_45_star_rating(r.get('rating', 0))]),
+                    'reviews_3star': len([r for r in reviews if self._is_3_star_rating(r.get('rating', 0))])
                 },
                 'filters_applied': filters or {},
                 'api_version': Config.API_VERSION
@@ -1514,6 +1514,31 @@ class EnhancedReviewExtractor:
             '2024-11-20', '2024-11-15', '2024-11-10', '2024-11-05'
         ]
         return dates[offset % len(dates)]
+    
+    def _normalize_rating_to_stars(self, rating):
+        """
+        Normalize rating to 1-5 star scale
+        AliExpress uses 0-100 scale (100 = 5 stars, 80 = 4 stars, 60 = 3 stars, etc.)
+        Other platforms may use 1-5 scale directly
+        """
+        if not rating:
+            return 0
+        if rating > 5:
+            # Convert 0-100 scale to 1-5 stars
+            return max(1, min(5, int((rating / 100) * 5)))
+        else:
+            # Already 1-5 scale
+            return max(1, min(5, int(rating)))
+    
+    def _is_45_star_rating(self, rating):
+        """Check if rating is 4 or 5 stars"""
+        stars = self._normalize_rating_to_stars(rating)
+        return stars >= 4
+    
+    def _is_3_star_rating(self, rating):
+        """Check if rating is 3 stars"""
+        stars = self._normalize_rating_to_stars(rating)
+        return stars == 3
     
     def _calculate_quality_score(self, review):
         """
@@ -2423,8 +2448,8 @@ def import_url():
                     'with_photos': len([r for r in reviews if r.get('images') and len(r.get('images', [])) > 0]),
                     'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
                     'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'reviews_45star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) >= 4) or (r.get('rating', 0) <= 5 and r.get('rating', 0) >= 4)]),
-                    'reviews_3star': len([r for r in reviews if (r.get('rating', 0) > 5 and (r.get('rating', 0) / 20) == 3) or (r.get('rating', 0) <= 5 and r.get('rating', 0) == 3)])
+                    'reviews_45star': len([r for r in reviews if self._is_45_star_rating(r.get('rating', 0))]),
+                    'reviews_3star': len([r for r in reviews if self._is_3_star_rating(r.get('rating', 0))])
                 }
             })
         
