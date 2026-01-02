@@ -2908,61 +2908,96 @@ def bookmarklet():
 // [SSR MODE] INIT v" + Date.now() + "
 // ReviewKing Enhanced Bookmarklet - Superior to Loox
 (function() {{
-    // Check if overlay already exists
-    const existingOverlay = document.getElementById('reviewking-overlay');
-    if (existingOverlay) {{
-        console.log('[REVIEWKING] Already active, skipping...');
-        return;
-    }}
+    console.log('[REVIEWKING] 🚀 Bookmarklet script loaded!');
     
-    const API_URL = '{host}';
-    
-    class ReviewKingClient {{
-        constructor() {{
-            // Assign to window FIRST so onclick handlers can reference it
-            window.reviewKingClient = this;
-            
-            this.sessionId = Math.random().toString(36).substr(2, 9);
-            this.selectedProduct = null;
-            this.searchTimeout = null;
-            this.allReviews = [];  // Store all reviews
-            this.reviews = [];  // Filtered reviews for display
-            this.currentFilter = 'ai_recommended';  // Default to AI Recommended (best quality reviews)
-            this.selectedCountry = 'all';  // Country filter
-            this.showTranslations = true;  // Translation toggle (default ON)
-            this.modalProductId = null;  // Store product ID clicked in modal
-            this.modalClickHandler = null;  // Store event handler for cleanup
-            this.currentIndex = 0;  // Initialize current review index
-            this.pagination = {{ has_next: false, page: 1 }};  // Initialize pagination
-            // Initialize stats with all required properties
-            this.stats = {{ 
-                with_photos: 0, 
-                ai_recommended: 0,
-                average_quality: 0,
-                reviews_45star: 0,
-                reviews_3star: 0
-            }};
-            this.init();
+    try {{
+        // Check if overlay already exists
+        const existingOverlay = document.getElementById('reviewking-overlay');
+        if (existingOverlay) {{
+            console.log('[REVIEWKING] Already active, skipping...');
+            return;
         }}
         
+        const API_URL = '{host}';
+        console.log('[REVIEWKING] API URL:', API_URL);
+        
+        class ReviewKingClient {{
+            constructor() {{
+                console.log('[REVIEWKING] Creating ReviewKingClient instance...');
+                
+                // Assign to window FIRST so onclick handlers can reference it
+                window.reviewKingClient = this;
+                
+                this.sessionId = Math.random().toString(36).substr(2, 9);
+                this.selectedProduct = null;
+                this.searchTimeout = null;
+                this.allReviews = [];  // Store all reviews
+                this.reviews = [];  // Filtered reviews for display
+                this.currentFilter = 'ai_recommended';  // Default to AI Recommended (best quality reviews)
+                this.selectedCountry = 'all';  // Country filter
+                this.showTranslations = true;  // Translation toggle (default ON)
+                this.modalProductId = null;  // Store product ID clicked in modal
+                this.modalClickHandler = null;  // Store event handler for cleanup
+                this.currentIndex = 0;  // Initialize current review index
+                this.pagination = {{ has_next: false, page: 1 }};  // Initialize pagination
+                // Initialize stats with all required properties
+                this.stats = {{ 
+                    with_photos: 0, 
+                    ai_recommended: 0,
+                    average_quality: 0,
+                    reviews_45star: 0,
+                    reviews_3star: 0
+                }};
+                
+                console.log('[REVIEWKING] Calling init()...');
+                this.init();
+            }}
+        
         init() {{
+            console.log('[REVIEWKING] Initializing...', window.location.href);
+            
             // Check if we're on SSR/modal page
             const isModalPage = this.isModalPage();
+            console.log('[REVIEWKING] Is modal page?', isModalPage);
             
             if (isModalPage) {{
                 // ⚠️ SSR page - setup modal detection and user guidance
                 // CRITICAL: This calls setupModalListener() which adds the "Get Reviews" button
                 // DO NOT REMOVE THIS CALL - it's essential for SSR functionality
+                console.log('[REVIEWKING] Setting up modal listener for SSR page');
                 this.setupModalListener();
                 return;
             }}
             
             // Normal product page - detect product from URL
+            console.log('[REVIEWKING] Detecting product...');
             this.productData = this.detectProduct();
+            console.log('[REVIEWKING] Product data:', this.productData);
+            
             if (!this.productData.productId) {{
-                alert('Could not detect product on this page. Please open a product page.');
+                console.error('[REVIEWKING] ❌ Could not detect product ID');
+                // Still create overlay to show helpful message
+                this.createOverlay();
+                const content = document.getElementById('reviewking-content');
+                if (content) {{
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px; color: #fff;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">🌸</div>
+                            <h2 style="color: #FF69B4; margin: 0 0 15px 0;">Could not detect product</h2>
+                            <p style="color: #aaa; margin: 0 0 25px 0; line-height: 1.6;">
+                                Please make sure you're on an AliExpress product page.<br>
+                                The URL should contain <code style="background: #2d2d3d; padding: 2px 6px; border-radius: 4px;">/item/</code>
+                            </p>
+                            <p style="color: #888; font-size: 14px;">
+                                Current URL: <code style="background: #2d2d3d; padding: 2px 6px; border-radius: 4px; word-break: break-all;">${{window.location.href}}</code>
+                            </p>
+                        </div>
+                    `;
+                }}
                 return;
             }}
+            
+            console.log('[REVIEWKING] ✅ Product detected, creating overlay...');
             this.createOverlay();
             this.loadReviews();
         }}
@@ -3516,7 +3551,7 @@ def bookmarklet():
                              onmouseover="this.style.background='#f8f9fa'" 
                              onmouseout="this.style.background='white'"
                              onclick="window.reviewKingClient.selectProduct('${{product.id}}', '${{product.title.replace(/'/g, "\\\\'")}}', '${{product.image || ''}}')">
-                            ${{product.image ? `<img src="${{product.image}}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}}
+                            ${{product.image ? '<img src="' + product.image + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">' : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}}
                             <div>
                                 <div style="font-weight: 500; color: #333; font-size: 14px;">${{product.title}}</div>
                                 <div style="font-size: 12px; color: #666;">ID: ${{product.id}}</div>
@@ -3553,7 +3588,7 @@ def bookmarklet():
             selectedDiv.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        ${{productImage ? `<img src="${{productImage}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                        ${{productImage ? '<img src="' + productImage + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
                         <div>
                             <div style="font-weight: 500;">✓ Target Product Selected</div>
                             <div style="opacity: 0.8; font-size: 12px;">${{productTitle}}</div>
@@ -4260,7 +4295,7 @@ def bookmarklet():
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                ${{this.selectedProduct.image ? `<img src="${{this.selectedProduct.image}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
+                                ${{this.selectedProduct.image ? '<img src="' + this.selectedProduct.image + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">' : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}}
                                 <div style="flex: 1;">
                                     <div style="font-weight: 500;">✓ Target Product Selected</div>
                                     <div style="opacity: 0.9; font-size: 12px;">${{this.selectedProduct.title}}</div>
@@ -4368,7 +4403,7 @@ def bookmarklet():
                         <select id="rk-country-filter" onchange="window.reviewKingClient.setCountry(this.value)" 
                                 style="width: 100%; padding: 10px 12px; background: #0f0f23; color: white; border: 1px solid #2d2d3d; border-radius: 8px; font-size: 14px; cursor: pointer;">
                             <option value="all">🌍 All countries (${{this.allReviews.length}})</option>
-                            ${{this.getUniqueCountries().map(c => `<option value="${{c.code}}" ${{this.selectedCountry === c.code ? 'selected' : ''}}>${{c.flag}} ${{c.name}} (${{c.count}})</option>`).join('')}}
+                            ${{this.getUniqueCountries().map(c => '<option value="' + c.code + '" ' + (this.selectedCountry === c.code ? 'selected' : '') + '>' + c.flag + ' ' + c.name + ' (' + c.count + ')</option>').join('')}}
                         </select>
                     </div>
                     <div>
@@ -5126,13 +5161,19 @@ def bookmarklet():
         new ReviewKingClient();
     }} catch (error) {{
         console.error('[REVIEWKING] Initialization error:', error);
+        console.error('[REVIEWKING] Error stack:', error.stack);
         window.reviewKingActive = false;
         delete window.reviewKingClient;  // Clean up if it was partially assigned
-        alert('ReviewKing initialization failed: ' + error.message);
+        alert('🌸 Sakura Reviews initialization failed:\\n\\n' + error.message + '\\n\\nCheck console for details.');
         
         // Clean up any partially created overlay
         const overlay = document.getElementById('reviewking-overlay');
         if (overlay) overlay.remove();
+    }}
+    }} catch (outerError) {{
+        console.error('[REVIEWKING] Outer error:', outerError);
+        console.error('[REVIEWKING] Error stack:', outerError.stack);
+        alert('🌸 Sakura Reviews failed to load:\\n\\n' + outerError.message + '\\n\\nCheck console for details.');
     }}
 }})();
     """
