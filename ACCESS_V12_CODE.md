@@ -109,3 +109,164 @@ echo $DATABASE_URL
    # Then decode it locally
    ```
 
+## After Retrieving the Code
+
+### Step 1: Save the Retrieved File
+
+Once you've retrieved `app_enhanced.py` from the v12 service:
+
+1. **Save it locally** with a clear version name:
+   ```bash
+   # Save as app_enhanced_v12.py in your project root
+   # D:\projs2025\SakuraReviews\app_enhanced_v12.py
+   ```
+
+2. **Create a backup** of your current version:
+   ```bash
+   cp app_enhanced.py app_enhanced_current_backup.py
+   ```
+
+### Step 2: Compare Versions
+
+Compare the v12 version with your current version to identify differences:
+
+```bash
+# Using diff (if on Linux/Mac)
+diff app_enhanced.py app_enhanced_v12.py
+
+# Or use a visual diff tool
+code --diff app_enhanced.py app_enhanced_v12.py
+```
+
+**Key areas to check:**
+- Database integration imports and initialization
+- `db_integration` variable initialization
+- Database connection setup
+- Review saving logic
+- API endpoints for database operations
+
+### Step 3: Identify Missing Components
+
+Look for these critical sections in `app_enhanced_v12.py`:
+
+1. **Database Integration Import:**
+   ```python
+   from database_integration import DatabaseIntegration
+   # or
+   from backend.models_v2 import db, Review, Shop, Product
+   ```
+
+2. **Database Initialization:**
+   ```python
+   db_integration = DatabaseIntegration()
+   # or
+   db.init_app(app)
+   ```
+
+3. **Review Saving Logic:**
+   ```python
+   # Look for functions that save reviews to database
+   def save_review_to_db(...)
+   ```
+
+### Step 4: Merge Critical Fixes
+
+If v12 has working database integration:
+
+1. **Extract the working database code** from v12
+2. **Compare with current implementation**
+3. **Apply fixes** to your current `app_enhanced.py`
+4. **Test locally** before deploying
+
+### Step 5: Check Dependencies
+
+Verify that all required dependencies are in `requirements.txt`:
+
+```bash
+# Check what imports v12 uses
+grep -E "^import |^from " app_enhanced_v12.py
+
+# Compare with current requirements.txt
+cat requirements.txt
+```
+
+## Troubleshooting Common Issues
+
+### Issue: Terminal Access Denied
+
+**Solution:**
+- Check if you have proper permissions in Easypanel
+- Try using the File Browser method instead
+- Contact Easypanel admin for access
+
+### Issue: File Not Found
+
+**Solution:**
+```bash
+# Search more broadly
+find / -name "*.py" -type f | grep -i app | grep -i enhanced
+
+# Check if it's in a different location
+ls -la /workspace/
+ls -la /app/
+ls -la /src/
+```
+
+### Issue: Base64 Encoding Too Large
+
+**Solution:**
+- Split the file into chunks:
+  ```bash
+  split -l 1000 app_enhanced.py app_chunk_
+  base64 app_chunk_aa > chunk1.txt
+  base64 app_chunk_ab > chunk2.txt
+  # etc.
+  ```
+
+### Issue: Database Still Not Working After Merge
+
+**Check:**
+1. Environment variables are set correctly
+2. Database connection string is valid
+3. All required tables exist
+4. Database models match the schema
+
+```bash
+# Test database connection
+python -c "
+from database_integration import DatabaseIntegration
+db = DatabaseIntegration()
+print('Connection OK' if db else 'Connection Failed')
+"
+```
+
+## Next Steps After Integration
+
+1. **Test Locally:**
+   ```bash
+   python app_enhanced.py
+   # Or
+   python -m flask run
+   ```
+
+2. **Verify Database Operations:**
+   - Create a test review
+   - Check if it saves to database
+   - Verify it appears in the widget
+
+3. **Deploy to Production:**
+   - Commit changes to git
+   - Deploy via Easypanel
+   - Monitor logs for errors
+
+4. **Monitor:**
+   - Check Easypanel logs
+   - Verify database connections
+   - Test review submission flow
+
+## Additional Resources
+
+- See `DOWNLOAD_V12_CODE.md` for alternative download methods
+- Check `database_integration.py` for database setup
+- Review `EASYPANEL_DEPLOYMENT.md` for deployment guide
+
