@@ -222,7 +222,7 @@ const API_URL = '{{ api_url }}';
                             productId = parsed.productId;
                         } catch (e) {
                             // Try regex extraction
-                            const match = productId.match(/productId['":]?[\\s]*(\\d+)/);
+                            const match = productId.match(/productId['":]?\s*(\d+)/);
                             if (match) productId = match[1];
                         }
                     }
@@ -412,7 +412,7 @@ const API_URL = '{{ api_url }}';
                 platform = 'aliexpress';
                 
                 // Method 1: Extract from URL (supports .html extension)
-                const urlMatch = url.match(/\\/item\\/(\\d+)(?:\\.html)?/);
+                const urlMatch = url.match(/\/item\/(\d+)(?:\.html)?/);
                 if (urlMatch) {
                     productId = urlMatch[1];
                     console.log('[DETECT] Product ID from URL:', productId);
@@ -444,15 +444,15 @@ const API_URL = '{{ api_url }}';
                 }
             } else if (hostname.includes('amazon')) {
                 platform = 'amazon';
-                const match = url.match(/\\/dp\\/([A-Z0-9]{10})/);
+                const match = url.match(/\/dp\/([A-Z0-9]{10})/);
                 if (match) productId = match[1];
             } else if (hostname.includes('ebay')) {
                 platform = 'ebay';
-                const match = url.match(/\\/itm\\/(\\d+)/);
+                const match = url.match(/\/itm\/(\d+)/);
                 if (match) productId = match[1];
             } else if (hostname.includes('walmart')) {
                 platform = 'walmart';
-                const match = url.match(/\\/ip\\/[^\\/]+\\/(\\d+)/);
+                const match = url.match(/\/ip\/[^\/]+\/(\d+)/);
                 if (match) productId = match[1];
             }
             
@@ -1038,7 +1038,7 @@ const API_URL = '{{ api_url }}';
         
         scrapeAmazon() {
             try {
-                const asin = window.location.pathname.match(/\\/dp\\/([A-Z0-9]{10})/)?.[1];
+                const asin = window.location.pathname.match(/\/dp\/([A-Z0-9]{10})/)?.[1];
                 
                 const reviews = [];
                 const reviewElements = document.querySelectorAll('[data-hook="review"]');
@@ -1058,7 +1058,7 @@ const API_URL = '{{ api_url }}';
                             id: 'amz_' + index,
                             reviewer_name: nameEl?.textContent?.trim() || 'Amazon Customer',
                             text: textEl.textContent?.trim() || '',
-                            rating: parseInt(ratingEl?.textContent?.match(/\\d/)?.[0] || 5),
+                            rating: parseInt(ratingEl?.textContent?.match(/\d/)?.[0] || 5),
                             date: new Date().toISOString().split('T')[0],
                             country: 'US',
                             verified: el.querySelector('[data-hook="avp-badge"]') !== null,
@@ -1081,7 +1081,7 @@ const API_URL = '{{ api_url }}';
         }
         
         extractProductIdFromUrl() {
-            const match = window.location.pathname.match(/\\/item\\/(\\d+)/);
+            const match = window.location.pathname.match(/\/item\/(\d+)/);
             return match ? match[1] : null;
         }
         
