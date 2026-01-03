@@ -1407,14 +1407,29 @@ class EnhancedReviewExtractor:
                 if idx == 0:
                     logger.info(f"First review images: {len(images)} images extracted from {len(raw_images)} raw images")
                 
+                # Get review text - use buyerFeedback (like v12)
+                review_text = eval_item.get('buyerFeedback', '')
+                
+                # Get date - try evalDate first (new API), then evalTime (old API), then default (like v12)
+                review_date = eval_item.get('evalDate') or eval_item.get('evalTime') or datetime.now().strftime('%Y-%m-%d')
+                # Parse date if it's in "21 Jul 2025" format (new API format)
+                if review_date and isinstance(review_date, str) and ' ' in review_date and len(review_date) > 10:
+                    try:
+                        from dateutil import parser
+                        parsed_date = parser.parse(review_date)
+                        review_date = parsed_date.strftime('%Y-%m-%d')
+                    except Exception:
+                        # If parsing fails, use default (like v12)
+                        review_date = datetime.now().strftime('%Y-%m-%d')
+                
                 reviews.append({
                     'id': eval_item.get('evaluationId', str(eval_item.get('id', ''))),
                     'platform': 'aliexpress',
                     'product_id': product_id,
-                    'reviewer_name': anonymize_reviewer_name(eval_item.get('buyerName', '')),
-                    'text': eval_item.get('buyerFeedback', ''),
+                    'reviewer_name': anonymize_reviewer_name(eval_item.get('buyerName', 'Customer')),
+                    'text': review_text,
                     'rating': int(eval_item.get('buyerEval', 100)),  # AliExpress uses 0-100 scale
-                    'date': eval_item.get('evalTime', datetime.now().strftime('%Y-%m-%d')),
+                    'date': review_date,
                     'country': eval_item.get('buyerCountry', 'Unknown'),
                     'verified': True,
                     'images': images,
@@ -2292,15 +2307,15 @@ def review_helpful_vote(review_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/admin/reviews/import/url', methods=['GET', 'POST'])
-@app.route('/-/admin/reviews/import/url', methods=['GET', 'POST'])
+@app.route('/admin/reviews/import/url', methods=['GET'])
+@app.route('/-/admin/reviews/import/url', methods=['GET'])
 def import_url():
     """
-    Loox-compatible endpoint: GET/POST /admin/reviews/import/url
+    Loox-compatible endpoint: GET /admin/reviews/import/url
     Returns paginated reviews for preview
-    IMPROVED: Now accepts scraped data from client-side (from app_ultimate.py)
+    EXACTLY like v12 - always does server-side scraping, no client-scraped data
     
-    Query params (GET) or Body (POST):
+    Query params:
     - productId: Product ID
     - platform: aliexpress, amazon, ebay, walmart
     - page: Page number
@@ -2308,33 +2323,20 @@ def import_url():
     - country: Country filter
     - with_photos: Photos only (true/false)
     - translate: Language (optional)
-    - scraped: Client-scraped review data (POST only)
-    - session_id: Existing session ID for caching
     """
     try:
-        # Get data from POST body or GET params
-        if request.method == 'POST':
-            data = request.json or {}
-            product_id = data.get('productId') or request.args.get('productId')
-            page = int(data.get('page', request.args.get('page', 1)))
-            platform = data.get('platform', request.args.get('platform', 'aliexpress'))
-            per_page = int(data.get('per_page', request.args.get('per_page', 150)))
-            scraped = data.get('scraped')
-            session_id = data.get('session_id') or request.args.get('id')
-        else:
-            product_id = request.args.get('productId')
-            page = int(request.args.get('page', 1))
-            platform = request.args.get('platform', 'aliexpress')
-            per_page = int(request.args.get('per_page', 150))
-            scraped = None
-            session_id = request.args.get('id')
+        # Get query parameters (like v12 - GET only)
+        product_id = request.args.get('productId')
+        page = int(request.args.get('page', 1))
+        platform = request.args.get('platform', 'aliexpress')
+        per_page = int(request.args.get('per_page', 150))  # Load 150 reviews to account for duplicates
         
         # Filters
         filters = {
-            'rating': request.args.get('rating') or (request.json or {}).get('rating'),
-            'country': request.args.get('country') or (request.json or {}).get('country'),
-            'with_photos': request.args.get('with_photos') or (request.json or {}).get('with_photos'),
-            'translate': request.args.get('translate') or (request.json or {}).get('translate')
+            'rating': request.args.get('rating'),
+            'country': request.args.get('country'),
+            'with_photos': request.args.get('with_photos'),
+            'translate': request.args.get('translate')
         }
         
         # Remove None values
@@ -2346,107 +2348,33 @@ def import_url():
                 'error': 'productId parameter required'
             }), 400
         
-        # IMPROVED: Try to load from existing session FIRST (session caching)
-        if session_id and session_id in import_sessions:
-            cached_session = import_sessions[session_id]
-            if 'reviews' in cached_session:
-                logger.info(f"📦 Loading cached data from session {session_id[:8]}...")
-                cached_reviews = cached_session['reviews']
-                
-                # Apply filters to cached reviews
-                filtered_reviews = cached_reviews
-                if filters.get('with_photos'):
-                    filtered_reviews = [r for r in filtered_reviews if r.get('images') and len(r.get('images', [])) > 0]
-                if filters.get('rating'):
-                    min_rating = int(filters['rating'])
-                    filtered_reviews = [r for r in filtered_reviews if r.get('rating', 0) >= min_rating]
-                
-                # Paginate
-                start = (page - 1) * per_page
-                end = start + per_page
-                paginated_reviews = filtered_reviews[start:end]
-                
-                return jsonify({
-                    'success': True,
-                    'reviews': paginated_reviews,
-                    'total': len(filtered_reviews),
-                    'page': page,
-                    'per_page': per_page,
-                    'has_next': end < len(filtered_reviews),
-                    'session_id': session_id,
-                    'data_source': 'cached',
-                    'stats': {
-                        'ai_recommended': len([r for r in cached_reviews if r.get('ai_recommended')]),
-                        'with_photos': len([r for r in cached_reviews if r.get('images') and len(r.get('images', [])) > 0]),
-                        'average_quality': sum(r.get('quality_score', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0,
-                        'average_rating': sum(r.get('rating', 0) for r in cached_reviews) / len(cached_reviews) if cached_reviews else 0
-                    }
-                })
+        # Extract reviews (like v12 - always server-side)
+        product_data = {
+            'productId': product_id,
+            'platform': platform,
+            'url': request.args.get('url', ''),
+            'ownerMemberId': request.args.get('ownerMemberId', '')
+        }
         
-        # IMPROVED: Use client-scraped data if available
-        if scraped and scraped.get('reviews'):
-            logger.info(f"✅ Got {len(scraped['reviews'])} REAL reviews from browser!")
-            reviews = scraped['reviews']
-            platform = scraped.get('platform', platform)
-            product_id = scraped.get('productId') or product_id
-            
-            # Apply AI scoring to real reviews
-            for review in reviews:
-                review['quality_score'] = extractor._calculate_quality_score(review)
-                review['ai_recommended'] = (review['quality_score'] >= 8 and review.get('rating', 0) >= 80)
-                review['sentiment_score'] = extractor._calculate_sentiment(review.get('text', ''))
-                review['has_images'] = len(review.get('images', [])) > 0
-            
-            # Sort by quality
-            reviews.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
-            
-            # Create/Update session WITH reviews for caching
-            if not session_id:
-                session_id = str(uuid.uuid4())
-            
-            import_sessions[session_id] = {
-                'product_id': product_id,
-                'platform': platform,
-                'reviews': reviews,  # CACHE the reviews!
-                'started_at': datetime.now().isoformat(),
-                'imported_count': 0,
-                'real_data': True
-            }
-            
-            # Apply filters
-            filtered_reviews = reviews
-            if filters.get('with_photos'):
-                filtered_reviews = [r for r in filtered_reviews if r.get('images') and len(r.get('images', [])) > 0]
-            if filters.get('rating'):
-                min_rating = int(filters['rating'])
-                filtered_reviews = [r for r in filtered_reviews if r.get('rating', 0) >= min_rating]
-            
-            # Paginate
-            start = (page - 1) * per_page
-            end = start + per_page
-            paginated_reviews = filtered_reviews[start:end]
-            
-            return jsonify({
-                'success': True,
-                'platform': platform,
-                'product_id': product_id,
-                'reviews': paginated_reviews,
-                'total': len(filtered_reviews),
-                'page': page,
-                'per_page': per_page,
-                'has_next': end < len(filtered_reviews),
-                'session_id': session_id,
-                'data_source': 'browser_scraped',
-                'stats': {
-                    'ai_recommended': len([r for r in reviews if r.get('ai_recommended')]),
-                    'with_photos': len([r for r in reviews if r.get('images') and len(r.get('images', [])) > 0]),
-                    'average_quality': sum(r.get('quality_score', 0) for r in reviews) / len(reviews) if reviews else 0,
-                    'average_rating': sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 0
-                    # Note: reviews_45star and reviews_3star are calculated on client side (like v12)
-                }
-            })
+        result = extractor.extract_reviews_paginated(
+            product_data, 
+            page, 
+            per_page, 
+            filters
+        )
         
-        # Fallback: Server-side extraction
+        # Create session ID for tracking (like v12 - just for tracking, not caching reviews)
+        session_id = request.args.get('id', str(uuid.uuid4()))
+        import_sessions[session_id] = {
+            'product_id': product_id,
+            'platform': platform,
+            'started_at': datetime.now().isoformat(),
+            'imported_count': 0
+        }
+        
+        result['session_id'] = session_id
+        
+        return jsonify(result)
         product_data = {
             'productId': product_id,
             'platform': platform,
@@ -2481,10 +2409,13 @@ def import_url():
             'error': 'Invalid parameters'
         }), 400
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         logger.error(f"Import URL error: {str(e)}")
+        logger.error(f"Traceback: {error_trace}")
         return jsonify({
             'success': False,
-            'error': 'Internal server error'
+            'error': f'Internal server error: {str(e)}'
         }), 500
 
 @app.route('/admin/reviews/import/single', methods=['POST'])
@@ -2900,12 +2831,22 @@ def get_analytics():
 @app.route('/js/bookmarklet.js')
 def bookmarklet():
     """Enhanced bookmarklet with superior UX"""
-    # Use the correct protocol (HTTPS in production, HTTP in development)
-    proto = request.headers.get('X-Forwarded-Proto', 'https' if request.is_secure else 'http')
-    api_url = f"{proto}://{request.host}"
+    # Priority 1: Use WIDGET_BASE_URL environment variable (set in Easypanel)
+    widget_base_url = os.environ.get('WIDGET_BASE_URL', '').strip()
+    if widget_base_url:
+        api_url = widget_base_url.rstrip('/')
+        host = api_url
+        logger.info(f"Bookmarklet using WIDGET_BASE_URL: {api_url}")
+    else:
+        # Priority 2: Use proxy headers (for Easypanel/nginx)
+        proto = request.headers.get('X-Forwarded-Proto', 'https' if request.is_secure else 'http')
+        host_header = request.headers.get('X-Forwarded-Host') or request.headers.get('Host') or request.host
+        api_url = f"{proto}://{host_header}"
+        host = api_url
+        logger.info(f"Bookmarklet using request host: {api_url}")
     
     # Render bookmarklet from template file
-    js_content = render_template('js/bookmarklet.js', api_url=api_url)
+    js_content = render_template('js/bookmarklet.js', host=host, api_url=api_url)
 
     
     return js_content, 200, {
@@ -8082,16 +8023,16 @@ def run_database_migrations():
                     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful_no INTEGER DEFAULT 0;
                 """))
                 db.session.commit()
-                print("✅ Database migrations complete (helpful votes columns)")
+                logger.info("Database migrations complete (helpful votes columns)")
             except Exception as e:
                 db.session.rollback()
-                print(f"⚠️ Migration note: {e}")
+                logger.warning(f"Migration note: {e}")
     except Exception as e:
-        print(f"⚠️ Migration skipped: {e}")
+        logger.warning(f"Migration skipped: {e}")
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5016))  # Use 5016 for fresh start (avoid cache)
+    port = int(os.environ.get('PORT', 5019))  # Use 5019 for fresh start (avoid cache)
     debug = os.environ.get('FLASK_ENV') == 'development'
     
     # Run migrations before starting
