@@ -8032,7 +8032,7 @@ def run_database_migrations():
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5019))  # Use 5019 for fresh start (avoid cache)
+    port = int(os.environ.get('PORT', 5020))  # Use 5020 for fresh start (avoid cache)
     debug = os.environ.get('FLASK_ENV') == 'development'
     
     # Run migrations before starting
