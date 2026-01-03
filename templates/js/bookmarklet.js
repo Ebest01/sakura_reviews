@@ -1686,6 +1686,49 @@
             }
         }
         
+        formatImportMessage(result, reviewType = 'reviews') {
+            // Create user-friendly import result message
+            const imported = result.imported_count || 0;
+            const failed = result.failed_count || 0;
+            const duplicates = result.duplicate_count || 0;
+            const skipped = result.skipped_count || 0;
+            
+            let mainMessage = '';
+            let detailsMessage = '';
+            
+            // Main message - explain what happened
+            if (imported > 0 && duplicates === 0) {
+                mainMessage = `✅ Successfully imported ${imported} ${reviewType}!`;
+            } else if (imported > 0 && duplicates > 0) {
+                mainMessage = `✅ Imported ${imported} ${reviewType} (${duplicates} were duplicates)`;
+            } else if (imported === 0 && duplicates > 0) {
+                mainMessage = `ℹ️ All ${reviewType} were duplicates (already imported)`;
+            } else if (imported === 0 && failed > 0) {
+                mainMessage = `❌ Import failed for all ${reviewType}`;
+            } else {
+                mainMessage = `✅ Import completed`;
+            }
+            
+            // Details message - show breakdown
+            const parts = [];
+            if (imported > 0) {
+                parts.push(`✅ ${imported} imported`);
+            }
+            if (duplicates > 0) {
+                parts.push(`🔄 ${duplicates} duplicates (skipped)`);
+            }
+            if (failed > 0) {
+                parts.push(`❌ ${failed} failed`);
+            }
+            if (skipped > 0 && skipped !== duplicates) {
+                parts.push(`⏭️ ${skipped} skipped`);
+            }
+            
+            detailsMessage = parts.length > 0 ? parts.join(' • ') : 'No changes';
+            
+            return { mainMessage, detailsMessage };
+        }
+        
         hideImportLoader(success, message, details) {
             this.isImporting = false;
             const loader = document.getElementById('rk-import-loader');
@@ -1806,9 +1849,8 @@
                     fetch(`${API_URL}/e?cat=Import+by+URL&a=Bulk+imported&c=${this.sessionId}`, 
                           { method: 'GET' });
                     
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count} | ⏭️ Skipped: ${result.skipped_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'reviews');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
@@ -1872,9 +1914,8 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with photos!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'reviews with photos');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
@@ -1938,9 +1979,8 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews without photos!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'reviews without photos');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
@@ -2004,9 +2044,8 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} AI recommended reviews!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'AI recommended reviews');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
@@ -2063,9 +2102,8 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with 4-5 stars!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'reviews with 4-5 stars');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
@@ -2122,9 +2160,8 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const duplicateMsg = result.duplicate_count > 0 ? ` | 🔄 Duplicates: ${result.duplicate_count}` : '';
-                    const message = `✅ Imported: ${result.imported_count} | ❌ Failed: ${result.failed_count}${duplicateMsg}`;
-                    this.hideImportLoader(true, `Successfully imported ${result.imported_count} reviews with 3 stars!`, message);
+                    const { mainMessage, detailsMessage } = this.formatImportMessage(result, 'reviews with 3 stars');
+                    this.hideImportLoader(true, mainMessage, detailsMessage);
                 } else {
                     this.hideImportLoader(false, 'Import failed: ' + result.error, '');
                 }
