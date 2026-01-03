@@ -1149,6 +1149,19 @@
             this.displayReview();  // Refresh display without re-filtering
         }
         
+        renderStars(rating) {
+            // Convert rating from 0-100 scale to 1-5 stars
+            const starCount = Math.ceil(rating / 20);
+            const filledStars = Math.min(starCount, 5);
+            const emptyStars = 5 - filledStars;
+            
+            // AliExpress SVG stars
+            const filledStarSVG = '<svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor" aria-hidden="false" focusable="false" style="display: inline-block; vertical-align: middle; margin-right: 2px;"><path d="M463.488 157.141333c18.986667-41.557333 78.016-41.557333 97.024 0l91.498667 200.170667 196.544 25.6c42.922667 5.589333 61.653333 57.28 32.256 89.088L738.56 625.92l36.629333 201.258667c7.850667 43.136-36.8 76.8-76.096 57.386666L512 792.064l-187.093333 92.458667c-39.296 19.413333-83.968-14.229333-76.096-57.365334l36.629333-201.258666-142.272-153.92c-29.376-31.786667-10.645333-83.498667 32.277333-89.088l196.544-25.6 91.52-200.170667z"></path></svg>';
+            const emptyStarSVG = '<svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor" aria-hidden="false" focusable="false" style="display: inline-block; vertical-align: middle; margin-right: 2px; opacity: 0.3;"><path d="M512 204.970667l-84.266667 184.32a53.333333 53.333333 0 0 1-41.6 30.72l-181.952 23.68 131.882667 142.698666a53.333333 53.333333 0 0 1 13.290667 45.738667l-33.792 185.642667 172.8-85.397334a53.333333 53.333333 0 0 1 47.274666 0l172.8 85.397334-33.792-185.642667a53.333333 53.333333 0 0 1 13.290667-45.76L819.84 443.733333l-181.930667-23.701333a53.333333 53.333333 0 0 1-41.621333-30.72L512 204.970667z m-48.512-47.829334c18.986667-41.557333 78.016-41.557333 97.024 0l91.498667 200.170667 196.544 25.6c42.922667 5.589333 61.653333 57.28 32.256 89.088L738.56 625.92l36.629333 201.258667c7.850667 43.136-36.8 76.8-76.096 57.386666L512 792.064l-187.093333 92.458667c-39.296 19.413333-83.968-14.229333-76.096-57.365334l36.629333-201.258666-142.272-153.92c-29.376-31.786667-10.645333-83.498667 32.277333-89.088l196.544-25.6 91.52-200.170667z"></path></svg>';
+            
+            return filledStarSVG.repeat(filledStars) + emptyStarSVG.repeat(emptyStars);
+        }
+        
         getCountryMap() {
             // Country code to flag/name mapping
             return {
@@ -1450,7 +1463,7 @@
                     <div style="display: flex; justify-content: space-between; margin-bottom: 18px; align-items: flex-start;">
                         <div style="flex: 1;">
                             <h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${review.reviewer_name}</h3>
-                            <div style="color: #fbbf24; font-size: 18px; margin: 6px 0; letter-spacing: 2px;">${'⭐'.repeat(Math.ceil(review.rating / 20)) + '☆'.repeat(5 - Math.ceil(review.rating / 20))}</div>
+                            <div style="color: #fbbf24; font-size: 24px; margin: 6px 0; line-height: 1; display: flex; align-items: center; gap: 2px;">${this.renderStars(review.rating)}</div>
                             <div style="color: #9ca3af; font-size: 12px; font-weight: 500;">${review.date} • ${review.country}</div>
                         </div>
                         <div style="text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
