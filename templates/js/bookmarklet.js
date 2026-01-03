@@ -602,7 +602,7 @@
                                     display: flex; align-items: center; gap: 12px;"
                              onmouseover="this.style.background='#f8f9fa'" 
                              onmouseout="this.style.background='white'"
-                             onclick="window.reviewKingClient.selectProduct('${product.id}', '${product.title.replace(/'/g, "\\'")}', '${product.image || ""}')">
+                             onclick="window.reviewKingClient.selectProduct('${product.id}', '${product.title.replace(/'/g, "\\'")}', '${product.image || ""}', '${(product.url || "").replace(/'/g, "\\'")}')">
                             ${product.image ? `<img src="${product.image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : '<div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px;"></div>'}
                             <div>
                                 <div style="font-weight: 500; color: #333; font-size: 14px;">${product.title}</div>
@@ -618,8 +618,8 @@
             }
         }
         
-        selectProduct(productId, productTitle, productImage) {
-            this.selectedProduct = { id: productId, title: productTitle, image: productImage || null };
+        selectProduct(productId, productTitle, productImage, productUrl) {
+            this.selectedProduct = { id: productId, title: productTitle, image: productImage || null, url: productUrl || null };
             
             // Hide dropdown and clear input
             const dropdown = document.getElementById('product-dropdown');
@@ -634,14 +634,16 @@
                 return;
             }
             
-            // Show selected product with thumbnail
+            // Show selected product with thumbnail - Product name as title, URL link below
+            const productLink = productUrl ? `<a href="${productUrl}" target="_blank" style="color: #a78bfa; text-decoration: none; font-size: 12px; opacity: 0.9; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">View product page in Shopify</a>` : '';
+            
             selectedDiv.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         ${productImage ? `<img src="${productImage}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}
                         <div>
-                            <div style="font-weight: 500;">✔ Target Product Selected</div>
-                            <div style="opacity: 0.8; font-size: 12px;">${productTitle}</div>
+                            <div style="font-weight: 500; font-size: 14px;">${productTitle}</div>
+                            ${productLink}
                         </div>
                     </div>
                     <button onclick="window.reviewKingClient.clearProduct()" 
@@ -1320,11 +1322,13 @@
                          box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 120px; overflow-y: auto; color: #333;"></div>
                     <div id="selected-product" style="display: block; margin-top: 8px; padding: 8px 12px; 
                          background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            ${this.selectedProduct.image ? `<img src="${this.selectedProduct.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}
-                            <div style="flex: 1;">
-                                <div style="font-weight: 500;">✔ Target Product Selected</div>
-                                <div style="opacity: 0.9; font-size: 12px;">${this.selectedProduct.title}</div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                ${this.selectedProduct.image ? `<img src="${this.selectedProduct.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : '<div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 6px; flex-shrink: 0;"></div>'}
+                                <div>
+                                    <div style="font-weight: 500; font-size: 14px;">${this.selectedProduct.title}</div>
+                                    ${this.selectedProduct.url ? `<a href="${this.selectedProduct.url}" target="_blank" style="color: #a78bfa; text-decoration: none; font-size: 12px; opacity: 0.9; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">View product page in Shopify</a>` : ''}
+                                </div>
                             </div>
                             <button onclick="window.reviewKingClient.clearProduct()" 
                                     style="background: rgba(255,255,255,0.2); border: none; color: white; 
